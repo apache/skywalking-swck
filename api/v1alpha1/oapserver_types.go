@@ -32,22 +32,9 @@ type OAPServerSpec struct {
 	Instances int `json:"instances,imitempty"`
 	// Config holds the OAP server configuration.
 	Config map[string]string `json:"config,omitempty"`
-
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+	// PodTemplate provides customisation options (labels, annotations, affinity rules, resource requests, and so on) for the Pods belonging to this OAP server.
 	// +kubebuilder:validation:Optional
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// If specified, affinity will define the pod's scheduling constraints
-	// +kubebuilder:validation:Optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
-	// Tolerations allows specifying a list of tolerations for controlling which
-	// set of Nodes a Pod can be scheduled on
-	// +kubebuilder:validation:Optional
-	Tolerations *[]corev1.Toleration `json:"tolerations,omitempty"`
-	// Resources holds ResourceRequirements for the OAP server containers
-	// +kubebuilder:validation:Optional
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	PodTemplate corev1.PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // OAPServerPhase is the phase OAP server is in from the controller point of view.
