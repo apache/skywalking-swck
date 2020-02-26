@@ -1,0 +1,20 @@
+# permissions for end users to view oapservers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oapserver-viewer-role
+rules:
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - oapservers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - oapservers/status
+  verbs:
+  - get

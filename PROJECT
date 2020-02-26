@@ -1,3 +1,7 @@
 domain: skywalking.apache.org
 repo: github.com/skywalking-swck
+resources:
+- group: operator
+  kind: OAPServer
+  version: v1alpha1
 version: "2"
