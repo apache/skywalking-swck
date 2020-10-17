@@ -29,9 +29,9 @@ type OAPServerSpec struct {
 	// Image is the OAP Server Docker image to deploy.
 	Image string `json:"image,omitempty"`
 	// Count is the number of OAP servers
-	Instances int `json:"instances,imitempty"`
+	Instances int32 `json:"instances,imitempty"`
 	// Config holds the OAP server configuration.
-	Config map[string]string `json:"config,omitempty"`
+	Config []corev1.EnvVar `json:"config,omitempty"`
 	// PodTemplate provides customisation options (labels, annotations, affinity rules, resource requests, and so on) for the Pods belonging to this OAP server.
 	// +kubebuilder:validation:Optional
 	PodTemplate corev1.PodTemplateSpec `json:"podTemplate,omitempty"`
@@ -52,6 +52,7 @@ const (
 // OAPServerStatus defines the observed state of OAPServer
 type OAPServerStatus struct {
 	// The phase OAP servers is in.
+	// +kubebuilder:printcolumn
 	Phase OAPServerPhase `json:"phase,omitempty"`
 	// A human readable message indicating details about why the OAP servers is in this phase.
 	// +kubebuilder:validation:Optional
@@ -59,9 +60,21 @@ type OAPServerStatus struct {
 	// A brief CamelCase message indicating details about why the OAP servers is in this state.
 	// +kubebuilder:validation:Optional
 	Reason string `json:"reason,omitempty"`
+	// The last time the phase is transitioned
+	// +kubebuilder:validation:Optional
+	LastTime metav1.Time `json:"last_time,omitempty"`
+	// Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
+	// +kubebuilder:validation:Optional
+	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version"
+// +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
+// +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.availableReplicas",description="The number of running"
+// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="The phase of deployment"
+// +kubebuilder:printcolumn:name="Image",type="string",priority=1,JSONPath=".spec.image"
 
 // OAPServer is the Schema for the oapservers API
 type OAPServer struct {

@@ -59,7 +59,7 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
+		MetricsBindAddress: "0",
 		LeaderElection:     enableLeaderElection,
 		Port:               9443,
 	})
