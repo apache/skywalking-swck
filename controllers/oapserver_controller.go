@@ -34,6 +34,8 @@ import (
 	operatorv1alpha1 "github.com/skywalking-swck/api/v1alpha1"
 )
 
+const annotationKeyIstioSetup = "istio-setup-command"
+
 var schedDuration, _ = time.ParseDuration("1m")
 var rushModeSchedDuration, _ = time.ParseDuration("5s")
 
@@ -57,6 +59,9 @@ func (r *OAPServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "failed to get OAPServer")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	log.Info("Checking istio setup command annotation")
+	r.istio(ctx, &oapServer)
 
 	log.Info("Checking if an existing Deployment exists")
 	deploymentName := "oap-server-deployment"
@@ -88,6 +93,13 @@ func (r *OAPServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	log.Info("updating current deployment")
+	deployment = *buildDeployment(&oapServer, deploymentName)
+	if err := r.Client.Update(ctx, &deployment); err != nil {
+		log.Error(err, "failed to update Deployment resource")
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{RequeueAfter: r.checkState(ctx, &oapServer, &deployment)}, nil
 }
 
@@ -99,7 +111,7 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, oapServer *operato
 	if lc.Status == core.ConditionTrue {
 		switch lc.Type {
 		case apps.DeploymentProgressing:
-			p = operatorv1alpha1.OAPServerReadyPhase
+			p = operatorv1alpha1.OAPServerChangingPhase
 		case apps.DeploymentAvailable:
 			p = operatorv1alpha1.OAPServerReadyPhase
 		}
@@ -116,20 +128,38 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, oapServer *operato
 		return rushModeSchedDuration
 	}
 
-	if p != operatorv1alpha1.OAPServerReadyPhase {
+	if p != operatorv1alpha1.OAPServerReadyPhase || oapServer.Spec.Instances != oapServer.Status.AvailableReplicas {
 		return rushModeSchedDuration
 	}
 	return schedDuration
 }
 
-func buildDeployment(oapServer *operatorv1alpha1.OAPServer, deploymentName string) *apps.Deployment {
-
-	podSpec := &oapServer.Spec.PodTemplate
-	if podSpec != nil {
-		podSpec = podSpec.DeepCopy()
-	} else {
-		podSpec = &core.PodTemplateSpec{}
+func (r *OAPServerReconciler) istio(ctx context.Context, oapServer *operatorv1alpha1.OAPServer) {
+	for _, envVar := range oapServer.Spec.Config {
+		if envVar.Name == "SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS" &&
+			oapServer.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
+			err := r.Patch(ctx, &operatorv1alpha1.OAPServer{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotationKeyIstioSetup: fmt.Sprintf("istioctl install --set profile=demo "+
+							"--set meshConfig.defaultConfig.envoyAccessLogService.address=skywalking-oap.%s:11800 "+
+							"--set meshConfig.enableEnvoyAccessLogService=true", oapServer.Namespace),
+					},
+					Name:      oapServer.Name,
+					Namespace: oapServer.Namespace,
+				},
+			},
+				client.Merge)
+			if err != nil {
+				r.Log.Error(err, "unable to patch Istio setup command to annotation")
+			}
+			return
+		}
 	}
+}
+
+func buildDeployment(oapServer *operatorv1alpha1.OAPServer, deploymentName string) *apps.Deployment {
+	podSpec := &core.PodTemplateSpec{}
 
 	if &podSpec.ObjectMeta == nil {
 		podSpec.ObjectMeta = metav1.ObjectMeta{Labels: make(map[string]string)}

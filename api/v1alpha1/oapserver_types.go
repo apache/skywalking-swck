@@ -32,9 +32,6 @@ type OAPServerSpec struct {
 	Instances int32 `json:"instances,imitempty"`
 	// Config holds the OAP server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
-	// PodTemplate provides customisation options (labels, annotations, affinity rules, resource requests, and so on) for the Pods belonging to this OAP server.
-	// +kubebuilder:validation:Optional
-	PodTemplate corev1.PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // OAPServerPhase is the phase OAP server is in from the controller point of view.
@@ -52,7 +49,7 @@ const (
 // OAPServerStatus defines the observed state of OAPServer
 type OAPServerStatus struct {
 	// The phase OAP servers is in.
-	// +kubebuilder:printcolumn
+	// +kubebuilder:validation:Optional
 	Phase OAPServerPhase `json:"phase,omitempty"`
 	// A human readable message indicating details about why the OAP servers is in this phase.
 	// +kubebuilder:validation:Optional
@@ -62,7 +59,7 @@ type OAPServerStatus struct {
 	Reason string `json:"reason,omitempty"`
 	// The last time the phase is transitioned
 	// +kubebuilder:validation:Optional
-	LastTime metav1.Time `json:"last_time,omitempty"`
+	LastTime metav1.Time `json:"lastTime,omitempty"`
 	// Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
 	// +kubebuilder:validation:Optional
 	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
@@ -70,7 +67,7 @@ type OAPServerStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version"
+// +kubebuilder:printcolumn:name="Version",type="string",priority=1,JSONPath=".spec.version",description="The version"
 // +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
 // +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.availableReplicas",description="The number of running"
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="The phase of deployment"
