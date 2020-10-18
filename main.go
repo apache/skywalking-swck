@@ -61,6 +61,7 @@ func main() {
 		Scheme:             scheme,
 		MetricsBindAddress: "0",
 		LeaderElection:     enableLeaderElection,
+		LeaderElectionID:   "aaa.swck",
 		Port:               9443,
 	})
 	if err != nil {
