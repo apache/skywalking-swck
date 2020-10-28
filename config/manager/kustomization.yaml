@@ -22,4 +22,3 @@ kind: Kustomization
 images:
 - name: controller
   newName: hanahmily/swck
-  newTag: latest

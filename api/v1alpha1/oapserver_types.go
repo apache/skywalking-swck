@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,40 +30,22 @@ type OAPServerSpec struct {
 	// Image is the OAP Server Docker image to deploy.
 	Image string `json:"image,omitempty"`
 	// Count is the number of OAP servers
-	Instances int32 `json:"instances,imitempty"`
+	Instances int32 `json:"instances,omitempty"`
 	// Config holds the OAP server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
 }
 
-// OAPServerPhase is the phase OAP server is in from the controller point of view.
-type OAPServerPhase string
-
-const (
-	// OAPServerReadyPhase is operating at the desired spec.
-	OAPServerReadyPhase OAPServerPhase = "Ready"
-	// OAPServerChangingPhase controller is working towards a desired state, cluster can be unavailable.
-	OAPServerChangingPhase OAPServerPhase = "Changing"
-	// OAPServerResourceInvalid is marking a resource as invalid, should never happen if admission control is installed correctly.
-	OAPServerResourceInvalid OAPServerPhase = "Invalid"
-)
-
 // OAPServerStatus defines the observed state of OAPServer
 type OAPServerStatus struct {
-	// The phase OAP servers is in.
-	// +kubebuilder:validation:Optional
-	Phase OAPServerPhase `json:"phase,omitempty"`
-	// A human readable message indicating details about why the OAP servers is in this phase.
-	// +kubebuilder:validation:Optional
-	Message string `json:"message,omitempty"`
-	// A brief CamelCase message indicating details about why the OAP servers is in this state.
-	// +kubebuilder:validation:Optional
-	Reason string `json:"reason,omitempty"`
-	// The last time the phase is transitioned
-	// +kubebuilder:validation:Optional
-	LastTime metav1.Time `json:"lastTime,omitempty"`
 	// Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
 	// +kubebuilder:validation:Optional
 	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
+	// Address indicates the entry of OAP server which ingresses data
+	// +kubebuilder:validation:Optional
+	Address string `json:"address,omitempty"`
+	// Represents the latest available observations of the underlying deployment's current state.
+	// +kubebuilder:validation:Optional
+	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -70,7 +53,7 @@ type OAPServerStatus struct {
 // +kubebuilder:printcolumn:name="Version",type="string",priority=1,JSONPath=".spec.version",description="The version"
 // +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
 // +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.availableReplicas",description="The number of running"
-// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="The phase of deployment"
+// +kubebuilder:printcolumn:name="Address",type="string",JSONPath=".status.address",description="The address of OAP server"
 // +kubebuilder:printcolumn:name="Image",type="string",priority=1,JSONPath=".spec.image"
 
 // OAPServer is the Schema for the oapservers API

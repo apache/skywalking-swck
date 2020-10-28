@@ -1,0 +1,39 @@
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - goconst
+    - golint
+    - ineffassign
+    - lll
+    - maligned
+    - misspell
+    - structcheck
+    - unconvert
+    - varcheck
+    - govet
+    - goimports
+    - prealloc
+    - unused
+    - staticcheck
+    - gosimple
+    - megacheck
+  disable:
+    - interfacer
+linters-settings:
+  lll:
+    line-length: 170
+  goconst:
+    min-occurrences: 4
+  govet:
+    check-shadowing: true
+run:
+  deadline: 10m
+  skip-dirs:
+    - config
+    - doc
+issues:
+  exclude:
+    # staticcheck
+    - 'SA1019: Package github.com/golang/protobuf/proto is deprecated: Use the "google.golang.org/protobuf/proto" package instead.'
+    - 'SA1019: Package github.com/golang/protobuf/jsonpb is deprecated: Use the "google.golang.org/protobuf/encoding/protojson" package instead.'

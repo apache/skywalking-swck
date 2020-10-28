@@ -22,9 +22,9 @@ spec:
     description: The number of running
     name: Running
     type: string
-  - JSONPath: .status.phase
-    description: The phase of deployment
-    name: Phase
+  - JSONPath: .status.address
+    description: The address of OAP server
+    name: Address
     type: string
   - JSONPath: .spec.image
     name: Image
@@ -172,32 +172,54 @@ spec:
               description: Version of OAP.
               type: string
           required:
-          - instances
           - version
           type: object
         status:
           description: OAPServerStatus defines the observed state of OAPServer
           properties:
+            address:
+              description: Address indicates the entry of OAP server which ingresses
+                data
+              type: string
             availableReplicas:
               description: Total number of available pods (ready for at least minReadySeconds)
                 targeted by this deployment.
               format: int32
               type: integer
-            lastTime:
-              description: The last time the phase is transitioned
-              format: date-time
-              type: string
-            message:
-              description: A human readable message indicating details about why the
-                OAP servers is in this phase.
-              type: string
-            phase:
-              description: The phase OAP servers is in.
-              type: string
-            reason:
-              description: A brief CamelCase message indicating details about why
-                the OAP servers is in this state.
-              type: string
+            conditions:
+              description: Represents the latest available observations of the underlying
+                deployment's current state.
+              items:
+                description: DeploymentCondition describes the state of a deployment
+                  at a certain point.
+                properties:
+                  lastTransitionTime:
+                    description: Last time the condition transitioned from one status
+                      to another.
+                    format: date-time
+                    type: string
+                  lastUpdateTime:
+                    description: The last time this condition was updated.
+                    format: date-time
+                    type: string
+                  message:
+                    description: A human readable message indicating details about
+                      the transition.
+                    type: string
+                  reason:
+                    description: The reason for the condition's last transition.
+                    type: string
+                  status:
+                    description: Status of the condition, one of True, False, Unknown.
+                    type: string
+                  type:
+                    description: Type of deployment condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
           type: object
       type: object
   version: v1alpha1

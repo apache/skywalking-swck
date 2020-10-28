@@ -1,7 +1,7 @@
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: OAPServer
 metadata:
-  name: oap-server-operator
+  name: demo
 spec:
   version: 8.1.0
   instances: 1

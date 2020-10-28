@@ -11,7 +11,6 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-GO_LICENSER = $(GOBIN)/go-licenser
 
 all: manager
 
@@ -19,15 +18,15 @@ clean:
 	rm -rf bin/
 
 # Run tests
-test: generate fmt vet manifests
+test: generate manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
-manager: generate fmt vet
+manager: generate
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
+run: generate manifests
 	go run ./main.go
 
 # Install CRDs into a cluster
@@ -47,21 +46,15 @@ deploy: manifests
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-# Run go fmt against code
-fmt:
-	go fmt ./...
-
-# Run go vet against code
-vet:
-	go vet ./...
-
 # Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-license: clean
-	$(GO_LICENSER) -version || GO111MODULE=off go get -u github.com/elastic/go-licenser
-	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' .
+GO_LICENSER := $(GOBIN)/go-licenser
+$(GO_LICENSER):
+	GO111MODULE=off go get -u github.com/elastic/go-licenser
+license: clean $(GO_LICENSER)
+	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=api/v1alpha1/zz_generated* .
 
 # Build the docker image
 docker-build: test
@@ -87,3 +80,35 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+# The goimports tool does not arrange imports in 3 blocks if there are already more than three blocks.
+# To avoid that, before running it, we collapse all imports in one block, then run the formatter.
+format: ## Format all Go code
+	@for f in `find . -name '*.go'`; do \
+	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' $$f > /tmp/fmt; \
+	    mv /tmp/fmt $$f; \
+	done
+	@goimports -w -local github.com/skywalking-swck .
+
+## Check that the status is consistent with CI.
+check: clean generate manifests
+	$(MAKE) format
+	mkdir -p /tmp/artifacts
+	git diff >/tmp/artifacts/check.diff 2>&1
+	@go mod tidy &> /dev/null
+	@if [ ! -z "`git status -s`" ]; then \
+		echo "Following files are not consistent with CI:"; \
+		git status -s; \
+		exit 1; \
+	fi
+
+## Code quality and integrity
+
+LINTER := bin/golangci-lint
+$(LINTER):
+	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.23.6
+	
+lint: $(LINTER)
+	$(LINTER) run --config ./golangci.yml
+
+.PHONY: lint
