@@ -45,16 +45,19 @@ deploy: manifests
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	 go run github.com/skywalking-swck/cmd/build license insert config
 
 # Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(MAKE) format
 
 GO_LICENSER := $(GOBIN)/go-licenser
 $(GO_LICENSER):
 	GO111MODULE=off go get -u github.com/elastic/go-licenser
-license: clean $(GO_LICENSER)
+license: $(GO_LICENSER)
 	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=api/v1alpha1/zz_generated* .
+	go run github.com/skywalking-swck/cmd/build license check config
 
 # Build the docker image
 docker-build: test
@@ -91,7 +94,7 @@ format: ## Format all Go code
 	@goimports -w -local github.com/skywalking-swck .
 
 ## Check that the status is consistent with CI.
-check: clean generate manifests
+check: generate manifests license
 	$(MAKE) format
 	mkdir -p /tmp/artifacts
 	git diff >/tmp/artifacts/check.diff 2>&1
