@@ -16,7 +16,7 @@
 #
 
 github:
-  description: Apache SkyWalking CLI
+  description: Apache SkyWalking Cloud on Kubernetes
   homepage: https://skywalking.apache.org/
   labels:
     - skywalking
