@@ -44,4 +44,4 @@ jobs:
       - name: Build
         run: make
       - name: Build docker image
-        uses: docker/build-push-action@v2
+        run: make docker-build
