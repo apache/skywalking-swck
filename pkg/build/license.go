@@ -71,7 +71,7 @@ func newInsert() *cobra.Command {
 				return fmt.Errorf("failed to get present directory: %w", err)
 			}
 			w := filepath.Join(dir, args[0])
-			l.Info("working directory: %s", w)
+			l.Info("working directory: ", w)
 
 			err = filepath.Walk(w,
 				func(path string, info os.FileInfo, err error) error {
@@ -108,7 +108,7 @@ func newCheck() *cobra.Command {
 				return fmt.Errorf("failed to get present directory: %w", err)
 			}
 			w := filepath.Join(dir, args[0])
-			l.Info("working directory: %s", w)
+			l.Info("working directory: ", w)
 
 			err = filepath.Walk(w,
 				func(path string, info os.FileInfo, err error) error {
@@ -121,7 +121,7 @@ func newCheck() *cobra.Command {
 					}
 					data, err := ioutil.ReadFile(path)
 					if err != nil {
-						l.Errorf("failed to read data from file ", path, err)
+						l.Errorf("failed to read data from file %s: %v", path, err)
 					}
 					if checkHeader(data) {
 						return nil
@@ -142,27 +142,24 @@ func insertHeader(path string) {
 	var buff bytes.Buffer
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		l.Errorf("failed to read data from file ", path, err)
+		l.Errorf("failed to read data from file %s: %v", path, err)
 	}
 	if checkHeader(data) {
 		return
 	}
 
 	if _, err = buff.WriteString(yamlHeader); err != nil {
-		l.Errorf("failed to write header to %s", path, err)
+		l.Errorf("failed to write header to %s: %v", path, err)
 	}
 	if _, err = buff.Write(append(data, '\n')); err != nil {
-		l.Errorf("failed to write content to %s", path, err)
+		l.Errorf("failed to write content to %s: %v", path, err)
 	}
 	if err = ioutil.WriteFile(path, buff.Bytes(), os.ModePerm); err != nil {
-		l.Errorf("failed to update %s", path, err)
+		l.Errorf("failed to update %s: %v", path, err)
 	}
-	l.Info("updated %s", path)
+	l.Info("updated ", path)
 }
 
 func checkHeader(data []byte) bool {
-	if strings.Index(string(data), "Apache Software Foundation (ASF)") > -1 {
-		return true
-	}
-	return false
+	return strings.Contains(string(data), "Apache Software Foundation (ASF)")
 }
