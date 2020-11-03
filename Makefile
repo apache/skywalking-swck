@@ -81,14 +81,17 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
+GOIMPORTS := $(GOBIN)/goimports
+$(GOIMPORTS):
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 # The goimports tool does not arrange imports in 3 blocks if there are already more than three blocks.
 # To avoid that, before running it, we collapse all imports in one block, then run the formatter.
-format: ## Format all Go code
+format: $(GOIMPORTS) ## Format all Go code
 	@for f in `find . -name '*.go'`; do \
 	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' $$f > /tmp/fmt; \
 	    mv /tmp/fmt $$f; \
 	done
-	@goimports -w -local github.com/skywalking-swck .
+	$(GOIMPORTS) -w -local github.com/skywalking-swck .
 
 ## Check that the status is consistent with CI.
 check: clean generate manifests
