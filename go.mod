@@ -5,8 +5,6 @@ go 1.13
 require (
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/go-logr/logr v0.1.0
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
