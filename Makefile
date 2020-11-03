@@ -1,3 +1,18 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
@@ -45,16 +60,19 @@ deploy: manifests
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	 go run github.com/skywalking-swck/cmd/build license insert config
 
 # Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(MAKE) format
 
 GO_LICENSER := $(GOBIN)/go-licenser
 $(GO_LICENSER):
 	GO111MODULE=off go get -u github.com/elastic/go-licenser
-license: clean $(GO_LICENSER)
+license: $(GO_LICENSER)
 	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=api/v1alpha1/zz_generated* .
+	go run github.com/skywalking-swck/cmd/build license check config
 
 # Build the docker image
 docker-build: test
@@ -94,7 +112,7 @@ format: $(GOIMPORTS) ## Format all Go code
 	$(GOIMPORTS) -w -local github.com/skywalking-swck .
 
 ## Check that the status is consistent with CI.
-check: clean generate manifests
+check: generate manifests license
 	$(MAKE) format
 	mkdir -p /tmp/artifacts
 	git diff >/tmp/artifacts/check.diff 2>&1
