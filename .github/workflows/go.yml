@@ -45,3 +45,9 @@ jobs:
         run: make
       - name: Build docker image
         run: make docker-build
+  checks:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - run: echo 'success'
