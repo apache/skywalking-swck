@@ -13,11 +13,7 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
  1. Go to the [download page](https://skywalking.apache.org/downloads/) to download latest release manifest. 
  
- 2. Create the `skywalking-swck-system` namespace:
- ```
- kubectl create namespace skywalking-swck-system
- ```
- 3. Apply the manifests for the Controller and CRDs in release/config:
+ 2. Apply the manifests for the Controller and CRDs in release/config:
  ```
  kubectl apply -f release/config
  ```
