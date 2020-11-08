@@ -50,11 +50,11 @@ source(){
     tar \
         --exclude="bin"  \
         --exclude="build"  \
+        --exclude=".*" \
+        --exclude="*.test"  \
+        --exclude="*.out"  \
         -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-src.tgz \
         .
-#        --exclude=".*" \
-#        --exclude="*.test"  \
-#        --exclude="*.out"  \
     popd
 }
 
