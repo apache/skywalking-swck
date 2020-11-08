@@ -6,6 +6,8 @@
 *.so
 *.dylib
 bin
+build/bin
+build/release/
 
 # Test binary, build with `go test -c`
 *.test
@@ -22,3 +24,5 @@ bin
 *.swp
 *.swo
 *~
+
+.DS_Store

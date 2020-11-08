@@ -133,3 +133,16 @@ lint: $(LINTER)
 	$(LINTER) run --config ./golangci.yml
 
 .PHONY: lint
+
+release-manager: generate
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-liunx-amd64 main.go
+
+RELEASE_SCRIPTS := ./build/package/release.sh
+
+release-binary: release-manager
+	${RELEASE_SCRIPTS} -b
+	
+release-source:
+	${RELEASE_SCRIPTS} -s
+
+.PHONY: release-manager release-binary release-source
