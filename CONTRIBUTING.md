@@ -68,14 +68,14 @@ This section guides committers and PMC members to release SkyWalking Cloud on Ku
 ### Prerequisites
 - [x] [GNU Make](https://www.gnu.org/software/make/manual/make.html) is installed
 - [x] [GPG tool](https://gpgtools.org) is installed
-- [x] [Add your GPG key](docs/How-to-release.md#add-your-gpg-public-key)
+- [x] [Add your GPG key](doc/release.md#add-your-gpg-public-key)
 
 ### Release steps
-- Export the version that is to be released, `export VERSION=1.0.1 `
-- Tag the latest commit that is to be released with `git tag v${VERSION}` and push the tag with `git push https://github.com/apache/skywalking-swck v${VERSION}`
+- Export the version that is to be released, `export VERSION=0.1.0 `
+- Tag the latest commit that is to be released with `git tag ${VERSION}` and push the tag with `git push https://github.com/apache/skywalking-swck ${VERSION}`
 - Verify licenses, build and sign distribution packages, simply run `make release`, distribution packages and checksums are generated
-- [Upload the packages to SVN repository](docs/How-to-release.md#upload-to-apache-svn) 
-- [Send internal announcement](docs/How-to-release.md#make-the-internal-announcements)
-- [Wait at least 48 hours for test responses](docs/How-to-release.md#wait-at-least-48-hours-for-test-responses)
-- [Call for vote](docs/How-to-release.md#call-a-vote-in-dev)
-- [Publish release](docs/How-to-release.md#publish-release)
+- [Upload the packages to SVN repository](doc/release.md#upload-to-apache-svn) 
+- [Send internal announcement](doc/release.md#make-the-internal-announcements)
+- [Wait at least 48 hours for test responses](doc/release.md#wait-at-least-48-hours-for-test-responses)
+- [Call for vote](doc/release.md#call-a-vote-in-dev)
+- [Publish release](doc/release.md#publish-release)
