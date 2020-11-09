@@ -30,7 +30,10 @@ endif
 all: manager
 
 clean:
-	rm -rf bin/
+	rm -rf build/bin
+	rm -rf build/release
+	rm -rf *.out
+	rm -rf *.test
 
 # Run tests
 test: generate manifests
@@ -144,5 +147,11 @@ release-binary: release-manager
 	
 release-source:
 	${RELEASE_SCRIPTS} -s
+	
+release-sign:
+	${RELEASE_SCRIPTS} -k bin
+	${RELEASE_SCRIPTS} -k src
 
-.PHONY: release-manager release-binary release-source
+release: release-binary release-source release-sign
+
+.PHONY: release-manager release-binary release-source release

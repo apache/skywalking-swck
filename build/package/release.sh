@@ -22,7 +22,6 @@ BUILDDIR=${SCRIPTDIR}/..
 ROOTDIR=${BUILDDIR}/..
 
 RELEASE_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-RELEASE_VERSION=${RELEASE_TAG#"v"}
 
 binary(){
     bindir=${BUILDDIR}/release/binary
@@ -36,26 +35,40 @@ binary(){
     # Generates CRDs and deployment manifests
     kustomize build config/crd > ${bindir}/config/crds.yaml
     pushd ${ROOTDIR}/config/manager
-    kustomize edit set image controller=apache/skywalking-swck:${RELEASE_VERSION}
+    kustomize edit set image controller=apache/skywalking-swck:${RELEASE_TAG}
     popd
     kustomize build config/default > ${bindir}/config/deploy.yaml
     # Package
-    tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-bin.tgz -C ${bindir} .
+    tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_TAG}-bin.tgz -C ${bindir} .
+    rm -rf ${bindir}
 }
 
 source(){
     # Package
-    rm -rf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-src.tgz
+    rm -rf ${BUILDDIR}/release/skywalking-swck-${RELEASE_TAG}-src.tgz
     pushd ${ROOTDIR}
     tar \
+        --exclude=".DS_Store" \
+        --exclude=".git" \
+        --exclude=".github" \
+        --exclude=".gitignore" \
+        --exclude=".asf.yaml" \
+        --exclude=".idea" \
         --exclude="bin"  \
-        --exclude="build"  \
-        --exclude=".*" \
+        --exclude="build/release"  \
         --exclude="*.test"  \
         --exclude="*.out"  \
-        -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-src.tgz \
+        -czf ./build/release/skywalking-swck-${RELEASE_TAG}-src.tgz \
         .
     popd
+}
+
+sign(){
+    type=$1
+    pushd ${BUILDDIR}/release/
+    gpg --batch --yes --armor --detach-sig skywalking-swck-${RELEASE_TAG}-${type}.tgz
+	shasum -a 512 skywalking-swck-${RELEASE_TAG}-${type}.tgz > skywalking-swck-${RELEASE_TAG}-${type}.tgz.sha512
+	popd
 }
 
 parseCmdLine(){
@@ -64,10 +77,11 @@ parseCmdLine(){
         echo "Exactly one argument required."
         usage
     fi
-    while getopts  "bsh" FLAG; do
+    while getopts  "bsk:h" FLAG; do
         case "${FLAG}" in
             b) binary ;;
             s) source ;;
+            k) sign ${OPTARG} ;;
             h) usage ;;
             \?) usage ;;
         esac
@@ -100,4 +114,3 @@ parseCmdLine "$@"
 ret=$?
 [ $ret -ne 0 ] && exit $ret
 echo "Done release [$RELEASE_TAG] (exit $ret)"
-
