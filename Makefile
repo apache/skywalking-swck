@@ -138,7 +138,7 @@ lint: $(LINTER)
 .PHONY: lint
 
 release-manager: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-liunx-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 main.go
 
 RELEASE_SCRIPTS := ./build/package/release.sh
 
