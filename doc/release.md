@@ -148,7 +148,7 @@ All PMC members and committers should check these before voting +1:
 are in `https://dist.apache.org/repos/dist/dev/skywalking/swck/$VERSION` with `.asc`, `.sha512`.
 1. `LICENSE` and `NOTICE` are in source codes and distribution package.
 1. Check `shasum -c apache-skywalking-swck-{src,bin}-$VERSION.tgz.sha512`.
-1. Check GPG signature. Download KEYS and import them by `curl https://www.apache.org/dist/rocketmq/KEYS -o KEYS && gpg --import KEYS`. Check `gpg --batch --verify apache-skywalking-swck-{src,bin}-$VERSION.tgz.asc apache-skywalking-swck-{src,bin}-$VERSION.tgz`
+1. Check GPG signature. Download KEYS and import them by `curl https://www.apache.org/dist/skywalking/KEYS -o KEYS && gpg --import KEYS`. Check `gpg --batch --verify apache-skywalking-swck-{src,bin}-$VERSION.tgz.asc apache-skywalking-swck-{src,bin}-$VERSION.tgz`
 1. Build distribution from source code package by following this [the build guide](#build-and-sign-the-source-code-package).
 1. Licenses header check.
 
