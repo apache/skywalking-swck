@@ -113,7 +113,7 @@ Release Candidate:
 
 Release Tag :
 
- * (Git Tag) v$VERSION
+ * (Git Tag) $VERSION
 
 Release Commit Hash :
 
@@ -125,7 +125,7 @@ Keys to verify the Release Candidate :
 
 Guide to build the release from source :
 
- * https://github.com/apache/skywalking-swck/blob/v$VERSION/docs/How-to-release.md
+ * https://github.com/apache/skywalking-swck/blob/$VERSION/docs/release.md
 
 Voting will start now and will remain open for at least 72 hours, all PMC members are required to give their votes.
 
@@ -148,8 +148,9 @@ All PMC members and committers should check these before voting +1:
 are in `https://dist.apache.org/repos/dist/dev/skywalking/swck/$VERSION` with `.asc`, `.sha512`.
 1. `LICENSE` and `NOTICE` are in source codes and distribution package.
 1. Check `shasum -c apache-skywalking-swck-{src,bin}-$VERSION.tgz.sha512`.
+1. Check GPG signature. Download KEYS and import them by `curl https://www.apache.org/dist/rocketmq/KEYS -o KEYS && gpg --import KEYS`. Check `gpg --batch --verify apache-skywalking-swck-{src,bin}-$VERSION.tgz.asc apache-skywalking-swck-{src,bin}-$VERSION.tgz`
 1. Build distribution from source code package by following this [the build guide](#build-and-sign-the-source-code-package).
-1. Licenses check, `make license.`
+1. Licenses header check.
 
 Vote result should follow these:
 
@@ -199,7 +200,7 @@ Vote result should follow these:
 
     On behalf of the SkyWalking Team, I’m glad to announce that SkyWalking Could on Kubernetes $VERSION is now released.
 
-    SkyWalking Could on Kubernetes: A Command Line Interface for Apache SkyWalking.
+    SkyWalking Could on Kubernetes: A bridge platform between Apache SkyWalking and Kubernetes.
 
     SkyWalking: APM (application performance monitor) tool for distributed systems, especially designed for microservices, cloud native and container-based (Docker, Kubernetes, Mesos) architectures.
 
