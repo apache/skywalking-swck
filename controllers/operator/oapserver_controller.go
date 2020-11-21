@@ -33,7 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/skywalking-swck/api/v1alpha1"
+	operatorv1alpha1 "github.com/skywalking-swck/apis/operator/v1alpha1"
 	"github.com/skywalking-swck/pkg/kubernetes"
 )
 

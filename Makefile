@@ -15,7 +15,7 @@
 #
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+OPERATOR_IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -27,7 +27,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 
-all: manager
+all: operator
 
 clean:
 	rm -rf build/bin
@@ -36,33 +36,29 @@ clean:
 	rm -rf *.test
 
 # Run tests
-test: generate manifests
+test: generate operator-manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
-manager: generate
-	go build -o bin/manager main.go
-
-# Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate manifests
-	go run ./main.go
+operator: generate
+	go build -o bin/manager cmd/manager/manager.go
 
 # Install CRDs into a cluster
-install: manifests
-	kustomize build config/crd | kubectl apply -f -
+operator-install: operator-manifests
+	kustomize build config/operator/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster
-uninstall: manifests
-	kustomize build config/crd | kubectl delete -f -
+operator-uninstall: operator-manifests
+	kustomize build config/operator/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl apply -f -
+operator-deploy: operator-manifests
+	cd config/operator/manager && kustomize edit set image controller=${OPERATOR_IMG}
+	kustomize build config/operator/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+operator-manifests: controller-gen
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..."  output:rbac:dir=config/operator/rbac output:crd:artifacts:config=config/operator/crd/bases
 	 go run github.com/skywalking-swck/cmd/build license insert config
 
 # Generate code
@@ -74,16 +70,18 @@ GO_LICENSER := $(GOBIN)/go-licenser
 $(GO_LICENSER):
 	GO111MODULE=off go get -u github.com/elastic/go-licenser
 license: $(GO_LICENSER)
-	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=api/v1alpha1/zz_generated* .
+	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=apis/operator/v1alpha1/zz_generated* .
 	go run github.com/skywalking-swck/cmd/build license check config
 
 # Build the docker image
-docker-build: test
-	docker build . -t ${IMG}
+operator-docker-build:
+	docker build . -f build/images/Dockerfile.operator -t ${OPERATOR_IMG}
 
 # Push the docker image
-docker-push:
-	docker push ${IMG}
+operator-docker-push:
+	docker push ${OPERATOR_IMG}
+
+docker-build: operator-docker-build
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -115,7 +113,7 @@ format: $(GOIMPORTS) ## Format all Go code
 	$(GOIMPORTS) -w -local github.com/skywalking-swck .
 
 ## Check that the status is consistent with CI.
-check: generate manifests license
+check: generate operator-manifests license
 	$(MAKE) format
 	mkdir -p /tmp/artifacts
 	git diff >/tmp/artifacts/check.diff 2>&1
@@ -137,12 +135,12 @@ lint: $(LINTER)
 
 .PHONY: lint
 
-release-manager: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 main.go
+release-operator: generate
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 cmd/manager/manager.go
 
 RELEASE_SCRIPTS := ./build/package/release.sh
 
-release-binary: release-manager
+release-binary: release-operator
 	${RELEASE_SCRIPTS} -b
 	
 release-source:
