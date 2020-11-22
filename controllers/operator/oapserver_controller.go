@@ -33,8 +33,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/skywalking-swck/apis/operator/v1alpha1"
-	"github.com/skywalking-swck/pkg/kubernetes"
+	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
+	"github.com/apache/skywalking-swck/pkg/kubernetes"
 )
 
 const annotationKeyIstioSetup = "istio-setup-command"
@@ -54,8 +54,7 @@ type OAPServerReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 
-func (r *OAPServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("oapserver", req.NamespacedName)
 	log.Info("=====================reconcile started================================")
 

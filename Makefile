@@ -16,6 +16,7 @@
 
 # Image URL to use all building/pushing image targets
 OPERATOR_IMG ?= controller:latest
+ADAPTER_IMG ?= metrics-adapter:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -27,7 +28,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 
-all: operator
+all: operator adapter
 
 clean:
 	rm -rf build/bin
@@ -58,12 +59,22 @@ operator-deploy: operator-manifests
 
 # Generate manifests e.g. CRD, RBAC etc.
 operator-manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..."  output:rbac:dir=config/operator/rbac output:crd:artifacts:config=config/operator/crd/bases
-	 go run github.com/skywalking-swck/cmd/build license insert config
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./apis/..." output:crd:artifacts:config=config/operator/crd/bases \
+		&& $(CONTROLLER_GEN) rbac:roleName=manager-role paths="./controllers/..."  output:rbac:dir=config/operator/rbac \
+		&& go run github.com/apache/skywalking-swck/cmd/build license insert config
+ 
+# Build adapter binary
+adapter:
+	go build -o bin/adapter cmd/adapter/adapter.go
+
+# Deploy adapter in the configured Kubernetes cluster in ~/.kube/config
+adapter-deploy:
+	kind load docker-image ${ADAPTER_IMG}
+	kustomize build config/dev/adapter | kubectl apply -f -
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="apis/..."
 	$(MAKE) format
 
 GO_LICENSER := $(GOBIN)/go-licenser
@@ -71,7 +82,7 @@ $(GO_LICENSER):
 	GO111MODULE=off go get -u github.com/elastic/go-licenser
 license: $(GO_LICENSER)
 	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=apis/operator/v1alpha1/zz_generated* .
-	go run github.com/skywalking-swck/cmd/build license check config
+	go run github.com/apache/skywalking-swck/cmd/build license check config
 
 # Build the docker image
 operator-docker-build:
@@ -81,7 +92,15 @@ operator-docker-build:
 operator-docker-push:
 	docker push ${OPERATOR_IMG}
 
-docker-build: operator-docker-build
+# Build the docker image
+adapter-docker-build:
+	docker build . -f build/images/Dockerfile.adapter -t ${ADAPTER_IMG}
+
+# Push the docker image
+adapter-docker-push:
+	docker push ${ADAPTER_IMG}
+
+docker-build: operator-docker-build adapter-docker-build
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -110,7 +129,7 @@ format: $(GOIMPORTS) ## Format all Go code
 	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' $$f > /tmp/fmt; \
 	    mv /tmp/fmt $$f; \
 	done
-	$(GOIMPORTS) -w -local github.com/skywalking-swck .
+	$(GOIMPORTS) -w -local github.com/apache/skywalking-swck .
 
 ## Check that the status is consistent with CI.
 check: generate operator-manifests license

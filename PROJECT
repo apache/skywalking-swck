@@ -1,6 +1,6 @@
 domain: skywalking.apache.org
 multigroup: true
-repo: github.com/skywalking-swck
+repo: github.com/apache/skywalking-swck
 resources:
 - group: operator
   kind: OAPServer

@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skywalking-swck/pkg/build"
+	"github.com/apache/skywalking-swck/pkg/build"
 )
 
 const (

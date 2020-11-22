@@ -8,6 +8,7 @@
 bin
 build/bin
 build/release/
+apiserver.local*
 
 # Test binary, build with `go test -c`
 *.test
