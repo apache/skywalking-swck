@@ -1,6 +1,6 @@
 module github.com/apache/skywalking-swck
 
-go 1.13
+go 1.14
 
 require (
 	github.com/apache/skywalking-cli v0.0.0-20201121070253-814817cd2396
