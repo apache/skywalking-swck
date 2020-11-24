@@ -59,7 +59,8 @@ func main() {
 	cmd.Flags().StringVar(&cmd.Message, "msg", "starting adapter...", "startup message")
 	cmd.Flags().StringVar(&cmd.BaseURL, "oap-addr", "http://oap:12800/graphql", "the address of OAP cluster")
 	cmd.Flags().StringVar(&cmd.MetricRegex, "metric-filter-regex", "", "a regular expression to filter metrics retrieved from OAP cluster")
-	cmd.Flags().DurationVar(&cmd.RefreshRegistryInterval, "refresh-interval", 10*time.Second, "the interval at which to update the cache of available metrics from OAP cluster")
+	cmd.Flags().DurationVar(&cmd.RefreshRegistryInterval, "refresh-interval", 10*time.Second,
+		"the interval at which to update the cache of available metrics from OAP cluster")
 	cmd.Flags().AddGoFlagSet(flag.CommandLine) // make sure we get the klog flags
 	if err := cmd.Flags().Parse(os.Args); err != nil {
 		klog.Fatalf("failed to parse arguments: %v", err)
