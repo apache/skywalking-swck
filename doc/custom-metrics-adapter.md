@@ -58,7 +58,7 @@ External metrics allow you to autoscale your cluster based on any metric availab
     `serviceName`, `serviceInstanceName` and `endpointName` respectively.
  * `label` is optional, used for querying multi-labels metrics.
 
-For example if your application is a front gateway, you could add the following section to 
+For example, if your application name is `front_gateway`, you could add the following section to 
 your HorizontalPodAutoscaler manifest to specify that you need less than 80ms of 90th latency.
 
 ```yaml
