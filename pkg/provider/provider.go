@@ -87,6 +87,11 @@ func NewProvider(baseURL string, metricRegex string, refreshRegistryInterval tim
 	return provider, nil
 }
 
+type paramValue struct {
+	key string
+	val *string
+}
+
 func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSelector labels.Selector,
 	info apiprovider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
 	var md *swctlschema.MetricDefinition
@@ -104,21 +109,12 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 		klog.Errorf("no selector for metric: %s", md.Name)
 		return nil, apierr.NewBadRequest(fmt.Sprintf("no selector for metric: %s", md.Name))
 	}
-	var svc string
-	var label string
-	for _, r := range requirement {
-		if r.Key() == "service" && r.Operator() == selection.Equals {
-			if v, exist := r.Values().PopAny(); exist {
-				svc = v
-			}
-		}
-		if r.Key() == "label" && r.Operator() == selection.Equals {
-			if v, exist := r.Values().PopAny(); exist {
-				label = v
-			}
-		}
-	}
-	if svc == "" {
+	svc := &paramValue{key: "service"}
+	label := &paramValue{key: "label"}
+	instance := &paramValue{key: "instance"}
+	endpoint := &paramValue{key: "endpoint"}
+	extractValue(requirement, svc, label, instance, endpoint)
+	if *svc.val == "" {
 		klog.Errorf("%s is lack of required label 'service'", md.Name)
 		return nil, apierr.NewBadRequest(fmt.Sprintf("%s is lack of required label 'service'", md.Name))
 	}
@@ -138,8 +134,9 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 		Name: md.Name,
 		Entity: &swctlschema.Entity{
 			Scope:               interceptor.ParseScope(md.Name),
-			ServiceName:         &svc,
-			ServiceInstanceName: &svc,
+			ServiceName:         svc.val,
+			ServiceInstanceName: instance.val,
+			EndpointName:        endpoint.val,
 			Normal:              &normal,
 		},
 	}
@@ -160,7 +157,7 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 
 		metricsValues = response["result"]
 	} else if md.Type == swctlschema.MetricsTypeLabeledValue {
-		if label == "" {
+		if *label.val == "" {
 			klog.Errorf("%s is lack of required label 'label'", md.Name)
 			return nil, apierr.NewBadRequest(fmt.Sprintf("%s is lack of required label 'label'", md.Name))
 		}
@@ -170,19 +167,19 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 
 		request.Var("duration", duration)
 		request.Var("condition", condition)
-		request.Var("labels", []string{label})
+		request.Var("labels", []string{*label.val})
 
 		if err := client.ExecuteQuery(p.ctx, request, &response); err != nil {
 			return nil, apierr.NewInternalError(fmt.Errorf("unable to fetch metrics: %v", err))
 		}
 
 		klog.V(4).Infof("Labeled request{condition:%s, duration:%s, labels:%s}  response %s",
-			display(condition), display(duration), label, display(response))
+			display(condition), display(duration), *label.val, display(response))
 
 		result := response["result"]
 
 		for _, r := range result {
-			if *r.Label == label {
+			if *r.Label == *label.val {
 				metricsValues = r
 			}
 		}
@@ -217,6 +214,18 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 			},
 		},
 	}, nil
+}
+
+func extractValue(requirement labels.Requirements, paramValues ...*paramValue) {
+	for _, r := range requirement {
+		for _, pv := range paramValues {
+			if r.Key() == pv.key && r.Operator() == selection.Equals {
+				if v, exist := r.Values().PopAny(); exist {
+					pv.val = &v
+				}
+			}
+		}
+	}
 }
 
 func (p *externalMetricsProvider) selectGroupResource(namespace string) apischema.GroupResource {

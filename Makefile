@@ -31,6 +31,7 @@ endif
 all: operator adapter
 
 clean:
+	rm -rf bin/
 	rm -rf build/bin
 	rm -rf build/release
 	rm -rf *.out
@@ -145,9 +146,9 @@ check: generate operator-manifests license
 
 ## Code quality and integrity
 
-LINTER := bin/golangci-lint
+LINTER := $(GOBIN)/golangci-lint
 $(LINTER):
-	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.23.6
+	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | BINDIR=$(GOBIN) sh -s v1.33.0
 	
 lint: $(LINTER)
 	$(LINTER) run --config ./golangci.yml

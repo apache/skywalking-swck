@@ -170,17 +170,8 @@ func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, servic
 func buildDeployment(oapServer *operatorv1alpha1.OAPServer, deploymentName string) *apps.Deployment {
 	podSpec := &core.PodTemplateSpec{}
 
-	if &podSpec.ObjectMeta == nil {
-		podSpec.ObjectMeta = metav1.ObjectMeta{Labels: make(map[string]string)}
-	}
-	if podSpec.Labels == nil {
-		podSpec.Labels = make(map[string]string)
-	}
 	podSpec.ObjectMeta.Labels = labelSelector(oapServer)
 
-	if &podSpec.Spec == nil {
-		podSpec.Spec = core.PodSpec{}
-	}
 	pod := &podSpec.Spec
 	image := oapServer.Spec.Image
 	if image == "" {

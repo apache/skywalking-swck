@@ -3,7 +3,7 @@ module github.com/apache/skywalking-swck
 go 1.14
 
 require (
-	github.com/apache/skywalking-cli v0.0.0-20201121070253-814817cd2396
+	github.com/apache/skywalking-cli v0.0.0-20201125155244-ffee47d2e83d
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/go-logr/logr v0.2.1
 	github.com/kubernetes-sigs/custom-metrics-apiserver v0.0.0-20201110135240-8c12d6d92362
