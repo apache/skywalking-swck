@@ -33,8 +33,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/skywalking-swck/api/v1alpha1"
-	"github.com/skywalking-swck/pkg/kubernetes"
+	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
+	"github.com/apache/skywalking-swck/pkg/kubernetes"
 )
 
 const annotationKeyIstioSetup = "istio-setup-command"
@@ -54,8 +54,7 @@ type OAPServerReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 
-func (r *OAPServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("oapserver", req.NamespacedName)
 	log.Info("=====================reconcile started================================")
 
@@ -171,17 +170,8 @@ func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, servic
 func buildDeployment(oapServer *operatorv1alpha1.OAPServer, deploymentName string) *apps.Deployment {
 	podSpec := &core.PodTemplateSpec{}
 
-	if &podSpec.ObjectMeta == nil {
-		podSpec.ObjectMeta = metav1.ObjectMeta{Labels: make(map[string]string)}
-	}
-	if podSpec.Labels == nil {
-		podSpec.Labels = make(map[string]string)
-	}
 	podSpec.ObjectMeta.Labels = labelSelector(oapServer)
 
-	if &podSpec.Spec == nil {
-		podSpec.Spec = core.PodSpec{}
-	}
 	pod := &podSpec.Spec
 	image := oapServer.Spec.Image
 	if image == "" {
