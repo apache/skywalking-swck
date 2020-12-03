@@ -27,6 +27,15 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+ARCH := $(shell uname)
+OSNAME := $(if $(findstring Darwin,$(ARCH)),darwin,linux)
+GOBINDATA_VERSION := v3.21.0
+
+# import local settings
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
 
 all: operator adapter
 
@@ -84,6 +93,9 @@ $(GO_LICENSER):
 license: $(GO_LICENSER)
 	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=apis/operator/v1alpha1/zz_generated* .
 	go run github.com/apache/skywalking-swck/cmd/build license check config
+	go run github.com/apache/skywalking-swck/cmd/build license check pkg/operator/manifests
+
+.PHONY: license
 
 # Build the docker image
 operator-docker-build:
@@ -133,7 +145,7 @@ format: $(GOIMPORTS) ## Format all Go code
 	$(GOIMPORTS) -w -local github.com/apache/skywalking-swck .
 
 ## Check that the status is consistent with CI.
-check: generate operator-manifests license
+check: generate operator-manifests update-templates license
 	$(MAKE) format
 	mkdir -p /tmp/artifacts
 	git diff >/tmp/artifacts/check.diff 2>&1
@@ -154,6 +166,16 @@ lint: $(LINTER)
 	$(LINTER) run --config ./golangci.yml
 
 .PHONY: lint
+
+GO_BINDATA := $(GOBIN)/go-bindata
+$(GO_BINDATA):
+	curl --location --output $(GO_BINDATA) https://github.com/kevinburke/go-bindata/releases/download/v3.21.0/go-bindata-$(OSNAME)-amd64 \
+		&& chmod +x $(GO_BINDATA)
+		
+update-templates: $(GO_BINDATA)
+	@echo updating charts
+	-hack/run_update_templates.sh
+	-hack/build-header.sh pkg/operator/repo/assets.gen.go
 
 release-operator: generate
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 cmd/manager/manager.go

@@ -3,8 +3,10 @@ module github.com/apache/skywalking-swck
 go 1.14
 
 require (
+	github.com/Masterminds/sprig/v3 v3.1.0
 	github.com/apache/skywalking-cli v0.0.0-20201125155244-ffee47d2e83d
 	github.com/evanphx/json-patch v4.9.0+incompatible
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.2.1
 	github.com/kubernetes-sigs/custom-metrics-apiserver v0.0.0-20201110135240-8c12d6d92362
 	github.com/machinebox/graphql v0.2.2
@@ -12,6 +14,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/urfave/cli v1.22.1
 	k8s.io/api v0.19.3
+	k8s.io/apiextensions-apiserver v0.19.3 // indirect
 	k8s.io/apimachinery v0.19.3
 	k8s.io/apiserver v0.19.3
 	k8s.io/client-go v0.19.3

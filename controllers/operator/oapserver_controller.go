@@ -20,16 +20,15 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"text/template"
 	"time"
 
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,14 +44,16 @@ var rushModeSchedDuration, _ = time.ParseDuration("5s")
 // OAPServerReconciler reconciles a OAPServer object
 type OAPServerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	FileRepo kubernetes.Repo
 }
 
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 
 func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("oapserver", req.NamespacedName)
@@ -62,56 +63,84 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := r.Client.Get(ctx, req.NamespacedName, &oapServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	serviceName := oapServer.Name
-	if err := r.service(ctx, log, serviceName, &oapServer); err != nil {
+	app := kubernetes.Application{
+		Log:      r.Log,
+		Client:   r.Client,
+		FileRepo: r.FileRepo,
+		CR:       &oapServer,
+		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
+	}
+	if err := app.Apply(ctx, kubernetes.K8SObj{
+		Name:      "service_account",
+		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"},
+		Prototype: &core.ServiceAccount{},
+	}); err != nil {
 		return ctrl.Result{}, err
 	}
-
-	deploymentName := oapServer.Name
-	if err := r.deployment(ctx, log, deploymentName, &oapServer); err != nil {
+	if err := app.Apply(ctx, kubernetes.K8SObj{
+		Name:      "cluster_role",
+		Key:       client.ObjectKey{Name: "swck:oapserver"},
+		Prototype: &rbac.ClusterRole{},
+	}); err != nil {
 		return ctrl.Result{}, err
 	}
+	if err := app.Apply(ctx, kubernetes.K8SObj{
+		Name:      "cluster_role_binding",
+		Key:       client.ObjectKey{Name: "swck:oapserver"},
+		Prototype: &rbac.ClusterRoleBinding{},
+	}); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := app.Apply(ctx, kubernetes.K8SObj{
+		Name:      "service",
+		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name},
+		Prototype: &core.Service{},
+		Extract: func(obj client.Object) interface{} {
+			return obj.(*core.Service).Spec
+		},
+	}); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := app.Apply(ctx, kubernetes.K8SObj{
+		Name:      "deployment",
+		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name},
+		Prototype: &apps.Deployment{},
+		TmplFunc: template.FuncMap{
+			"generateImage": func() string {
+				image := oapServer.Spec.Image
+				if image == "" {
+					v := oapServer.Spec.Version
+					vTmpl := "apache/skywalking-oap-server:%s-%s"
+					vES := "es6"
+					for _, e := range oapServer.Spec.Config {
+						if e.Name != "SW_STORAGE" {
+							continue
+						}
+						if e.Value == "elasticsearch7" {
+							vES = "es7"
+						}
+					}
+					image = fmt.Sprintf(vTmpl, v, vES)
+				}
+				return image
+			},
+		},
+		Extract: func(obj client.Object) interface{} {
+			return obj.(*apps.Deployment).Spec
+		},
+	}); err != nil {
+		return ctrl.Result{}, err
+	}
+	r.istio(ctx, log, oapServer.Name, &oapServer)
 
-	r.istio(ctx, log, serviceName, &oapServer)
-
-	return ctrl.Result{RequeueAfter: r.checkState(ctx, log, &oapServer, serviceName, deploymentName)}, nil
+	return ctrl.Result{RequeueAfter: r.checkState(ctx, log, &oapServer, oapServer.Name)}, nil
 }
 
-func (r *OAPServerReconciler) deployment(ctx context.Context, log logr.Logger, deploymentName string, oapServer *operatorv1alpha1.OAPServer) error {
-	currentDeploy := apps.Deployment{}
-	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: deploymentName}, &currentDeploy)
-	if apierrors.IsNotFound(err) {
-		log.Info("could not find existing Deployment, creating one...")
-
-		currentDeploy = *buildDeployment(oapServer, deploymentName)
-		if err = r.Client.Create(ctx, &currentDeploy); err != nil {
-			return err
-		}
-
-		log.Info("created Deployment resource")
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	deployment := buildDeployment(oapServer, deploymentName)
-	if apiequal.Semantic.DeepDerivative(deployment.Spec, currentDeploy.Spec) {
-		log.Info("Deployment keeps the same as before")
-		return nil
-	}
-	if err := r.Client.Update(ctx, deployment); err != nil {
-		return err
-	}
-	log.Info("updated Deployment resource")
-	return nil
-}
-
-func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer, serviceName, deploymentName string) time.Duration {
+func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer, name string) time.Duration {
 	overlay := operatorv1alpha1.OAPServerStatus{}
 	deployment := apps.Deployment{}
 	nextSchedule := schedDuration
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: deploymentName}, &deployment); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: name}, &deployment); err != nil {
 		nextSchedule = rushModeSchedDuration
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
@@ -129,7 +158,7 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 		}
 	}
 	service := core.Service{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: serviceName}, &service); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: name}, &service); err != nil {
 		nextSchedule = rushModeSchedDuration
 	} else {
 		overlay.Address = fmt.Sprintf("%s.%s", service.Name, service.Namespace)
@@ -165,164 +194,6 @@ func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, servic
 			return
 		}
 	}
-}
-
-func buildDeployment(oapServer *operatorv1alpha1.OAPServer, deploymentName string) *apps.Deployment {
-	podSpec := &core.PodTemplateSpec{}
-
-	podSpec.ObjectMeta.Labels = labelSelector(oapServer)
-
-	pod := &podSpec.Spec
-	image := oapServer.Spec.Image
-	if image == "" {
-		v := oapServer.Spec.Version
-		vTmpl := "apache/skywalking-oap-server:%s-%s"
-		vES := "es6"
-		for _, e := range oapServer.Spec.Config {
-			if e.Name != "SW_STORAGE" {
-				continue
-			}
-			if e.Value == "elasticsearch7" {
-				vES = "es7"
-			}
-		}
-		image = fmt.Sprintf(vTmpl, v, vES)
-	}
-	probe := &core.Probe{
-		Handler: core.Handler{
-			Exec: &core.ExecAction{
-				Command: []string{"/skywalking/bin/swctl", "ch"},
-			},
-		},
-		InitialDelaySeconds: 40,
-		TimeoutSeconds:      10,
-		PeriodSeconds:       30,
-		SuccessThreshold:    1,
-		FailureThreshold:    3,
-	}
-	cc := oapServer.Spec.Config
-	if cc == nil {
-		cc = []core.EnvVar{}
-	}
-	cc = append(cc, core.EnvVar{Name: "SW_TELEMETRY", Value: "prometheus"})
-	cc = append(cc, core.EnvVar{Name: "SW_HEALTH_CHECKER", Value: "default"})
-	pod.Containers = []core.Container{
-		{
-			Name:  "oap",
-			Image: image,
-			Env:   cc,
-			Ports: []core.ContainerPort{
-				{
-					Name:          "grpc",
-					ContainerPort: 11800,
-					Protocol:      core.ProtocolTCP,
-				},
-				{
-					Name:          "graphql",
-					ContainerPort: 12800,
-					Protocol:      core.ProtocolTCP,
-				},
-				{
-					Name:          "http-monitoring",
-					ContainerPort: 1234,
-					Protocol:      core.ProtocolTCP,
-				},
-			},
-			LivenessProbe:  probe,
-			ReadinessProbe: probe,
-		},
-	}
-
-	deployment := apps.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            deploymentName,
-			Namespace:       oapServer.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(oapServer, operatorv1alpha1.GroupVersion.WithKind("OAPServer"))},
-		},
-		Spec: apps.DeploymentSpec{
-			Replicas: &oapServer.Spec.Instances,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labelSelector(oapServer),
-			},
-			MinReadySeconds: 5,
-			Template:        *podSpec,
-		},
-	}
-	return &deployment
-}
-
-func (r *OAPServerReconciler) service(ctx context.Context, log logr.Logger, serviceName string, oapServer *operatorv1alpha1.OAPServer) error {
-	currentService := core.Service{}
-	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: serviceName}, &currentService)
-	if apierrors.IsNotFound(err) {
-		log.Info("could not find existing Service, creating one...")
-		currentService = buildService(serviceName, nil, oapServer)
-		if err = r.Client.Create(ctx, &currentService); err != nil {
-			return err
-		}
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	service := buildService(serviceName, currentService.DeepCopy(), oapServer)
-
-	if apiequal.Semantic.DeepDerivative(service.Spec, currentService.Spec) {
-		log.Info("Service keeps the same as before")
-		return nil
-	}
-	if err := r.Client.Update(ctx, &service); err != nil {
-		return err
-	}
-	log.Info("updated Service resource")
-	return nil
-}
-
-func buildService(serviceName string, base *core.Service, oapServer *operatorv1alpha1.OAPServer) core.Service {
-	s := core.Service{}
-	s.Name = serviceName
-	s.Namespace = oapServer.Namespace
-	s.ObjectMeta = metav1.ObjectMeta{
-		Name:            serviceName,
-		Namespace:       oapServer.Namespace,
-		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(oapServer, operatorv1alpha1.GroupVersion.WithKind("OAPServer"))},
-	}
-	s.Spec = core.ServiceSpec{
-		Type:     core.ServiceTypeClusterIP,
-		Selector: labelSelector(oapServer),
-		Ports: []core.ServicePort{
-			{
-				Name:     "grpc",
-				Port:     11800,
-				Protocol: core.ProtocolTCP,
-				TargetPort: intstr.IntOrString{
-					Type:   intstr.String,
-					StrVal: "grpc",
-				},
-			},
-			{
-				Name:     "graphql",
-				Port:     12800,
-				Protocol: core.ProtocolTCP,
-				TargetPort: intstr.IntOrString{
-					Type:   intstr.String,
-					StrVal: "graphql",
-				},
-			},
-		},
-	}
-	if base == nil {
-		return s
-	}
-	if err := kubernetes.ApplyOverlay(base, &s); err != nil {
-		return s
-	}
-	return *base
-}
-
-func labelSelector(oapServer *operatorv1alpha1.OAPServer) map[string]string {
-	return map[string]string{fmt.Sprintf("%s/oap-server-name", operatorv1alpha1.GroupVersion.Group): oapServer.Name}
 }
 
 func (r *OAPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {

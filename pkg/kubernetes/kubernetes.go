@@ -18,7 +18,12 @@
 package kubernetes
 
 import (
+	"bytes"
+	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -38,4 +43,23 @@ func ApplyOverlay(current, overlay runtime.Object) error {
 		return err
 	}
 	return runtime.DecodeInto(unstructured.UnstructuredJSONScheme, merged, current)
+}
+
+// LoadTemplate loads a YAML file to a component
+func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap, spec interface{}) error {
+	tmplBuilder := template.New("manifest").
+		Funcs(sprig.TxtFuncMap())
+	if funcMap != nil {
+		tmplBuilder = tmplBuilder.Funcs(funcMap)
+	}
+	tmpl, err := tmplBuilder.Parse(manifest)
+	if err != nil {
+		return err
+	}
+	buf := bytes.Buffer{}
+	err = tmpl.Execute(&buf, values)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(buf.Bytes(), spec)
 }

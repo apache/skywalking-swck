@@ -27,3 +27,4 @@ apiserver.local*
 *~
 
 .DS_Store
+.env
