@@ -29,6 +29,7 @@ import (
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	controllers "github.com/apache/skywalking-swck/controllers/operator"
+	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -70,9 +71,10 @@ func main() {
 	}
 
 	if err = (&controllers.OAPServerReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("OAPServer"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("OAPServer"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("oapserver"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)

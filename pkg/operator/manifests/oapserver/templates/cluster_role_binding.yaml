@@ -15,70 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
----
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: ClusterRoleBinding
 metadata:
-  creationTimestamp: null
-  name: manager-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  - services
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.skywalking.apache.org
-  resources:
-  - oapservers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.skywalking.apache.org
-  resources:
-  - oapservers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterrolebindings
-  - clusterroles
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
+  name: swck:oapserver
+  labels:
+    operator.skywalking.apache.org/application: oapserver
+    operator.skywalking.apache.org/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: swck:oapserver
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Name }}-oap
+    namespace: {{ .Namespace }}

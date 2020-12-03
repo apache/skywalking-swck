@@ -26,7 +26,7 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
  kubectl apply -f release/operator/config
  ```
 
-For more details, please refer to [deploy operator](doc/operator.md)
+For more details, please refer to [deploy operator](docs/operator.md)
 
 ## Custom Metrics Adapter
   
@@ -37,7 +37,7 @@ For more details, please refer to [deploy operator](doc/operator.md)
  kubectl apply -f release/adapter/config
  ```
 
-For more details, please read [Custom metrics adapter](doc/custom-metrics-adapter.md)
+For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
 
 # Contributing
 For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md)
