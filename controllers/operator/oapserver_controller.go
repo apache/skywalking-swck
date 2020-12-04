@@ -26,7 +26,6 @@ import (
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -63,84 +62,59 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := r.Client.Get(ctx, req.NamespacedName, &oapServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	ff, err := r.FileRepo.GetFilesRecursive("templates")
+	if err != nil {
+		log.Error(err, "failed to load resource templates")
+		return ctrl.Result{}, err
+	}
 	app := kubernetes.Application{
-		Log:      r.Log,
 		Client:   r.Client,
 		FileRepo: r.FileRepo,
 		CR:       &oapServer,
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
+		TmplFunc: tmplFunc(&oapServer),
 	}
-	if err := app.Apply(ctx, kubernetes.K8SObj{
-		Name:      "service_account",
-		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"},
-		Prototype: &core.ServiceAccount{},
-	}); err != nil {
-		return ctrl.Result{}, err
+	for _, f := range ff {
+		l := log.WithName(f)
+		if err := app.Apply(ctx, f, l); err != nil {
+			l.Error(err, "failed to apply resource")
+			return ctrl.Result{}, err
+		}
 	}
-	if err := app.Apply(ctx, kubernetes.K8SObj{
-		Name:      "cluster_role",
-		Key:       client.ObjectKey{Name: "swck:oapserver"},
-		Prototype: &rbac.ClusterRole{},
-	}); err != nil {
-		return ctrl.Result{}, err
-	}
-	if err := app.Apply(ctx, kubernetes.K8SObj{
-		Name:      "cluster_role_binding",
-		Key:       client.ObjectKey{Name: "swck:oapserver"},
-		Prototype: &rbac.ClusterRoleBinding{},
-	}); err != nil {
-		return ctrl.Result{}, err
-	}
-	if err := app.Apply(ctx, kubernetes.K8SObj{
-		Name:      "service",
-		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name},
-		Prototype: &core.Service{},
-		Extract: func(obj client.Object) interface{} {
-			return obj.(*core.Service).Spec
-		},
-	}); err != nil {
-		return ctrl.Result{}, err
-	}
-	if err := app.Apply(ctx, kubernetes.K8SObj{
-		Name:      "deployment",
-		Key:       client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name},
-		Prototype: &apps.Deployment{},
-		TmplFunc: template.FuncMap{
-			"generateImage": func() string {
-				image := oapServer.Spec.Image
-				if image == "" {
-					v := oapServer.Spec.Version
-					vTmpl := "apache/skywalking-oap-server:%s-%s"
-					vES := "es6"
-					for _, e := range oapServer.Spec.Config {
-						if e.Name != "SW_STORAGE" {
-							continue
-						}
-						if e.Value == "elasticsearch7" {
-							vES = "es7"
-						}
-					}
-					image = fmt.Sprintf(vTmpl, v, vES)
-				}
-				return image
-			},
-		},
-		Extract: func(obj client.Object) interface{} {
-			return obj.(*apps.Deployment).Spec
-		},
-	}); err != nil {
-		return ctrl.Result{}, err
-	}
+
 	r.istio(ctx, log, oapServer.Name, &oapServer)
 
-	return ctrl.Result{RequeueAfter: r.checkState(ctx, log, &oapServer, oapServer.Name)}, nil
+	return ctrl.Result{RequeueAfter: r.checkState(ctx, log, &oapServer)}, nil
 }
 
-func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer, name string) time.Duration {
+func tmplFunc(oapServer *operatorv1alpha1.OAPServer) template.FuncMap {
+	return template.FuncMap{
+		"generateImage": func() string {
+			image := oapServer.Spec.Image
+			if image == "" {
+				v := oapServer.Spec.Version
+				vTmpl := "apache/skywalking-oap-server:%s-%s"
+				vES := "es6"
+				for _, e := range oapServer.Spec.Config {
+					if e.Name != "SW_STORAGE" {
+						continue
+					}
+					if e.Value == "elasticsearch7" {
+						vES = "es7"
+					}
+				}
+				image = fmt.Sprintf(vTmpl, v, vES)
+			}
+			return image
+		},
+	}
+}
+
+func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) time.Duration {
 	overlay := operatorv1alpha1.OAPServerStatus{}
 	deployment := apps.Deployment{}
 	nextSchedule := schedDuration
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: name}, &deployment); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &deployment); err != nil {
 		nextSchedule = rushModeSchedDuration
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
@@ -148,17 +122,17 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 		if oapServer.Spec.Instances != overlay.AvailableReplicas {
 			nextSchedule = rushModeSchedDuration
 		}
-		if oapServer.Spec.Image == "" {
+		if oapServer.Spec.Image != deployment.Spec.Template.Spec.Containers[0].Image {
 			oapServer.Spec.Image = deployment.Spec.Template.Spec.Containers[0].Image
 			if err := r.Update(ctx, oapServer); err != nil {
 				log.Error(err, "failed to update OAPServer Image field")
 			}
-			log.Info("updated OAPServer Image field")
-			return rushModeSchedDuration
+			log.Info("updated OAPServer Image")
+			nextSchedule = rushModeSchedDuration
 		}
 	}
 	service := core.Service{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: name}, &service); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &service); err != nil {
 		nextSchedule = rushModeSchedDuration
 	} else {
 		overlay.Address = fmt.Sprintf("%s.%s", service.Name, service.Namespace)
