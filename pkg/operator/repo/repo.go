@@ -17,7 +17,16 @@
 
 package repo
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/apache/skywalking-swck/pkg/kubernetes"
+)
+
+var _ kubernetes.Repo = &AssetsRepo{}
 
 // AssetsRepo provides templates through assets
 type AssetsRepo struct {
@@ -25,10 +34,84 @@ type AssetsRepo struct {
 }
 
 func NewRepo(component string) *AssetsRepo {
-	return &AssetsRepo{Root: fmt.Sprintf("%s/templates", component)}
+	return &AssetsRepo{Root: component}
 }
 
 // ReadFile reads the content of compiled in files at path and returns a buffer with the data.
-func (v *AssetsRepo) ReadFile(path string) ([]byte, error) {
-	return Asset(fmt.Sprintf("%s/%s", v.Root, path))
+func (a *AssetsRepo) ReadFile(path string) ([]byte, error) {
+	return Asset(path)
+}
+
+func (a *AssetsRepo) GetFilesRecursive(path string) ([]string, error) {
+	ap := fmt.Sprintf("%s/%s", a.Root, path)
+	rootFI, err := Stat(ap)
+	if err != nil {
+		return nil, err
+	}
+	return getFilesRecursive(filepath.Dir(ap), rootFI)
+}
+
+func getFilesRecursive(prefix string, root os.FileInfo) ([]string, error) {
+	if !root.IsDir() {
+		return nil, fmt.Errorf("not a dir: %s", root.Name())
+	}
+	prefix = filepath.Join(prefix, root.Name())
+	fs, _ := AssetDir(prefix)
+	out := make([]string, 0)
+	for _, f := range fs {
+		info, err := Stat(filepath.Join(prefix, f))
+		if err != nil {
+			return nil, err
+		}
+		if !info.IsDir() {
+			out = append(out, filepath.Join(prefix, filepath.Base(info.Name())))
+			continue
+		}
+		nfs, err := getFilesRecursive(prefix, info)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, nfs...)
+	}
+	return out, nil
+}
+
+// Stat returns a FileInfo object for the given path.
+func Stat(path string) (os.FileInfo, error) {
+	info, err := AssetInfo(path)
+	if err != nil {
+		// try it as a directory instead
+		_, err = AssetDir(path)
+		if err == nil {
+			info = &dirInfo{name: filepath.Base(path)}
+		}
+	} else {
+		fi := info.(bindataFileInfo)
+		fi.name = filepath.Base(fi.name)
+	}
+
+	return info, err
+}
+
+type dirInfo struct {
+	name string
+}
+
+func (di dirInfo) Name() string {
+	return di.name
+}
+func (di dirInfo) Size() int64 {
+	return 0
+}
+func (di dirInfo) Mode() os.FileMode {
+	return os.FileMode(0)
+}
+func (di dirInfo) ModTime() time.Time {
+	return time.Unix(0, 0)
+}
+func (di dirInfo) IsDir() bool {
+	return true
+}
+func (di dirInfo) Sys() interface{} {
+	return nil
 }
