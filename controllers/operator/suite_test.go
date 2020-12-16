@@ -46,8 +46,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	if err := v1alpha1.AddToScheme(testScheme); err != nil {
-		fmt.Printf("failed to register scheme: %v", err)
+	if errAddScheme := v1alpha1.AddToScheme(testScheme); errAddScheme != nil {
+		fmt.Printf("failed to register scheme: %v", errAddScheme)
 		os.Exit(1)
 	}
 
