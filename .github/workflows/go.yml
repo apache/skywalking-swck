@@ -45,6 +45,8 @@ jobs:
         run: make
       - name: Build docker image
         run: make docker-build
+      - name: Unit Test
+        run: make test
   checks:
     name: build
     runs-on: ubuntu-latest

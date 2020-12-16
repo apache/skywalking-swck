@@ -19,6 +19,7 @@ package kubernetes
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -62,4 +63,19 @@ func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap,
 		return err
 	}
 	return yaml.Unmarshal(buf.Bytes(), spec)
+}
+
+type ErrorCollector []error
+
+func (c *ErrorCollector) Collect(e error) { *c = append(*c, e) }
+
+func (c *ErrorCollector) Error() error {
+	if len(*c) < 1 {
+		return nil
+	}
+	err := "Collected errors:\n"
+	for i, e := range *c {
+		err += fmt.Sprintf("\tError %d: %s\n", i, e.Error())
+	}
+	return fmt.Errorf(err)
 }
