@@ -77,7 +77,7 @@ jobs:
       - name: tests
         run: make test
   checks:
-    name: ci
+    name: build
     runs-on: ubuntu-20.04
     needs: [check, build, unit-tests]
     steps:
