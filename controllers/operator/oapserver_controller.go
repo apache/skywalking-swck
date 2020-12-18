@@ -24,9 +24,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +40,6 @@ import (
 const annotationKeyIstioSetup = "istio-setup-command"
 
 var schedDuration, _ = time.ParseDuration("1m")
-var rushModeSchedDuration, _ = time.ParseDuration("5s")
 
 // OAPServerReconciler reconciles a OAPServer object
 type OAPServerReconciler struct {
@@ -82,9 +83,17 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	r.istio(ctx, log, oapServer.Name, &oapServer)
+	if err := r.istio(ctx, log, oapServer.Name, &oapServer); err != nil {
+		l.Error(err, "failed to sync istio annotation")
+		return ctrl.Result{}, err
+	}
 
-	return ctrl.Result{RequeueAfter: r.checkState(ctx, log, &oapServer)}, nil
+	if err := r.checkState(ctx, log, &oapServer); err != nil {
+		l.Error(err, "failed to check sub resources state")
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
 func tmplFunc(oapServer *operatorv1alpha1.OAPServer) template.FuncMap {
@@ -110,50 +119,48 @@ func tmplFunc(oapServer *operatorv1alpha1.OAPServer) template.FuncMap {
 	}
 }
 
-func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) time.Duration {
+func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) error {
 	overlay := operatorv1alpha1.OAPServerStatus{}
 	deployment := apps.Deployment{}
-	nextSchedule := schedDuration
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &deployment); err != nil {
-		nextSchedule = rushModeSchedDuration
+	errCol := new(kubernetes.ErrorCollector)
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &deployment); err != nil && !apierrors.IsNotFound(err) {
+		errCol.Collect(fmt.Errorf("failed to get deployment: %w", err))
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
 		overlay.AvailableReplicas = deployment.Status.AvailableReplicas
-		if oapServer.Spec.Instances != overlay.AvailableReplicas {
-			nextSchedule = rushModeSchedDuration
-		}
 		if oapServer.Spec.Image != deployment.Spec.Template.Spec.Containers[0].Image {
 			oapServer.Spec.Image = deployment.Spec.Template.Spec.Containers[0].Image
 			if err := r.Update(ctx, oapServer); err != nil {
-				log.Error(err, "failed to update OAPServer Image field")
+				errCol.Collect(fmt.Errorf("failed to update image field: %w", err))
+				return errCol.Error()
 			}
 			log.Info("updated OAPServer Image")
-			nextSchedule = rushModeSchedDuration
 		}
 	}
 	service := core.Service{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &service); err != nil {
-		nextSchedule = rushModeSchedDuration
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &service); err != nil && !apierrors.IsNotFound(err) {
+		errCol.Collect(fmt.Errorf("failed to get service: %w", err))
 	} else {
 		overlay.Address = fmt.Sprintf("%s.%s", service.Name, service.Namespace)
 	}
 	if apiequal.Semantic.DeepDerivative(overlay, oapServer.Status) {
 		log.Info("Status keeps the same as before")
-		return nextSchedule
 	}
 	oapServer.Status = overlay
+	oapServer.Kind = "OAPServer"
 	if err := kubernetes.ApplyOverlay(oapServer, &operatorv1alpha1.OAPServer{Status: overlay}); err != nil {
-		log.Error(err, "failed to overlay OAPServer")
-		return rushModeSchedDuration
+		errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
+		return errCol.Error()
 	}
 	if err := r.Status().Update(ctx, oapServer); err != nil {
-		return rushModeSchedDuration
+		errCol.Collect(fmt.Errorf("failed to update status of OAPServer: %w", err))
 	}
 	log.Info("updated Status sub resource")
-	return nextSchedule
+
+	return errCol.Error()
 }
 
-func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, serviceName string, oapServer *operatorv1alpha1.OAPServer) {
+func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, serviceName string, oapServer *operatorv1alpha1.OAPServer) error {
 	for _, envVar := range oapServer.Spec.Config {
 		if envVar.Name == "SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS" &&
 			oapServer.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
@@ -161,17 +168,19 @@ func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, servic
 				"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
 				"--set meshConfig.enableEnvoyAccessLogService=true", serviceName, oapServer.Namespace)
 			if err := r.Update(ctx, oapServer); err != nil {
-				log.Error(err, "unable to patch Istio setup command to annotation")
-				return
+				return err
 			}
 			log.Info("patched Istio annotation")
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 func (r *OAPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.OAPServer{}).
+		Owns(&apps.Deployment{}).
+		Owns(&core.Service{}).
 		Complete(r)
 }

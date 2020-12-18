@@ -12,6 +12,7 @@ require (
 	github.com/machinebox/graphql v0.2.2
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.0.0
+	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli v1.22.1
 	k8s.io/api v0.19.3
 	k8s.io/apiextensions-apiserver v0.19.3 // indirect

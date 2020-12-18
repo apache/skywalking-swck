@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -13,29 +15,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-github:
-  description: Apache SkyWalking Cloud on Kubernetes
-  homepage: https://skywalking.apache.org/
-  labels:
-    - skywalking
-    - observability
-    - apm
-    - distributed-tracing
-    - kubernetes
-    - operator
-  enabled_merge_buttons:
-    squash:  true
-    merge:   false
-    rebase:  false
-  protected_branches:
-    master:
-      required_status_checks:
-        strict: true
-        contexts:
-          - build 
-      required_pull_request_reviews:
-        dismiss_stale_reviews: true
-        required_approving_review_count: 1
-
+os=$(go env GOOS)
+arch=$(go env GOARCH)
+curl -L https://go.kubebuilder.io/dl/2.3.1/${os}/${arch} | tar -xz -C /tmp/
+sudo mv /tmp/kubebuilder_2.3.1_${os}_${arch} /usr/local/kubebuilder
+export PATH=$PATH:/usr/local/kubebuilder/bin
