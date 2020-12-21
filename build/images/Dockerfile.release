@@ -50,7 +50,7 @@ RUN set -eux; \
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /tmp
-COPY --from=builder --chown=nonroot:nonroot /swck/bin/manager-linux-amd64 /bin/manager
+COPY --from=builder --chown=nonroot:nonroot /swck/bin/manager-linux-amd64 /manager
 USER nonroot:nonroot
 
-ENTRYPOINT ["/bin/manager"]
+ENTRYPOINT ["/manager"]
