@@ -59,9 +59,11 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 			Namespace: nsn.Namespace,
 		},
 		Spec: v1alpha1.OAPServerSpec{
+			Version:   "8.1.0",
 			Instances: 1,
 		},
 	}
+	created.Default()
 	err := k8sClient.Create(context.Background(), created)
 	require.NoError(t, err)
 

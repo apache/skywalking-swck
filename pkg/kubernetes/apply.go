@@ -68,7 +68,7 @@ func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logge
 		}
 
 		if err = a.Create(ctx, curr); err != nil {
-			return fmt.Errorf("failed to create: %w", errComp)
+			return fmt.Errorf("failed to create: %w", err)
 		}
 
 		log.Info("created")

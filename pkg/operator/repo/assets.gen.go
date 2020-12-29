@@ -18,7 +18,7 @@
 // sources:
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
-// oapserver/templates/deployment.yaml (2.693kB)
+// oapserver/templates/deployment.yaml (2.691kB)
 // oapserver/templates/service.yaml (1.32kB)
 // oapserver/templates/service_account.yaml (1.09kB)
 
@@ -208,7 +208,7 @@ spec:
       serviceAccountName: {{ .Name }}-oap
       containers:
       - name: oap
-        image: {{ generateImage }}
+        image: {{ .Spec.Image }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 11800
@@ -262,7 +262,7 @@ func oapserverTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x84, 0xc6, 0x37, 0x3e, 0x28, 0x85, 0xf9, 0x34, 0xb6, 0x9f, 0xae, 0xfa, 0x6c, 0x34, 0x80, 0xa8, 0x23, 0xf1, 0x51, 0xfb, 0x6d, 0x8, 0x6e, 0x9f, 0x74, 0xb5, 0x8b, 0xb3, 0xb, 0xf7, 0x66, 0xeb}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xab, 0x0, 0xd7, 0x59, 0x0, 0xf3, 0x25, 0x32, 0xb4, 0xd7, 0x79, 0x89, 0xd7, 0x45, 0x8, 0x57, 0x7a, 0x86, 0xe7, 0x62, 0x44, 0x1, 0xa3, 0x14, 0xb4, 0x17, 0x92, 0x67, 0xf1, 0x11, 0x9f, 0x49}}
 	return a, nil
 }
 

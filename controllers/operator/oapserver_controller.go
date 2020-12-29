@@ -20,7 +20,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"text/template"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -37,8 +36,6 @@ import (
 	"github.com/apache/skywalking-swck/pkg/kubernetes"
 )
 
-const annotationKeyIstioSetup = "istio-setup-command"
-
 var schedDuration, _ = time.ParseDuration("1m")
 
 // OAPServerReconciler reconciles a OAPServer object
@@ -53,7 +50,8 @@ type OAPServerReconciler struct {
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
 
 func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("oapserver", req.NamespacedName)
@@ -73,7 +71,6 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		FileRepo: r.FileRepo,
 		CR:       &oapServer,
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
-		TmplFunc: tmplFunc(&oapServer),
 	}
 	for _, f := range ff {
 		l := log.WithName(f)
@@ -83,40 +80,12 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	if err := r.istio(ctx, log, oapServer.Name, &oapServer); err != nil {
-		l.Error(err, "failed to sync istio annotation")
-		return ctrl.Result{}, err
-	}
-
 	if err := r.checkState(ctx, log, &oapServer); err != nil {
 		l.Error(err, "failed to check sub resources state")
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
-}
-
-func tmplFunc(oapServer *operatorv1alpha1.OAPServer) template.FuncMap {
-	return template.FuncMap{
-		"generateImage": func() string {
-			image := oapServer.Spec.Image
-			if image == "" {
-				v := oapServer.Spec.Version
-				vTmpl := "apache/skywalking-oap-server:%s-%s"
-				vES := "es6"
-				for _, e := range oapServer.Spec.Config {
-					if e.Name != "SW_STORAGE" {
-						continue
-					}
-					if e.Value == "elasticsearch7" {
-						vES = "es7"
-					}
-				}
-				image = fmt.Sprintf(vTmpl, v, vES)
-			}
-			return image
-		},
-	}
 }
 
 func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) error {
@@ -128,14 +97,6 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
 		overlay.AvailableReplicas = deployment.Status.AvailableReplicas
-		if oapServer.Spec.Image != deployment.Spec.Template.Spec.Containers[0].Image {
-			oapServer.Spec.Image = deployment.Spec.Template.Spec.Containers[0].Image
-			if err := r.Update(ctx, oapServer); err != nil {
-				errCol.Collect(fmt.Errorf("failed to update image field: %w", err))
-				return errCol.Error()
-			}
-			log.Info("updated OAPServer Image")
-		}
 	}
 	service := core.Service{}
 	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name}, &service); err != nil && !apierrors.IsNotFound(err) {
@@ -158,23 +119,6 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	log.Info("updated Status sub resource")
 
 	return errCol.Error()
-}
-
-func (r *OAPServerReconciler) istio(ctx context.Context, log logr.Logger, serviceName string, oapServer *operatorv1alpha1.OAPServer) error {
-	for _, envVar := range oapServer.Spec.Config {
-		if envVar.Name == "SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS" &&
-			oapServer.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
-			oapServer.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
-				"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
-				"--set meshConfig.enableEnvoyAccessLogService=true", serviceName, oapServer.Namespace)
-			if err := r.Update(ctx, oapServer); err != nil {
-				return err
-			}
-			log.Info("patched Istio annotation")
-			return nil
-		}
-	}
-	return nil
 }
 
 func (r *OAPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -70,6 +70,7 @@ operator-deploy: operator-manifests
 # Generate manifests e.g. CRD, RBAC etc.
 operator-manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./apis/..." output:crd:artifacts:config=config/operator/crd/bases \
+		output:webhook:artifacts:config=config/operator/webhook \
 		&& $(CONTROLLER_GEN) rbac:roleName=manager-role paths="./controllers/..."  output:rbac:dir=config/operator/rbac \
 		&& go run github.com/apache/skywalking-swck/cmd/build license insert config
  
@@ -84,7 +85,7 @@ adapter-deploy:
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="apis/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./apis/..."
 	$(MAKE) format
 
 GO_LICENSER := $(GOBIN)/go-licenser

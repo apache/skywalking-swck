@@ -26,11 +26,13 @@ import (
 // OAPServerSpec defines the desired state of OAPServer
 type OAPServerSpec struct {
 	// Version of OAP.
+	// +kubebuilder:validation:Required
 	Version string `json:"version"`
 	// Image is the OAP Server Docker image to deploy.
 	Image string `json:"image,omitempty"`
 	// Count is the number of OAP servers
-	Instances int32 `json:"instances,omitempty"`
+	// +kubebuilder:validation:Required
+	Instances int32 `json:"instances"`
 	// Config holds the OAP server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
 }

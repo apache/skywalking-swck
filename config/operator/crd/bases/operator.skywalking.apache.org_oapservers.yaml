@@ -189,6 +189,7 @@ spec:
               description: Version of OAP.
               type: string
           required:
+          - instances
           - version
           type: object
         status:

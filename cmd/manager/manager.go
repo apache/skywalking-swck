@@ -81,6 +81,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
 	}
+	if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "OAPServer")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
