@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -53,16 +54,33 @@ func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logge
 	}
 	proto := &unstructured.Unstructured{}
 	err = LoadTemplate(string(manifests), a.CR, a.TmplFunc, proto)
-	if err != nil {
-		return fmt.Errorf("failed to load template: %w", err)
+	if err == ErrNothingLoaded {
+		log.Info("nothing is loaded")
+		return nil
 	}
-	key := client.ObjectKeyFromObject(proto)
+	if err != nil {
+		return fmt.Errorf("failed to load %s template: %w", manifest, err)
+	}
+	return a.apply(ctx, proto, log)
+}
+
+// ApplyFromObject apply an object to api server
+func (a *Application) ApplyFromObject(ctx context.Context, obj runtime.Object, log logr.Logger) error {
+	proto, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return fmt.Errorf("failed to convert object to unstructed: %v", err)
+	}
+	return a.apply(ctx, &unstructured.Unstructured{Object: proto}, log)
+}
+
+func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) error {
+	key := client.ObjectKeyFromObject(obj)
 	current := &unstructured.Unstructured{}
-	current.SetGroupVersionKind(proto.GetObjectKind().GroupVersionKind())
-	err = a.Get(ctx, key, current)
+	current.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	err := a.Get(ctx, key, current)
 	if apierrors.IsNotFound(err) {
 		log.Info("could not find existing resource, creating one...")
-		curr, errComp := a.compose(proto)
+		curr, errComp := a.compose(obj)
 		if errComp != nil {
 			return fmt.Errorf("failed to compose: %w", errComp)
 		}
@@ -78,7 +96,7 @@ func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logge
 		return fmt.Errorf("failed to get %v : %w", key, err)
 	}
 
-	object, err := a.compose(proto)
+	object, err := a.compose(obj)
 	if err != nil {
 		return fmt.Errorf("failed to compose: %w", err)
 	}

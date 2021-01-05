@@ -20,10 +20,8 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
-	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
@@ -32,33 +30,27 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
+	uiv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/pkg/kubernetes"
 )
 
-var schedDuration, _ = time.ParseDuration("1m")
-
-// OAPServerReconciler reconciles a OAPServer object
-type OAPServerReconciler struct {
+// UIReconciler reconciles a UI object
+type UIReconciler struct {
 	client.Client
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
 }
 
-// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapservers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapservers/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
+// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis/status,verbs=get;update;patch
 
-func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("oapserver", req.NamespacedName)
+func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := r.Log.WithValues("ui", req.NamespacedName)
 	log.Info("=====================reconcile started================================")
 
-	oapServer := operatorv1alpha1.OAPServer{}
-	if err := r.Client.Get(ctx, req.NamespacedName, &oapServer); err != nil {
+	ui := uiv1alpha1.UI{}
+	if err := r.Client.Get(ctx, req.NamespacedName, &ui); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	ff, err := r.FileRepo.GetFilesRecursive("templates")
@@ -69,8 +61,8 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	app := kubernetes.Application{
 		Client:   r.Client,
 		FileRepo: r.FileRepo,
-		CR:       &oapServer,
-		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
+		CR:       &ui,
+		GVK:      uiv1alpha1.GroupVersion.WithKind("UI"),
 	}
 	for _, f := range ff {
 		l := log.WithName(f)
@@ -79,51 +71,59 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 	}
-
-	if err := r.checkState(ctx, log, &oapServer); err != nil {
-		l.Error(err, "failed to check sub resources state")
+	if err := r.checkState(ctx, log, &ui); err != nil {
+		log.Error(err, "failed to check sub resources state")
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
-func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) error {
-	overlay := operatorv1alpha1.OAPServerStatus{}
+func (r *UIReconciler) checkState(ctx context.Context, log logr.Logger, ui *uiv1alpha1.UI) error {
+	overlay := uiv1alpha1.UIStatus{}
 	deployment := apps.Deployment{}
 	errCol := new(kubernetes.ErrorCollector)
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: ui.Namespace, Name: ui.Name + "-ui"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
 		errCol.Collect(fmt.Errorf("failed to get deployment: %w", err))
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
 		overlay.AvailableReplicas = deployment.Status.AvailableReplicas
 	}
-	service := core.Service{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"}, &service); err != nil && !apierrors.IsNotFound(err) {
-		errCol.Collect(fmt.Errorf("failed to get service: %w", err))
+	svc := core.Service{}
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: ui.Namespace, Name: ui.Name + "-ui"}, &svc); err != nil && !apierrors.IsNotFound(err) {
+		errCol.Collect(fmt.Errorf("failed to get svc: %w", err))
 	} else {
-		overlay.Address = fmt.Sprintf("%s.%s", service.Name, service.Namespace)
+		for _, i := range svc.Status.LoadBalancer.Ingress {
+			overlay.ExternalIPs = append(overlay.ExternalIPs, i.IP)
+		}
+		for _, p := range svc.Spec.Ports {
+			overlay.Ports = append(overlay.Ports, p.Port)
+		}
+		if len(overlay.Ports) < 1 {
+			overlay.Ports = []int32{0}
+		}
+		overlay.InternalAddress = fmt.Sprintf("%s.%s", svc.Name, svc.Namespace)
 	}
-	if apiequal.Semantic.DeepDerivative(overlay, oapServer.Status) {
+	if apiequal.Semantic.DeepDerivative(overlay, ui.Status) {
 		log.Info("Status keeps the same as before")
 	}
-	oapServer.Status = overlay
-	oapServer.Kind = "OAPServer"
-	if err := kubernetes.ApplyOverlay(oapServer, &operatorv1alpha1.OAPServer{Status: overlay}); err != nil {
+	ui.Status = overlay
+	ui.Kind = "UI"
+	if err := kubernetes.ApplyOverlay(ui, &uiv1alpha1.UI{Status: overlay}); err != nil {
 		errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
 		return errCol.Error()
 	}
-	if err := r.Status().Update(ctx, oapServer); err != nil {
-		errCol.Collect(fmt.Errorf("failed to update status of OAPServer: %w", err))
+	if err := r.Status().Update(ctx, ui); err != nil {
+		errCol.Collect(fmt.Errorf("failed to update status of UI: %w", err))
 	}
 	log.Info("updated Status sub resource")
 
 	return errCol.Error()
 }
 
-func (r *OAPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *UIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.OAPServer{}).
+		For(&uiv1alpha1.UI{}).
 		Owns(&apps.Deployment{}).
 		Owns(&core.Service{}).
 		Complete(r)

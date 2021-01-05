@@ -27,7 +27,7 @@ make operator-install
 1. Deploy a sample OAP server, this will create an OAP server in the default namespace:
 
 ```sh
-curl https://raw.githubusercontent.com/apache/skywalking-swck/master/config/operator/samples/oap.yaml | kubectl apply -f -
+curl https://raw.githubusercontent.com/apache/skywalking-swck/master/config/operator/samples/default.yaml | kubectl apply -f -
 ```
 
 2. Check the OAP server in Kubernetes:

@@ -80,17 +80,24 @@ var _ webhook.Validator = &OAPServer{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *OAPServer) ValidateCreate() error {
 	oapserverlog.Info("validate create", "name", r.Name)
-	return nil
+	return r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *OAPServer) ValidateUpdate(old runtime.Object) error {
 	oapserverlog.Info("validate update", "name", r.Name)
-	return nil
+	return r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *OAPServer) ValidateDelete() error {
 	oapserverlog.Info("validate delete", "name", r.Name)
+	return nil
+}
+
+func (r *OAPServer) validate() error {
+	if r.Spec.Image == "" {
+		return fmt.Errorf("image is absent")
+	}
 	return nil
 }

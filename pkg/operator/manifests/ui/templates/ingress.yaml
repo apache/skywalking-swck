@@ -14,27 +14,36 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-apiVersion: v1
-kind: Service
+ 
+{{- $ingress := .Spec.Service.Ingress }}
+{{ if $ingress.Host }}
+{{- $svc := .Spec.Service.ServiceSpec }}
+{{- $port := index $svc.Ports 0 }}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
 metadata:
-  name: {{ .Name }}-oap
+  name: {{ .Name }}-ui
   namespace: {{ .Namespace }}
   labels:
-    app: oap
-    operator.skywalking.apache.org/oap-server-name: {{ .Name }}
-    operator.skywalking.apache.org/application: oapserver
-    operator.skywalking.apache.org/component: service
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
+    operator.skywalking.apache.org/component: deployment
+  annotations:
+    {{- range $key, $value := $ingress.Annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
 spec:
-  type: ClusterIP
-  ports:
-  - port: 12800
-    name: rest
-  - port: 11800
-    name: grpc
-  - port: 1234
-    name: http-monitoring
-  selector:
-    app: oap
-    operator.skywalking.apache.org/oap-server-name: {{ .Name }}
-
+  rules:
+    - host: {{ $ingress.Host }}
+      http:
+        paths:
+          - path: 
+            backend:
+              serviceName: {{ .Name }}
+              servicePort: {{ $port.Port }}
+  {{- if $ingress.TLS }}
+  tls:
+{{ toYAML $ingress.TLS | indent 4 }}
+  {{end}}
+{{end}}

@@ -77,6 +77,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - uis
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - uis/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
