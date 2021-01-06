@@ -22,7 +22,7 @@
 // oapserver/templates/service.yaml (1.324kB)
 // oapserver/templates/service_account.yaml (1.09kB)
 // ui/templates/deployment.yaml (2.235kB)
-// ui/templates/ingress.yaml (1.655kB)
+// ui/templates/ingress.yaml (1.758kB)
 // ui/templates/service.yaml (1.112kB)
 
 package repo
@@ -499,8 +499,11 @@ spec:
         paths:
           - path: 
             backend:
-              serviceName: {{ .Name }}
+              serviceName: {{ .Name }}-ui
               servicePort: {{ $port.Port }}
+  {{- if $ingress.IngressClassName }}
+  ingressClassName: {{ $ingress.IngressClassName }}
+  {{end}}
   {{- if $ingress.TLS }}
   tls:
 {{ toYAML $ingress.TLS | indent 4 }}
@@ -519,7 +522,7 @@ func uiTemplatesIngressYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x26, 0x9, 0x38, 0xb6, 0x6f, 0x54, 0x1f, 0xfd, 0xbe, 0xe4, 0xb9, 0x75, 0xe3, 0x19, 0x2a, 0x8, 0xd4, 0xf3, 0x1b, 0x4a, 0x5e, 0xba, 0x42, 0xb2, 0xc7, 0x5d, 0xf1, 0x8, 0x4d, 0x36, 0xb5, 0x78}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xd9, 0x4d, 0xeb, 0xbb, 0xb8, 0x64, 0x23, 0x82, 0xfa, 0x80, 0xf3, 0xb, 0xb0, 0xf8, 0x4a, 0xaa, 0xf9, 0xef, 0xe0, 0x77, 0xcb, 0x53, 0x2f, 0x96, 0xf4, 0xba, 0x8f, 0x6b, 0xb6, 0xb8, 0x2, 0x85}}
 	return a, nil
 }
 
