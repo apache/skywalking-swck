@@ -18,9 +18,13 @@
 package kubernetes
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/Masterminds/sprig/v3"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -28,6 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+var ErrNothingLoaded = errors.New("LoadTemplate: failed load anything from manifests")
 
 // ApplyOverlay applies an overlay using JSON patch strategy over the current Object in place.
 func ApplyOverlay(current, overlay runtime.Object) error {
@@ -49,6 +55,9 @@ func ApplyOverlay(current, overlay runtime.Object) error {
 // LoadTemplate loads a YAML file to a component
 func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap, spec interface{}) error {
 	tmplBuilder := template.New("manifest").
+		Funcs(template.FuncMap{
+			"toYAML": toYAML,
+		}).
 		Funcs(sprig.TxtFuncMap())
 	if funcMap != nil {
 		tmplBuilder = tmplBuilder.Funcs(funcMap)
@@ -62,7 +71,41 @@ func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap,
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(buf.Bytes(), spec)
+	bb := stripCharacters(buf.Bytes())
+	if len(bb) < 1 {
+		return ErrNothingLoaded
+	}
+	return yaml.Unmarshal(bb, spec)
+}
+
+func toYAML(v interface{}) string {
+	b, _ := yaml.Marshal(v)
+	return string(b)
+}
+
+func stripCharacters(bb []byte) []byte {
+	s := string(bb)
+	s = strings.TrimSpace(s)
+	s = stripComment(s)
+	s = strings.TrimSpace(s)
+	return []byte(s)
+}
+
+const commentChars = "#;"
+
+func stripComment(source string) string {
+	sc := bufio.NewScanner(strings.NewReader(source))
+	ll := make([]string, 0)
+	for sc.Scan() {
+		l := sc.Text()
+		if cut := strings.IndexAny(l, commentChars); cut >= 0 {
+			l = strings.TrimRightFunc(l[:cut], unicode.IsSpace)
+		}
+		if strings.TrimSpace(l) != "" {
+			ll = append(ll, l)
+		}
+	}
+	return strings.Join(ll, "\n")
 }
 
 type ErrorCollector []error

@@ -18,9 +18,12 @@
 // sources:
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
-// oapserver/templates/deployment.yaml (2.693kB)
-// oapserver/templates/service.yaml (1.32kB)
+// oapserver/templates/deployment.yaml (2.695kB)
+// oapserver/templates/service.yaml (1.324kB)
 // oapserver/templates/service_account.yaml (1.09kB)
+// ui/templates/deployment.yaml (2.235kB)
+// ui/templates/ingress.yaml (1.655kB)
+// ui/templates/service.yaml (1.112kB)
 
 package repo
 
@@ -183,7 +186,7 @@ var _oapserverTemplatesDeploymentYaml = []byte(`# Licensed to Apache Software Fo
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Name }}
+  name: {{ .Name }}-oap
   namespace: {{ .Namespace }}
   labels:
     app: oap
@@ -208,7 +211,7 @@ spec:
       serviceAccountName: {{ .Name }}-oap
       containers:
       - name: oap
-        image: {{ generateImage }}
+        image: {{ .Spec.Image }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 11800
@@ -262,7 +265,7 @@ func oapserverTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x84, 0xc6, 0x37, 0x3e, 0x28, 0x85, 0xf9, 0x34, 0xb6, 0x9f, 0xae, 0xfa, 0x6c, 0x34, 0x80, 0xa8, 0x23, 0xf1, 0x51, 0xfb, 0x6d, 0x8, 0x6e, 0x9f, 0x74, 0xb5, 0x8b, 0xb3, 0xb, 0xf7, 0x66, 0xeb}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xda, 0x3, 0x5e, 0xcd, 0xf8, 0xab, 0x5c, 0x26, 0x20, 0x39, 0xee, 0x1c, 0x45, 0x3e, 0xdb, 0x21, 0x3c, 0xcb, 0xf8, 0x9c, 0x44, 0xd3, 0x4c, 0x81, 0xcc, 0x5b, 0xb2, 0xea, 0x90, 0xba, 0x93, 0x33}}
 	return a, nil
 }
 
@@ -286,7 +289,7 @@ var _oapserverTemplatesServiceYaml = []byte(`# Licensed to Apache Software Found
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Name }}
+  name: {{ .Name }}-oap
   namespace: {{ .Namespace }}
   labels:
     app: oap
@@ -319,7 +322,7 @@ func oapserverTemplatesServiceYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x26, 0x9a, 0x7e, 0x23, 0x6c, 0xc6, 0x36, 0x17, 0xd5, 0x9e, 0xb2, 0x94, 0x47, 0xb6, 0xc, 0xaf, 0x83, 0x5e, 0x97, 0x44, 0x5e, 0x94, 0x33, 0xb1, 0xba, 0x72, 0xdd, 0xab, 0x20, 0xbc, 0xdf, 0x59}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe5, 0xf4, 0x9d, 0x3a, 0x24, 0x7f, 0x70, 0xa8, 0x42, 0x9f, 0xcb, 0xb7, 0xd9, 0x99, 0x44, 0x3, 0xda, 0xee, 0x5b, 0x11, 0x88, 0x3d, 0xd0, 0x23, 0x5, 0xc8, 0xde, 0xb3, 0x79, 0x11, 0x29, 0xf7}}
 	return a, nil
 }
 
@@ -364,6 +367,202 @@ func oapserverTemplatesService_accountYaml() (*asset, error) {
 
 	info := bindataFileInfo{name: "oapserver/templates/service_account.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x35, 0x3b, 0x36, 0x6, 0xcc, 0x9, 0x84, 0x7d, 0x62, 0x48, 0x31, 0xcf, 0x17, 0xec, 0xd1, 0xdd, 0x83, 0x0, 0x86, 0x6a, 0x50, 0xd5, 0xb6, 0x4a, 0x23, 0xdc, 0xea, 0xd, 0x80, 0x87, 0x2, 0x24}}
+	return a, nil
+}
+
+var _uiTemplatesDeploymentYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-ui
+  namespace: {{ .Namespace }}
+  labels:
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
+    operator.skywalking.apache.org/component: deployment
+spec:
+  replicas: {{ .Spec.Instances }}
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: ui
+      operator.skywalking.apache.org/ui-name: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: ui
+        operator.skywalking.apache.org/ui-name: {{ .Name }}
+        operator.skywalking.apache.org/application: ui
+        operator.skywalking.apache.org/component: deployment
+    spec:
+      containers:
+      - name: ui
+        image: {{ .Spec.Image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: page
+        livenessProbe:
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 3
+          successThreshold: 1
+          httpGet:
+            path: /
+            port: 8080
+        readinessProbe:
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 3
+          successThreshold: 1
+          httpGet:
+            path: /
+            port: 8080
+        env:
+          - name: SW_OAP_ADDRESS
+            value: {{ .Spec.OAPServerAddress }}
+`)
+
+func uiTemplatesDeploymentYamlBytes() ([]byte, error) {
+	return _uiTemplatesDeploymentYaml, nil
+}
+
+func uiTemplatesDeploymentYaml() (*asset, error) {
+	bytes, err := uiTemplatesDeploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "ui/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x69, 0xdf, 0x8d, 0x6a, 0xbf, 0x74, 0x8f, 0xc4, 0xd1, 0x15, 0x6c, 0x96, 0x23, 0x71, 0x53, 0x46, 0xfa, 0xe6, 0x35, 0xec, 0x23, 0x23, 0xce, 0x87, 0xfd, 0xbb, 0xb4, 0xc, 0x7e, 0x3a, 0xb9, 0x14}}
+	return a, nil
+}
+
+var _uiTemplatesIngressYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+ 
+{{- $ingress := .Spec.Service.Ingress }}
+{{ if $ingress.Host }}
+{{- $svc := .Spec.Service.ServiceSpec }}
+{{- $port := index $svc.Ports 0 }}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Name }}-ui
+  namespace: {{ .Namespace }}
+  labels:
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
+    operator.skywalking.apache.org/component: deployment
+  annotations:
+    {{- range $key, $value := $ingress.Annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ $ingress.Host }}
+      http:
+        paths:
+          - path: 
+            backend:
+              serviceName: {{ .Name }}
+              servicePort: {{ $port.Port }}
+  {{- if $ingress.TLS }}
+  tls:
+{{ toYAML $ingress.TLS | indent 4 }}
+  {{end}}
+{{end}}
+`)
+
+func uiTemplatesIngressYamlBytes() ([]byte, error) {
+	return _uiTemplatesIngressYaml, nil
+}
+
+func uiTemplatesIngressYaml() (*asset, error) {
+	bytes, err := uiTemplatesIngressYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "ui/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x26, 0x9, 0x38, 0xb6, 0x6f, 0x54, 0x1f, 0xfd, 0xbe, 0xe4, 0xb9, 0x75, 0xe3, 0x19, 0x2a, 0x8, 0xd4, 0xf3, 0x1b, 0x4a, 0x5e, 0xba, 0x42, 0xb2, 0xc7, 0x5d, 0xf1, 0x8, 0x4d, 0x36, 0xb5, 0x78}}
+	return a, nil
+}
+
+var _uiTemplatesServiceYaml = []byte(`# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}-ui
+  namespace: {{ .Namespace }}
+  labels:
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
+    operator.skywalking.apache.org/component: service
+spec:
+{{ toYAML .Spec.Service.ServiceSpec | indent 2 }}`)
+
+func uiTemplatesServiceYamlBytes() ([]byte, error) {
+	return _uiTemplatesServiceYaml, nil
+}
+
+func uiTemplatesServiceYaml() (*asset, error) {
+	bytes, err := uiTemplatesServiceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "ui/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x60, 0x12, 0x23, 0x84, 0x64, 0x67, 0xa8, 0x47, 0x72, 0x7b, 0x5d, 0xe7, 0x4b, 0xa3, 0xea, 0x15, 0xe5, 0x29, 0x40, 0xf9, 0xbe, 0x5a, 0x6f, 0xb9, 0x5b, 0x83, 0x1c, 0xca, 0x2c, 0xa7, 0xc1, 0x5b}}
 	return a, nil
 }
 
@@ -463,6 +662,9 @@ var _bindata = map[string]func() (*asset, error){
 	"oapserver/templates/deployment.yaml":           oapserverTemplatesDeploymentYaml,
 	"oapserver/templates/service.yaml":              oapserverTemplatesServiceYaml,
 	"oapserver/templates/service_account.yaml":      oapserverTemplatesService_accountYaml,
+	"ui/templates/deployment.yaml":                  uiTemplatesDeploymentYaml,
+	"ui/templates/ingress.yaml":                     uiTemplatesIngressYaml,
+	"ui/templates/service.yaml":                     uiTemplatesServiceYaml,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.
@@ -516,6 +718,13 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"deployment.yaml":           &bintree{oapserverTemplatesDeploymentYaml, map[string]*bintree{}},
 			"service.yaml":              &bintree{oapserverTemplatesServiceYaml, map[string]*bintree{}},
 			"service_account.yaml":      &bintree{oapserverTemplatesService_accountYaml, map[string]*bintree{}},
+		}},
+	}},
+	"ui": &bintree{nil, map[string]*bintree{
+		"templates": &bintree{nil, map[string]*bintree{
+			"deployment.yaml": &bintree{uiTemplatesDeploymentYaml, map[string]*bintree{}},
+			"ingress.yaml":    &bintree{uiTemplatesIngressYaml, map[string]*bintree{}},
+			"service.yaml":    &bintree{uiTemplatesServiceYaml, map[string]*bintree{}},
 		}},
 	}},
 }}

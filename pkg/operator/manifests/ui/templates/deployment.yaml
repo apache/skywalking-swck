@@ -18,69 +18,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Name }}-oap
+  name: {{ .Name }}-ui
   namespace: {{ .Namespace }}
   labels:
-    app: oap
-    operator.skywalking.apache.org/oap-server-name: {{ .Name }}
-    operator.skywalking.apache.org/application: oapserver
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
     operator.skywalking.apache.org/component: deployment
 spec:
   replicas: {{ .Spec.Instances }}
   minReadySeconds: 5
   selector:
     matchLabels:
-      app: oap
-      operator.skywalking.apache.org/oap-server-name: {{ .Name }}
+      app: ui
+      operator.skywalking.apache.org/ui-name: {{ .Name }}
   template:
     metadata:
       labels:
-        app: oap
-        operator.skywalking.apache.org/oap-server-name: {{ .Name }}
-        operator.skywalking.apache.org/application: oapserver
+        app: ui
+        operator.skywalking.apache.org/ui-name: {{ .Name }}
+        operator.skywalking.apache.org/application: ui
         operator.skywalking.apache.org/component: deployment
     spec:
-      serviceAccountName: {{ .Name }}-oap
       containers:
-      - name: oap
+      - name: ui
         image: {{ .Spec.Image }}
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 11800
-          name: grpc
-        - containerPort: 12800
-          name: rest
-        - containerPort: 1234
-          name: http-monitoring
+        - containerPort: 8080
+          name: page
         livenessProbe:
           initialDelaySeconds: 10
           timeoutSeconds: 10
           periodSeconds: 30
-          failureThreshold: 10
+          failureThreshold: 3
           successThreshold: 1
-          exec:
-            command:
-              - /skywalking/bin/swctl
-              - ch
+          httpGet:
+            path: /
+            port: 8080
         readinessProbe:
           initialDelaySeconds: 10
           timeoutSeconds: 10
           periodSeconds: 30
-          failureThreshold: 10
+          failureThreshold: 3
           successThreshold: 1
-          exec:
-            command:
-              - /skywalking/bin/swctl
-              - ch
+          httpGet:
+            path: /
+            port: 8080
         env:
-        - name: JAVA_OPTS
-          value: -Xmx2048M
-        - name: SW_TELEMETRY
-          value: prometheus
-        - name: SW_HEALTH_CHECKER
-          value: default
-        {{range .Spec.Config}}
-        - name: {{ .Name }}
-          value: {{ .Value }}
-        {{end}}
-
+          - name: SW_OAP_ADDRESS
+            value: {{ .Spec.OAPServerAddress }}

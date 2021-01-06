@@ -21,5 +21,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: controller
-  newName: apache/skywalking-swck
-  newTag: 0.1.0
+  newName: gcr.io/skywalking-live-demo/controller
+  newTag: latest
