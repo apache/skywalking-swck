@@ -8,6 +8,8 @@ Release Notes.
 #### Features
 - Introduce custom metrics adapter to SkyWalking OAP cluster for Kubernetes HPA autoscaling.
 - Add RBAC files and service account to support Kubernetes coordination.
+- Add default and validation webhooks to operator controllers.
+- Add UI CRD to deploy skywalking UI server.
 
 #### Chores
 - Transform project layers to support multiple applications.
