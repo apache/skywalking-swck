@@ -24,6 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,6 +45,7 @@ type UIReconciler struct {
 
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 
 func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("ui", req.NamespacedName)
@@ -126,5 +128,6 @@ func (r *UIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&uiv1alpha1.UI{}).
 		Owns(&apps.Deployment{}).
 		Owns(&core.Service{}).
+		Owns(&networkingv1beta1.Ingress{}).
 		Complete(r)
 }
