@@ -54,6 +54,15 @@ func ApplyOverlay(current, overlay runtime.Object) error {
 
 // LoadTemplate loads a YAML file to a component
 func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap, spec interface{}) error {
+	bb, err := GenerateManifests(manifest, values, funcMap)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(bb, spec)
+}
+
+// GenerateManifests generate manifests from templates, CR and values
+func GenerateManifests(manifest string, values interface{}, funcMap template.FuncMap) ([]byte, error) {
 	tmplBuilder := template.New("manifest").
 		Funcs(template.FuncMap{
 			"toYAML": toYAML,
@@ -64,18 +73,18 @@ func LoadTemplate(manifest string, values interface{}, funcMap template.FuncMap,
 	}
 	tmpl, err := tmplBuilder.Parse(manifest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	buf := bytes.Buffer{}
 	err = tmpl.Execute(&buf, values)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	bb := stripCharacters(buf.Bytes())
 	if len(bb) < 1 {
-		return ErrNothingLoaded
+		return nil, ErrNothingLoaded
 	}
-	return yaml.Unmarshal(bb, spec)
+	return bb, nil
 }
 
 func toYAML(v interface{}) string {

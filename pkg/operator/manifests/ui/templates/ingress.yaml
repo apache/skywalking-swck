@@ -40,8 +40,11 @@ spec:
         paths:
           - path: 
             backend:
-              serviceName: {{ .Name }}
+              serviceName: {{ .Name }}-ui
               servicePort: {{ $port.Port }}
+  {{- if $ingress.IngressClassName }}
+  ingressClassName: {{ $ingress.IngressClassName }}
+  {{end}}
   {{- if $ingress.TLS }}
   tls:
 {{ toYAML $ingress.TLS | indent 4 }}
