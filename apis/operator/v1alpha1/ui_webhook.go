@@ -20,9 +20,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -50,29 +48,9 @@ func (r *UI) Default() {
 		r.Spec.Image = fmt.Sprintf("apache/skywalking-ui:%s", r.Spec.Version)
 	}
 
-	if r.Spec.Service.ServiceSpec.Type == "" {
-		r.Spec.Service.ServiceSpec = corev1.ServiceSpec{
-			Type: corev1.ServiceTypeClusterIP,
-			Ports: []corev1.ServicePort{
-				{
-					Name: "page",
-					Port: 80,
-					TargetPort: intstr.IntOrString{
-						Type:   intstr.Int,
-						IntVal: 8080,
-					},
-				},
-			},
-		}
-	}
+	r.Spec.Service.Template.Default()
 	if r.Spec.OAPServerAddress == "" {
 		r.Spec.OAPServerAddress = fmt.Sprintf("%s-oap.%s:12800", r.Name, r.Namespace)
-	}
-	if len(r.Spec.Service.ServiceSpec.Selector) < 1 {
-		r.Spec.Service.ServiceSpec.Selector = map[string]string{
-			"app":                                    "ui",
-			"operator.skywalking.apache.org/ui-name": r.Name,
-		}
 	}
 }
 
@@ -103,8 +81,8 @@ func (r *UI) validate() error {
 	if r.Spec.Image == "" {
 		return fmt.Errorf("image is absent")
 	}
-	if r.Spec.Service.ServiceSpec.Type == "" {
-		return fmt.Errorf("service spec is absent")
+	if err := r.Spec.Service.Template.Validate(); err != nil {
+		return fmt.Errorf("service template is invalid: %w", err)
 	}
 	if r.Spec.OAPServerAddress == "" {
 		return fmt.Errorf("oap server address is absent")

@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+{{- $svc := .Spec.Service.Template }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,4 +24,26 @@ metadata:
     operator.skywalking.apache.org/application: ui
     operator.skywalking.apache.org/component: service
 spec:
-{{ toYAML .Spec.Service.ServiceSpec | indent 2 }}
+  type: {{ $svc.Type }}
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: page
+  {{- if $svc.ExternalIPs }}
+  externalIPs:
+    {{- range $value := $svc.ExternalIPs }}
+    - {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  {{- if $svc.LoadBalancerIP }}
+  loadBalancerIP: {{ $svc.LoadBalancerIP }}
+  {{- end }}
+  {{- if $svc.LoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- range $value := $svc.LoadBalancerSourceRanges }}
+    - {{ $value | quote}}
+    {{- end }}
+  {{- end }}
+  selector:
+    app: ui
+    operator.skywalking.apache.org/oap-server-name: {{ .Name }}

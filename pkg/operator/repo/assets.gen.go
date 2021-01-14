@@ -19,11 +19,12 @@
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
 // oapserver/templates/deployment.yaml (2.695kB)
-// oapserver/templates/service.yaml (1.324kB)
+// oapserver/templates/ingress.yaml (1.755kB)
+// oapserver/templates/service.yaml (1.786kB)
 // oapserver/templates/service_account.yaml (1.09kB)
 // ui/templates/deployment.yaml (2.235kB)
-// ui/templates/ingress.yaml (1.76kB)
-// ui/templates/service.yaml (1.112kB)
+// ui/templates/ingress.yaml (1.755kB)
+// ui/templates/service.yaml (1.69kB)
 
 package repo
 
@@ -269,6 +270,75 @@ func oapserverTemplatesDeploymentYaml() (*asset, error) {
 	return a, nil
 }
 
+var _oapserverTemplatesIngressYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+ 
+{{- $ingress := .Spec.Service.Ingress }}
+{{ if $ingress.Host }}
+{{- $svc := .Spec.Service.Template }}
+{{- $port := index $svc.Ports 0 }}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Name }}-ui
+  namespace: {{ .Namespace }}
+  labels:
+    app: ui
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+    operator.skywalking.apache.org/application: ui
+    operator.skywalking.apache.org/component: deployment
+  annotations:
+    {{- range $key, $value := $ingress.Annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ $ingress.Host }}
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: {{ .Name }}-ui
+              servicePort: {{ $port.Port }}
+  {{- if $ingress.IngressClassName }}
+  ingressClassName: {{ $ingress.IngressClassName }}
+  {{end}}
+  {{- if $ingress.TLS }}
+  tls:
+{{ toYAML $ingress.TLS | indent 4 }}
+  {{end}}
+{{end}}
+`)
+
+func oapserverTemplatesIngressYamlBytes() ([]byte, error) {
+	return _oapserverTemplatesIngressYaml, nil
+}
+
+func oapserverTemplatesIngressYaml() (*asset, error) {
+	bytes, err := oapserverTemplatesIngressYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "oapserver/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xfe, 0x7d, 0x12, 0xac, 0x6b, 0xc4, 0xe6, 0x2e, 0x3d, 0xd, 0xa, 0xaa, 0x10, 0xac, 0x76, 0xe9, 0x71, 0x61, 0x74, 0xbc, 0x24, 0xaf, 0xe9, 0x75, 0x98, 0xc2, 0x8e, 0x42, 0x2d, 0x48, 0xff, 0x68}}
+	return a, nil
+}
+
 var _oapserverTemplatesServiceYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
 # license agreements. See the NOTICE file distributed with
 # this work for additional information regarding copyright
@@ -286,6 +356,7 @@ var _oapserverTemplatesServiceYaml = []byte(`# Licensed to Apache Software Found
 # specific language governing permissions and limitations
 # under the License.
 
+{{- $svc := .Spec.Service.Template }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -305,6 +376,21 @@ spec:
     name: grpc
   - port: 1234
     name: http-monitoring
+  {{ - if $svc.ExternalIPs }}
+  externalIPs:
+    {{ - range $value := $svc.ExternalIPs }}
+    - {{ $value | quote }}
+    {{ - end }}
+  {{ - end }}
+  {{ - if $svc.LoadBalancerIP }}
+  loadBalancerIP: {{ $svc.LoadBalancerIP }}
+  {{ - end }}
+  {{ - if $svc.LoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{ - range $value := $svc.LoadBalancerSourceRanges }}
+    - {{ $value | quote }}
+    {{ - end }}
+  {{ - end }}
   selector:
     app: oap
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}
@@ -322,7 +408,7 @@ func oapserverTemplatesServiceYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe5, 0xf4, 0x9d, 0x3a, 0x24, 0x7f, 0x70, 0xa8, 0x42, 0x9f, 0xcb, 0xb7, 0xd9, 0x99, 0x44, 0x3, 0xda, 0xee, 0x5b, 0x11, 0x88, 0x3d, 0xd0, 0x23, 0x5, 0xc8, 0xde, 0xb3, 0x79, 0x11, 0x29, 0xf7}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x2b, 0x49, 0xb9, 0x33, 0x3f, 0xd5, 0x38, 0x2a, 0x24, 0xe2, 0xb, 0x69, 0xb8, 0xff, 0x44, 0xb0, 0xe2, 0x70, 0x70, 0xc1, 0xab, 0x36, 0x3a, 0x81, 0x1f, 0xc4, 0x72, 0x19, 0xdf, 0xe7, 0xea, 0x32}}
 	return a, nil
 }
 
@@ -476,7 +562,7 @@ var _uiTemplatesIngressYaml = []byte(`# Licensed to Apache Software Foundation (
  
 {{- $ingress := .Spec.Service.Ingress }}
 {{ if $ingress.Host }}
-{{- $svc := .Spec.Service.ServiceSpec }}
+{{- $svc := .Spec.Service.Template }}
 {{- $port := index $svc.Ports 0 }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -490,7 +576,7 @@ metadata:
     operator.skywalking.apache.org/component: deployment
   annotations:
     {{- range $key, $value := $ingress.Annotations }}
-      {{ $key }}: {{ $value | quote }}
+    {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
   rules:
@@ -522,7 +608,7 @@ func uiTemplatesIngressYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x30, 0xf0, 0xdb, 0xbf, 0xd4, 0x6f, 0x55, 0xde, 0xbd, 0x89, 0xac, 0x86, 0xd4, 0x33, 0xcd, 0xda, 0xf3, 0xa6, 0x2d, 0x39, 0x60, 0xfa, 0x37, 0x8e, 0xf0, 0x61, 0x45, 0xe7, 0x28, 0x7e, 0xfe, 0xbb}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xfe, 0x7d, 0x12, 0xac, 0x6b, 0xc4, 0xe6, 0x2e, 0x3d, 0xd, 0xa, 0xaa, 0x10, 0xac, 0x76, 0xe9, 0x71, 0x61, 0x74, 0xbc, 0x24, 0xaf, 0xe9, 0x75, 0x98, 0xc2, 0x8e, 0x42, 0x2d, 0x48, 0xff, 0x68}}
 	return a, nil
 }
 
@@ -540,7 +626,7 @@ var _uiTemplatesServiceYaml = []byte(`# Licensed to the Apache Software Foundati
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+{{- $svc := .Spec.Service.Template }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -552,7 +638,29 @@ metadata:
     operator.skywalking.apache.org/application: ui
     operator.skywalking.apache.org/component: service
 spec:
-{{ toYAML .Spec.Service.ServiceSpec | indent 2 }}`)
+  type: {{ $svc.Type }}
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: page
+  {{- if $svc.ExternalIPs }}
+  externalIPs:
+    {{- range $value := $svc.ExternalIPs }}
+    - {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  {{- if $svc.LoadBalancerIP }}
+  loadBalancerIP: {{ $svc.LoadBalancerIP }}
+  {{- end }}
+  {{- if $svc.LoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- range $value := $svc.LoadBalancerSourceRanges }}
+    - {{ $value | quote}}
+    {{- end }}
+  {{- end }}
+  selector:
+    app: ui
+    operator.skywalking.apache.org/oap-server-name: {{ .Name }}`)
 
 func uiTemplatesServiceYamlBytes() ([]byte, error) {
 	return _uiTemplatesServiceYaml, nil
@@ -565,7 +673,7 @@ func uiTemplatesServiceYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x60, 0x12, 0x23, 0x84, 0x64, 0x67, 0xa8, 0x47, 0x72, 0x7b, 0x5d, 0xe7, 0x4b, 0xa3, 0xea, 0x15, 0xe5, 0x29, 0x40, 0xf9, 0xbe, 0x5a, 0x6f, 0xb9, 0x5b, 0x83, 0x1c, 0xca, 0x2c, 0xa7, 0xc1, 0x5b}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x19, 0x1e, 0x76, 0x7c, 0x5b, 0xbe, 0xe3, 0x12, 0xf7, 0x6f, 0xe9, 0xd5, 0x99, 0xba, 0x6f, 0xe6, 0xe6, 0xc4, 0xff, 0x77, 0x10, 0x27, 0x59, 0xd6, 0x9, 0xcd, 0x71, 0x2e, 0x17, 0xe6, 0x8c, 0x8b}}
 	return a, nil
 }
 
@@ -663,6 +771,7 @@ var _bindata = map[string]func() (*asset, error){
 	"oapserver/templates/cluster_role.yaml":         oapserverTemplatesCluster_roleYaml,
 	"oapserver/templates/cluster_role_binding.yaml": oapserverTemplatesCluster_role_bindingYaml,
 	"oapserver/templates/deployment.yaml":           oapserverTemplatesDeploymentYaml,
+	"oapserver/templates/ingress.yaml":              oapserverTemplatesIngressYaml,
 	"oapserver/templates/service.yaml":              oapserverTemplatesServiceYaml,
 	"oapserver/templates/service_account.yaml":      oapserverTemplatesService_accountYaml,
 	"ui/templates/deployment.yaml":                  uiTemplatesDeploymentYaml,
@@ -719,6 +828,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"cluster_role.yaml":         &bintree{oapserverTemplatesCluster_roleYaml, map[string]*bintree{}},
 			"cluster_role_binding.yaml": &bintree{oapserverTemplatesCluster_role_bindingYaml, map[string]*bintree{}},
 			"deployment.yaml":           &bintree{oapserverTemplatesDeploymentYaml, map[string]*bintree{}},
+			"ingress.yaml":              &bintree{oapserverTemplatesIngressYaml, map[string]*bintree{}},
 			"service.yaml":              &bintree{oapserverTemplatesServiceYaml, map[string]*bintree{}},
 			"service_account.yaml":      &bintree{oapserverTemplatesService_accountYaml, map[string]*bintree{}},
 		}},

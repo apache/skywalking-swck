@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+{{- $svc := .Spec.Service.Template }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -34,6 +35,21 @@ spec:
     name: grpc
   - port: 1234
     name: http-monitoring
+  {{ - if $svc.ExternalIPs }}
+  externalIPs:
+    {{ - range $value := $svc.ExternalIPs }}
+    - {{ $value | quote }}
+    {{ - end }}
+  {{ - end }}
+  {{ - if $svc.LoadBalancerIP }}
+  loadBalancerIP: {{ $svc.LoadBalancerIP }}
+  {{ - end }}
+  {{ - if $svc.LoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{ - range $value := $svc.LoadBalancerSourceRanges }}
+    - {{ $value | quote }}
+    {{ - end }}
+  {{ - end }}
   selector:
     app: oap
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}

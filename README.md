@@ -20,6 +20,7 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 ## Operator
 
+ * To install the operator in an existing cluster, make sure you have [`cert-manager` installed](https://cert-manager.io/docs/installation/)
  * Apply the manifests for the Controller and CRDs in release/config:
  
  ```
