@@ -26,6 +26,18 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmap
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   - services
   verbs:
@@ -68,6 +80,26 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - fetchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - fetchers/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - operator.skywalking.apache.org
   resources:

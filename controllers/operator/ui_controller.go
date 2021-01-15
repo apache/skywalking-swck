@@ -28,6 +28,7 @@ import (
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -41,6 +42,7 @@ type UIReconciler struct {
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
+	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis,verbs=get;list;watch;create;update;patch;delete
@@ -65,13 +67,10 @@ func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 		FileRepo: r.FileRepo,
 		CR:       &ui,
 		GVK:      uiv1alpha1.GroupVersion.WithKind("UI"),
+		Recorder: r.Recorder,
 	}
-	for _, f := range ff {
-		l := log.WithName(f)
-		if err := app.Apply(ctx, f, l); err != nil {
-			l.Error(err, "failed to apply resource")
-			return ctrl.Result{}, err
-		}
+	if err := app.ApplyAll(ctx, ff, log); err != nil {
+		return ctrl.Result{}, err
 	}
 	if err := r.checkState(ctx, log, &ui); err != nil {
 		log.Error(err, "failed to check sub resources state")

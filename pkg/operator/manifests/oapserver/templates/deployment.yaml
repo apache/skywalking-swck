@@ -38,7 +38,7 @@ spec:
         app: oap
         operator.skywalking.apache.org/oap-server-name: {{ .Name }}
         operator.skywalking.apache.org/application: oapserver
-        operator.skywalking.apache.org/component: deployment
+        operator.skywalking.apache.org/component: pod
     spec:
       serviceAccountName: {{ .Name }}-oap
       containers:

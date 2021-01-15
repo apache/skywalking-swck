@@ -1,0 +1,88 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: fetchers.operator.skywalking.apache.org
+spec:
+  group: operator.skywalking.apache.org
+  names:
+    kind: Fetcher
+    listKind: FetcherList
+    plural: fetchers
+    singular: fetcher
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Fetcher is the Schema for the fetchers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: FetcherSpec defines the desired state of Fetcher
+          properties:
+            OAPServerAddress:
+              description: OAPServerAddress is the address of backend OAPServers
+              type: string
+            clusterName:
+              description: ClusterName
+              type: string
+            type:
+              description: Fetcher is the type of how to fetch metrics from target.
+              items:
+                description: Service Type string describes ingress methods for a service
+                type: string
+              type: array
+          type: object
+        status:
+          description: FetcherStatus defines the observed state of Fetcher
+          properties:
+            replicas:
+              description: Replicas is currently not being set and might be removed
+                in the next version.
+              format: int32
+              type: integer
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+

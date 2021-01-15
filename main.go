@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
+	controllers "github.com/apache/skywalking-swck/controllers/operator"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
@@ -72,35 +73,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&operatorcontroller.OAPServerReconciler{
+	if err = (&controllers.OAPServerReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("OAPServer"),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: repo.NewRepo("oapserver"),
-		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
 	}
-	if err = (&operatorcontroller.UIReconciler{
+	if err = (&controllers.UIReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("UI"),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: repo.NewRepo("ui"),
-		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
-		os.Exit(1)
-	}
-
-	if err = (&operatorcontroller.FetcherReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Fetcher"),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("fetcher"),
-		Recorder: mgr.GetEventRecorderFor("fetcher-controller"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
 		os.Exit(1)
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
@@ -112,10 +100,19 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "UI")
 			os.Exit(1)
 		}
-		if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
-			os.Exit(1)
-		}
+	}
+
+	if err = (&operatorcontroller.FetcherReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Fetcher"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
+		os.Exit(1)
+	}
+	if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 

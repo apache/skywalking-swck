@@ -23,11 +23,13 @@ import (
 	"text/template"
 
 	"github.com/go-logr/logr"
+	l "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,36 +46,56 @@ type Application struct {
 	FileRepo Repo
 	GVK      schema.GroupVersionKind
 	TmplFunc template.FuncMap
+	Recorder record.EventRecorder
+}
+
+// ApplyAll manifests dependent a single CR
+func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log logr.Logger) error {
+	var changedFf []string
+	for _, f := range manifestFiles {
+		sl := log.WithName(f)
+		changed, err := a.Apply(ctx, f, sl)
+		if err != nil {
+			l.Error(err, "failed to apply resource")
+			a.Recorder.Eventf(a.CR, "ApplyError", "failed to apply resource", "encountered err: %v", err)
+			return err
+		}
+		if changed {
+			changedFf = append(changedFf, f)
+		}
+	}
+	a.Recorder.Eventf(a.CR, "CreatedOrUpdated", "resources are created or updated", "resources: %v", changedFf)
+	return nil
 }
 
 // Apply a template represents a component to api server
-func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logger) error {
+func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logger) (bool, error) {
 	manifests, err := a.FileRepo.ReadFile(manifest)
 	if err != nil {
-		return err
+		return false, err
 	}
 	proto := &unstructured.Unstructured{}
 	err = LoadTemplate(string(manifests), a.CR, a.TmplFunc, proto)
 	if err == ErrNothingLoaded {
 		log.Info("nothing is loaded")
-		return nil
+		return false, nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to load %s template: %w", manifest, err)
+		return false, fmt.Errorf("failed to load %s template: %w", manifest, err)
 	}
 	return a.apply(ctx, proto, log)
 }
 
 // ApplyFromObject apply an object to api server
-func (a *Application) ApplyFromObject(ctx context.Context, obj runtime.Object, log logr.Logger) error {
+func (a *Application) ApplyFromObject(ctx context.Context, obj runtime.Object, log logr.Logger) (bool, error) {
 	proto, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
-		return fmt.Errorf("failed to convert object to unstructed: %v", err)
+		return false, fmt.Errorf("failed to convert object to unstructed: %v", err)
 	}
 	return a.apply(ctx, &unstructured.Unstructured{Object: proto}, log)
 }
 
-func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) error {
+func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) (bool, error) {
 	key := client.ObjectKeyFromObject(obj)
 	current := &unstructured.Unstructured{}
 	current.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
@@ -82,34 +104,34 @@ func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured,
 		log.Info("could not find existing resource, creating one...")
 		curr, errComp := a.compose(obj)
 		if errComp != nil {
-			return fmt.Errorf("failed to compose: %w", errComp)
+			return false, fmt.Errorf("failed to compose: %w", errComp)
 		}
 
 		if err = a.Create(ctx, curr); err != nil {
-			return fmt.Errorf("failed to create: %w", err)
+			return false, fmt.Errorf("failed to create: %w", err)
 		}
 
 		log.Info("created")
-		return nil
+		return true, nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to get %v : %w", key, err)
+		return false, fmt.Errorf("failed to get %v : %w", key, err)
 	}
 
 	object, err := a.compose(obj)
 	if err != nil {
-		return fmt.Errorf("failed to compose: %w", err)
+		return false, fmt.Errorf("failed to compose: %w", err)
 	}
 
 	if getVersion(current, a.versionKey()) == getVersion(object, a.versionKey()) {
 		log.Info("resource keeps the same as before")
-		return nil
+		return false, nil
 	}
 	if err := a.Update(ctx, object); err != nil {
-		return fmt.Errorf("failed to update: %w", err)
+		return false, fmt.Errorf("failed to update: %w", err)
 	}
 	log.Info("updated")
-	return nil
+	return true, nil
 }
 
 func (a *Application) setVersionAnnotation(o *unstructured.Unstructured) error {

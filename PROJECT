@@ -8,4 +8,10 @@ resources:
 - group: operator
   kind: UI
   version: v1alpha1
+- group: operator
+  kind: Collector
+  version: v1alpha1
+- group: operator
+  kind: Fetcher
+  version: v1alpha1
 version: "2"
