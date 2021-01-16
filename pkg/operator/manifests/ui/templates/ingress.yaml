@@ -39,7 +39,7 @@ spec:
           - path: /*
             backend:
               serviceName: {{ .Name }}-ui
-              servicePort: 8080
+              servicePort: 80
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}
