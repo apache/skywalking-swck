@@ -19,11 +19,12 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
-	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,7 +43,7 @@ type FetcherReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups="",resources=configmap,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=fetchers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=fetchers/status,verbs=get;update;patch
 
@@ -50,8 +51,8 @@ func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	log := r.Log.WithValues("fetcher", req.NamespacedName)
 	log.Info("=====================reconcile started================================")
 
-	fetcher := operatorv1alpha1.Fetcher{}
-	if err := r.Client.Get(ctx, req.NamespacedName, &fetcher); err != nil {
+	fetcher := &operatorv1alpha1.Fetcher{}
+	if err := r.Client.Get(ctx, req.NamespacedName, fetcher); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	ff, err := r.FileRepo.GetFilesRecursive("templates")
@@ -62,20 +63,52 @@ func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	app := kubernetes.Application{
 		Client:   r.Client,
 		FileRepo: r.FileRepo,
-		CR:       &fetcher,
+		CR:       fetcher,
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("Fetcher"),
 		Recorder: r.Recorder,
 	}
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
+		_ = r.updateStatus(ctx, fetcher, core.ConditionFalse, "Failed to apply resources")
 		return ctrl.Result{}, err
 	}
+	if err := r.updateStatus(ctx, fetcher, core.ConditionTrue, "Reconciled all of resources"); err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{RequeueAfter: schedDuration}, nil
+}
+
+func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv1alpha1.Fetcher, status core.ConditionStatus, msg string) error {
 	if fetcher.Status.Replicas == 0 {
 		fetcher.Status.Replicas = 1
-		if err := r.Status().Update(ctx, &fetcher); err != nil {
-			l.Error(err, "failed to update status")
+	}
+	now := metav1.NewTime(time.Now())
+	changed := false
+	if len(fetcher.Status.Conditions) < 1 {
+		changed = true
+		fetcher.Status.Conditions = append(fetcher.Status.Conditions, operatorv1alpha1.FetcherCondition{
+			Type:               operatorv1alpha1.FetcherConditionTypeRead,
+			Status:             status,
+			Message:            msg,
+			LastTransitionTime: now,
+			LastUpdateTime:     now,
+		})
+	} else {
+		current := fetcher.Status.Conditions[0]
+		if current.Status != status || current.Message != msg {
+			changed = true
+			current.Status = status
+			current.Message = msg
+			current.LastUpdateTime = now
 		}
 	}
-	return ctrl.Result{}, nil
+	if !changed {
+		return nil
+	}
+	if err := r.Status().Update(ctx, fetcher); err != nil {
+		r.Log.Error(err, "failed to update status")
+		return err
+	}
+	return nil
 }
 
 func (r *FetcherReconciler) SetupWithManager(mgr ctrl.Manager) error {

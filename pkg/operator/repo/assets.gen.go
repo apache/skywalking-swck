@@ -18,18 +18,18 @@
 // sources:
 // fetcher/templates/cluster_role.yaml (1.218kB)
 // fetcher/templates/cluster_role_binding.yaml (1.205kB)
-// fetcher/templates/configmap.yaml (3.057kB)
-// fetcher/templates/deployment.yaml (2.052kB)
+// fetcher/templates/configmap.yaml (3.082kB)
+// fetcher/templates/deployment.yaml (2.084kB)
 // fetcher/templates/service_account.yaml (1.088kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
 // oapserver/templates/deployment.yaml (2.688kB)
-// oapserver/templates/ingress.yaml (1.755kB)
-// oapserver/templates/service.yaml (1.786kB)
+// oapserver/templates/ingress.yaml (1.672kB)
+// oapserver/templates/service.yaml (1.782kB)
 // oapserver/templates/service_account.yaml (1.09kB)
 // ui/templates/deployment.yaml (2.235kB)
-// ui/templates/ingress.yaml (1.755kB)
-// ui/templates/service.yaml (1.69kB)
+// ui/templates/ingress.yaml (1.67kB)
+// ui/templates/service.yaml (1.683kB)
 
 package repo
 
@@ -188,6 +188,7 @@ var _fetcherTemplatesConfigmapYaml = []byte(`# Licensed to Apache Software Found
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+{{ $types := .Spec.GetType }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -199,7 +200,7 @@ metadata:
     operator.skywalking.apache.org/application: fetcher
     operator.skywalking.apache.org/component: configmap
 data:
-  collector.yaml: |
+  collector.yaml: |-
     service:
       extensions: [zpages, health_check]
       pipelines:
@@ -218,7 +219,7 @@ data:
         endpoint: {{ .Spec.OAPServerAddress | quote }}
         insecure: true
     receivers:
-      {{- if has "prometheus" .Spec.Type }}
+      {{- if has "prometheus" $types }}
       prometheus:
         config:
           global:
@@ -231,7 +232,7 @@ data:
             relabel_configs:
             - source_labels: []
               target_label: cluster
-              replacement: {{ .Spec.ClusterName | quote }} 
+              replacement: {{ .Spec.ClusterName | quote }}
             - action: keep
               regex: true
               source_labels:
@@ -258,8 +259,7 @@ data:
               source_labels:
               - __meta_kubernetes_pod_name
               target_label: kubernetes_pod_name
-      {{- end }}
-`)
+      {{- end }}`)
 
 func fetcherTemplatesConfigmapYamlBytes() ([]byte, error) {
 	return _fetcherTemplatesConfigmapYaml, nil
@@ -272,7 +272,7 @@ func fetcherTemplatesConfigmapYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "fetcher/templates/configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xae, 0x93, 0x54, 0xa, 0xe6, 0xdb, 0x7c, 0xb9, 0xd0, 0x3, 0xec, 0x17, 0x42, 0x7f, 0x6d, 0x9f, 0xd2, 0x4d, 0x41, 0x3c, 0x31, 0x19, 0xb6, 0x63, 0xac, 0x9d, 0x8a, 0x75, 0x36, 0xd7, 0x5f, 0x3d}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x78, 0x5c, 0x20, 0x2e, 0x4a, 0xd1, 0xc, 0xe0, 0xc3, 0x13, 0xec, 0x8e, 0x70, 0x6d, 0x50, 0x62, 0x8f, 0x8f, 0x1, 0x3c, 0xc3, 0xcc, 0x91, 0xf2, 0x40, 0xf9, 0x1, 0x21, 0x10, 0xae, 0x76, 0x85}}
 	return a, nil
 }
 
@@ -320,6 +320,7 @@ spec:
       serviceAccountName: {{ .Name }}-fetcher
       containers:
         - args:
+            - --log-level=DEBUG
             - --config=/conf/collector.yaml
           image: otel/opentelemetry-collector:0.18.0
           imagePullPolicy: IfNotPresent
@@ -348,7 +349,7 @@ func fetcherTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "fetcher/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x25, 0xd0, 0x89, 0xa3, 0xe4, 0x97, 0x17, 0x3b, 0xa3, 0x4e, 0x11, 0x9c, 0x5b, 0x40, 0xbb, 0xee, 0x2, 0xec, 0x7c, 0x1e, 0xd7, 0x1a, 0xa1, 0x7f, 0x22, 0xbc, 0x5b, 0x32, 0xd4, 0x9b, 0xa6, 0xcd}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x5d, 0xe2, 0x26, 0x9b, 0x90, 0xa9, 0x58, 0x5b, 0xce, 0xda, 0x61, 0x85, 0x4c, 0x9a, 0xfc, 0x29, 0xab, 0x6f, 0xd6, 0x48, 0x92, 0x24, 0xa5, 0x5a, 0xc6, 0xf6, 0xe, 0x54, 0xe5, 0xaf, 0xca, 0x3a}}
 	return a, nil
 }
 
@@ -614,8 +615,6 @@ var _oapserverTemplatesIngressYaml = []byte(`# Licensed to Apache Software Found
  
 {{- $ingress := .Spec.Service.Ingress }}
 {{ if $ingress.Host }}
-{{- $svc := .Spec.Service.Template }}
-{{- $port := index $svc.Ports 0 }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -637,8 +636,8 @@ spec:
         paths:
           - path: /*
             backend:
-              serviceName: {{ .Name }}-ui
-              servicePort: {{ $port.Port }}
+              serviceName: {{ .Name }}-oap
+              servicePort: 12800
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}
@@ -660,7 +659,7 @@ func oapserverTemplatesIngressYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xfe, 0x7d, 0x12, 0xac, 0x6b, 0xc4, 0xe6, 0x2e, 0x3d, 0xd, 0xa, 0xaa, 0x10, 0xac, 0x76, 0xe9, 0x71, 0x61, 0x74, 0xbc, 0x24, 0xaf, 0xe9, 0x75, 0x98, 0xc2, 0x8e, 0x42, 0x2d, 0x48, 0xff, 0x68}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x9a, 0x2, 0xeb, 0x33, 0x6f, 0x15, 0x7c, 0x82, 0x23, 0x94, 0xe1, 0x20, 0x4f, 0x3, 0xd7, 0x23, 0xc6, 0xd0, 0x3a, 0xc6, 0x44, 0x3a, 0xc0, 0x8f, 0xeb, 0x47, 0x57, 0x9a, 0x2d, 0x49, 0xea, 0x5a}}
 	return a, nil
 }
 
@@ -693,7 +692,7 @@ metadata:
     operator.skywalking.apache.org/application: oapserver
     operator.skywalking.apache.org/component: service
 spec:
-  type: ClusterIP
+  type: {{ $svc.Type }}
   ports:
   - port: 12800
     name: rest
@@ -701,21 +700,21 @@ spec:
     name: grpc
   - port: 1234
     name: http-monitoring
-  {{ - if $svc.ExternalIPs }}
+  {{- if $svc.ExternalIPs }}
   externalIPs:
-    {{ - range $value := $svc.ExternalIPs }}
+    {{- range $value := $svc.ExternalIPs }}
     - {{ $value | quote }}
-    {{ - end }}
-  {{ - end }}
-  {{ - if $svc.LoadBalancerIP }}
+    {{- end }}
+  {{- end }}
+  {{- if $svc.LoadBalancerIP }}
   loadBalancerIP: {{ $svc.LoadBalancerIP }}
-  {{ - end }}
-  {{ - if $svc.LoadBalancerSourceRanges }}
+  {{- end }}
+  {{- if $svc.LoadBalancerSourceRanges }}
   loadBalancerSourceRanges:
-    {{ - range $value := $svc.LoadBalancerSourceRanges }}
+    {{- range $value := $svc.LoadBalancerSourceRanges }}
     - {{ $value | quote }}
-    {{ - end }}
-  {{ - end }}
+    {{- end }}
+  {{- end }}
   selector:
     app: oap
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}
@@ -733,7 +732,7 @@ func oapserverTemplatesServiceYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x2b, 0x49, 0xb9, 0x33, 0x3f, 0xd5, 0x38, 0x2a, 0x24, 0xe2, 0xb, 0x69, 0xb8, 0xff, 0x44, 0xb0, 0xe2, 0x70, 0x70, 0xc1, 0xab, 0x36, 0x3a, 0x81, 0x1f, 0xc4, 0x72, 0x19, 0xdf, 0xe7, 0xea, 0x32}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x3a, 0x76, 0x46, 0xaa, 0x13, 0x1b, 0x93, 0x29, 0x97, 0xcd, 0xa3, 0x61, 0xf2, 0x8f, 0x2d, 0xf, 0xcd, 0x88, 0xf6, 0xd, 0x32, 0xae, 0x16, 0x3e, 0x55, 0x33, 0x43, 0xe9, 0x16, 0xd0, 0xe2, 0xe0}}
 	return a, nil
 }
 
@@ -887,8 +886,6 @@ var _uiTemplatesIngressYaml = []byte(`# Licensed to Apache Software Foundation (
  
 {{- $ingress := .Spec.Service.Ingress }}
 {{ if $ingress.Host }}
-{{- $svc := .Spec.Service.Template }}
-{{- $port := index $svc.Ports 0 }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -911,7 +908,7 @@ spec:
           - path: /*
             backend:
               serviceName: {{ .Name }}-ui
-              servicePort: {{ $port.Port }}
+              servicePort: 8080
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}
@@ -933,7 +930,7 @@ func uiTemplatesIngressYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xfe, 0x7d, 0x12, 0xac, 0x6b, 0xc4, 0xe6, 0x2e, 0x3d, 0xd, 0xa, 0xaa, 0x10, 0xac, 0x76, 0xe9, 0x71, 0x61, 0x74, 0xbc, 0x24, 0xaf, 0xe9, 0x75, 0x98, 0xc2, 0x8e, 0x42, 0x2d, 0x48, 0xff, 0x68}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x52, 0x3a, 0x76, 0x29, 0xda, 0xe9, 0xc, 0x8a, 0x45, 0x9d, 0xb1, 0xdc, 0x64, 0xab, 0xf, 0x90, 0x78, 0x9a, 0x1b, 0xee, 0x93, 0x65, 0x9e, 0xcd, 0x2a, 0xeb, 0x6c, 0x95, 0xb8, 0x7b, 0x20, 0xbe}}
 	return a, nil
 }
 
@@ -985,7 +982,8 @@ spec:
   {{- end }}
   selector:
     app: ui
-    operator.skywalking.apache.org/oap-server-name: {{ .Name }}`)
+    operator.skywalking.apache.org/ui-name: {{ .Name }}
+`)
 
 func uiTemplatesServiceYamlBytes() ([]byte, error) {
 	return _uiTemplatesServiceYaml, nil
@@ -998,7 +996,7 @@ func uiTemplatesServiceYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x19, 0x1e, 0x76, 0x7c, 0x5b, 0xbe, 0xe3, 0x12, 0xf7, 0x6f, 0xe9, 0xd5, 0x99, 0xba, 0x6f, 0xe6, 0xe6, 0xc4, 0xff, 0x77, 0x10, 0x27, 0x59, 0xd6, 0x9, 0xcd, 0x71, 0x2e, 0x17, 0xe6, 0x8c, 0x8b}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe1, 0xf5, 0xd3, 0xc1, 0x2f, 0xdd, 0x42, 0x6c, 0x1e, 0x1, 0xae, 0x2a, 0x33, 0x68, 0x5, 0x92, 0xfd, 0xa1, 0x22, 0x9b, 0x5e, 0x22, 0x30, 0x98, 0x9a, 0x2b, 0xae, 0xe0, 0x5f, 0xa6, 0xff, 0x13}}
 	return a, nil
 }
 

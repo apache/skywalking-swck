@@ -42,6 +42,7 @@ spec:
       serviceAccountName: {{ .Name }}-fetcher
       containers:
         - args:
+            - --log-level=DEBUG
             - --config=/conf/collector.yaml
           image: otel/opentelemetry-collector:0.18.0
           imagePullPolicy: IfNotPresent

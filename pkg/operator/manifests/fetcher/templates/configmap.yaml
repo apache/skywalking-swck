@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+{{ $types := .Spec.GetType }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,7 +26,7 @@ metadata:
     operator.skywalking.apache.org/application: fetcher
     operator.skywalking.apache.org/component: configmap
 data:
-  collector.yaml: |
+  collector.yaml: |-
     service:
       extensions: [zpages, health_check]
       pipelines:
@@ -44,7 +45,7 @@ data:
         endpoint: {{ .Spec.OAPServerAddress | quote }}
         insecure: true
     receivers:
-      {{- if has "prometheus" .Spec.Type }}
+      {{- if has "prometheus" $types }}
       prometheus:
         config:
           global:
@@ -57,7 +58,7 @@ data:
             relabel_configs:
             - source_labels: []
               target_label: cluster
-              replacement: {{ .Spec.ClusterName | quote }} 
+              replacement: {{ .Spec.ClusterName | quote }}
             - action: keep
               regex: true
               source_labels:

@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,14 +44,46 @@ const (
 	FetcherTypePrometheus = "prometheus"
 )
 
+func (f *FetcherSpec) GetType() []string {
+	result := make([]string, len(f.Type))
+	for _, t := range f.Type {
+		result = append(result, string(t))
+	}
+	return result
+}
+
 // FetcherStatus defines the observed state of Fetcher
 type FetcherStatus struct {
 	// Replicas is currently not being set and might be removed in the next version.
 	// +kubebuilder:validation:Optional
 	Replicas int32 `json:"replicas,omitempty"`
+	// Represents the latest available observations of a fetcher's current state.
+	// +kubebuilder:validation:Optional
+	Conditions []FetcherCondition `json:"conditions,omitempty"`
+}
+
+type FetcherConditionType string
+
+var (
+	FetcherConditionTypeRead FetcherConditionType = "Ready"
+)
+
+// DeploymentCondition describes the state of a deployment at a certain point.
+type FetcherCondition struct {
+	// Type of deployment condition.
+	Type FetcherConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Fetcher is the Schema for the fetchers API
 type Fetcher struct {

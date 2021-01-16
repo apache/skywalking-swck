@@ -17,8 +17,6 @@
  
 {{- $ingress := .Spec.Service.Ingress }}
 {{ if $ingress.Host }}
-{{- $svc := .Spec.Service.Template }}
-{{- $port := index $svc.Ports 0 }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -41,7 +39,7 @@ spec:
           - path: /*
             backend:
               serviceName: {{ .Name }}-ui
-              servicePort: {{ $port.Port }}
+              servicePort: 8080
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}

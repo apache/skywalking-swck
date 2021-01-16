@@ -28,6 +28,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8sreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -48,6 +49,7 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 		Log:      logger,
 		Scheme:   testScheme,
 		FileRepo: fileRepo,
+		Recorder: record.NewFakeRecorder(100),
 	}
 	created := &v1alpha1.OAPServer{
 		TypeMeta: metav1.TypeMeta{

@@ -46,4 +46,4 @@ spec:
   {{- end }}
   selector:
     app: ui
-    operator.skywalking.apache.org/oap-server-name: {{ .Name }}
+    operator.skywalking.apache.org/ui-name: {{ .Name }}

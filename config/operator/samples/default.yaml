@@ -23,6 +23,9 @@ spec:
   version: 8.3.0
   instances: 1
   image: apache/skywalking-oap-server:8.3.0-es6
+  service:
+    template:
+      type: ClusterIP
   
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
@@ -35,9 +38,6 @@ spec:
   image: apache/skywalking-ui:8.3.0
   OAPServerAddress: default-oap:12800
   service:
-    serviceSpec:
+    template:
       type: ClusterIP
-      ports:
-        - port: 80
-          targetPort: 8080
  

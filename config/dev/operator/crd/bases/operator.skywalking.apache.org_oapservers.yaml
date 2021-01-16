@@ -1,0 +1,348 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: oapservers.operator.skywalking.apache.org
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.version
+    description: The version
+    name: Version
+    priority: 1
+    type: string
+  - JSONPath: .spec.instances
+    description: The number of expected instance
+    name: Instances
+    type: string
+  - JSONPath: .status.availableReplicas
+    description: The number of running
+    name: Running
+    type: string
+  - JSONPath: .status.address
+    description: The address of OAP server
+    name: Address
+    type: string
+  - JSONPath: .spec.image
+    name: Image
+    priority: 1
+    type: string
+  group: operator.skywalking.apache.org
+  names:
+    kind: OAPServer
+    listKind: OAPServerList
+    plural: oapservers
+    singular: oapserver
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: OAPServer is the Schema for the oapservers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: OAPServerSpec defines the desired state of OAPServer
+          properties:
+            config:
+              description: Config holds the OAP server configuration.
+              items:
+                description: EnvVar represents an environment variable present in
+                  a Container.
+                properties:
+                  name:
+                    description: Name of the environment variable. Must be a C_IDENTIFIER.
+                    type: string
+                  value:
+                    description: 'Variable references $(VAR_NAME) are expanded using
+                      the previous defined environment variables in the container
+                      and any service environment variables. If a variable cannot
+                      be resolved, the reference in the input string will be unchanged.
+                      The $(VAR_NAME) syntax can be escaped with a double $$, ie:
+                      $$(VAR_NAME). Escaped references will never be expanded, regardless
+                      of whether the variable exists or not. Defaults to "".'
+                    type: string
+                  valueFrom:
+                    description: Source for the environment variable's value. Cannot
+                      be used if value is not empty.
+                    properties:
+                      configMapKeyRef:
+                        description: Selects a key of a ConfigMap.
+                        properties:
+                          key:
+                            description: The key to select.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                          optional:
+                            description: Specify whether the ConfigMap or its key
+                              must be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                      fieldRef:
+                        description: 'Selects a field of the pod: supports metadata.name,
+                          metadata.namespace, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`,
+                          spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP,
+                          status.podIPs.'
+                        properties:
+                          apiVersion:
+                            description: Version of the schema the FieldPath is written
+                              in terms of, defaults to "v1".
+                            type: string
+                          fieldPath:
+                            description: Path of the field to select in the specified
+                              API version.
+                            type: string
+                        required:
+                        - fieldPath
+                        type: object
+                      resourceFieldRef:
+                        description: 'Selects a resource of the container: only resources
+                          limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage,
+                          requests.cpu, requests.memory and requests.ephemeral-storage)
+                          are currently supported.'
+                        properties:
+                          containerName:
+                            description: 'Container name: required for volumes, optional
+                              for env vars'
+                            type: string
+                          divisor:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Specifies the output format of the exposed
+                              resources, defaults to "1"
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          resource:
+                            description: 'Required: resource to select'
+                            type: string
+                        required:
+                        - resource
+                        type: object
+                      secretKeyRef:
+                        description: Selects a key of a secret in the pod's namespace
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                    type: object
+                required:
+                - name
+                type: object
+              type: array
+            image:
+              description: Image is the OAP Server Docker image to deploy.
+              type: string
+            instances:
+              description: Count is the number of OAP servers
+              format: int32
+              type: integer
+            service:
+              description: Service relevant settings
+              properties:
+                ingress:
+                  description: Ingress defines the behavior of an ingress
+                  properties:
+                    annotations:
+                      additionalProperties:
+                        type: string
+                      description: Annotations is an unstructured key value map stored
+                        with a resource that may be set by external tools to store
+                        and retrieve arbitrary metadata. They are not queryable and
+                        should be preserved when modifying objects.
+                      type: object
+                    host:
+                      description: Host is the fully qualified domain name of a network
+                        host, as defined by RFC 3986. Note the following deviations
+                        from the "host" part of the URI as defined in RFC 3986
+                      type: string
+                    ingressClassName:
+                      description: IngressClassName is the name of the IngressClass
+                        cluster resource. The associated IngressClass defines which
+                        controller will implement the resource. This replaces the
+                        deprecated `kubernetes.io/ingress.class` annotation. For backwards
+                        compatibility, when that annotation is set, it must be given
+                        precedence over this field. The controller may emit a warning
+                        if the field and annotation have different values. Implementations
+                        of this API should ignore Ingresses without a class specified.
+                        An IngressClass resource may be marked as default, which can
+                        be used to set a default value for this field. For more information,
+                        refer to the IngressClass documentation.
+                      type: string
+                    tls:
+                      description: TLS configuration. Currently the Ingress only supports
+                        a single TLS port, 443. If multiple members of this list specify
+                        different hosts, they will be multiplexed on the same port
+                        according to the hostname specified through the SNI TLS extension,
+                        if the ingress controller fulfilling the ingress supports
+                        SNI.
+                      items:
+                        description: IngressTLS describes the transport layer security
+                          associated with an Ingress.
+                        properties:
+                          hosts:
+                            description: Hosts are a list of hosts included in the
+                              TLS certificate. The values in this list must match
+                              the name/s used in the tlsSecret. Defaults to the wildcard
+                              host setting for the loadbalancer controller fulfilling
+                              this Ingress, if left unspecified.
+                            items:
+                              type: string
+                            type: array
+                            x-kubernetes-list-type: atomic
+                          secretName:
+                            description: SecretName is the name of the secret used
+                              to terminate TLS traffic on port 443. Field is left
+                              optional to allow TLS routing based on SNI hostname
+                              alone. If the SNI host in a listener conflicts with
+                              the "Host" header field used by an IngressRule, the
+                              SNI host is used for termination and value of the Host
+                              header is used for routing.
+                            type: string
+                        type: object
+                      type: array
+                  type: object
+                template:
+                  description: ServiceTemplate defines the behavior of a service.
+                  properties:
+                    clusterIP:
+                      description: clusterIP is the IP address of the service and
+                        is usually assigned randomly.
+                      type: string
+                    externalIPs:
+                      description: externalIPs is a list of IP addresses for which
+                        nodes in the cluster will also accept traffic for this service.
+                      items:
+                        type: string
+                      type: array
+                    loadBalancerIP:
+                      description: 'Only applies to Service Type: LoadBalancer LoadBalancer
+                        will get created with the IP specified in this field.'
+                      type: string
+                    loadBalancerSourceRanges:
+                      description: If specified and supported by the platform, this
+                        will restrict traffic through the cloud-provider load-balancer
+                        will be restricted to the specified client IPs.
+                      items:
+                        type: string
+                      type: array
+                    type:
+                      description: type determines how the Service is exposed.
+                      type: string
+                  type: object
+              type: object
+            version:
+              description: Version of OAP.
+              type: string
+          required:
+          - instances
+          - version
+          type: object
+        status:
+          description: OAPServerStatus defines the observed state of OAPServer
+          properties:
+            address:
+              description: Address indicates the entry of OAP server which ingresses
+                data
+              type: string
+            availableReplicas:
+              description: Total number of available pods (ready for at least minReadySeconds)
+                targeted by this deployment.
+              format: int32
+              type: integer
+            conditions:
+              description: Represents the latest available observations of the underlying
+                deployment's current state.
+              items:
+                description: DeploymentCondition describes the state of a deployment
+                  at a certain point.
+                properties:
+                  lastTransitionTime:
+                    description: Last time the condition transitioned from one status
+                      to another.
+                    format: date-time
+                    type: string
+                  lastUpdateTime:
+                    description: The last time this condition was updated.
+                    format: date-time
+                    type: string
+                  message:
+                    description: A human readable message indicating details about
+                      the transition.
+                    type: string
+                  reason:
+                    description: The reason for the condition's last transition.
+                    type: string
+                  status:
+                    description: Status of the condition, one of True, False, Unknown.
+                    type: string
+                  type:
+                    description: Type of deployment condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+

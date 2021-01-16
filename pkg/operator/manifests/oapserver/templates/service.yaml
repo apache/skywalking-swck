@@ -27,7 +27,7 @@ metadata:
     operator.skywalking.apache.org/application: oapserver
     operator.skywalking.apache.org/component: service
 spec:
-  type: ClusterIP
+  type: {{ $svc.Type }}
   ports:
   - port: 12800
     name: rest
@@ -35,21 +35,21 @@ spec:
     name: grpc
   - port: 1234
     name: http-monitoring
-  {{ - if $svc.ExternalIPs }}
+  {{- if $svc.ExternalIPs }}
   externalIPs:
-    {{ - range $value := $svc.ExternalIPs }}
+    {{- range $value := $svc.ExternalIPs }}
     - {{ $value | quote }}
-    {{ - end }}
-  {{ - end }}
-  {{ - if $svc.LoadBalancerIP }}
+    {{- end }}
+  {{- end }}
+  {{- if $svc.LoadBalancerIP }}
   loadBalancerIP: {{ $svc.LoadBalancerIP }}
-  {{ - end }}
-  {{ - if $svc.LoadBalancerSourceRanges }}
+  {{- end }}
+  {{- if $svc.LoadBalancerSourceRanges }}
   loadBalancerSourceRanges:
-    {{ - range $value := $svc.LoadBalancerSourceRanges }}
+    {{- range $value := $svc.LoadBalancerSourceRanges }}
     - {{ $value | quote }}
-    {{ - end }}
-  {{ - end }}
+    {{- end }}
+  {{- end }}
   selector:
     app: oap
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}

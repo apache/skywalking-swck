@@ -36,6 +36,12 @@ curl https://raw.githubusercontent.com/apache/skywalking-swck/master/config/oper
 kubectl get oapserver
 ```
 
+2. Check the UI server in Kubernetes:
+
+```sh
+kubectl get ui
+```
+
 ## Troubleshooting
 
 If you encounter any issue, you can check the log of the controller by pulling it from Kubernetes:

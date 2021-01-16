@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 	l "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -57,14 +58,16 @@ func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log 
 		changed, err := a.Apply(ctx, f, sl)
 		if err != nil {
 			l.Error(err, "failed to apply resource")
-			a.Recorder.Eventf(a.CR, "ApplyError", "failed to apply resource", "encountered err: %v", err)
+			a.Recorder.Eventf(a.CR, v1.EventTypeWarning, "failed to apply resource", "encountered err: %v", err)
 			return err
 		}
 		if changed {
 			changedFf = append(changedFf, f)
 		}
 	}
-	a.Recorder.Eventf(a.CR, "CreatedOrUpdated", "resources are created or updated", "resources: %v", changedFf)
+	if len(changedFf) > 0 {
+		a.Recorder.Eventf(a.CR, v1.EventTypeNormal, "resources are created or updated", "resources: %v", changedFf)
+	}
 	return nil
 }
 
