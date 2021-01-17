@@ -40,4 +40,6 @@ spec:
   service:
     template:
       type: ClusterIP
- 
+    ingress:
+      host: demo.ui.skywalking
+    

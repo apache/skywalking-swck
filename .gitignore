@@ -25,6 +25,7 @@ apiserver.local*
 *.swp
 *.swo
 *~
+.vscode
 
 .DS_Store
 .env
