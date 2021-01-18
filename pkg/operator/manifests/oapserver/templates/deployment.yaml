@@ -41,6 +41,16 @@ spec:
         operator.skywalking.apache.org/component: pod
     spec:
       serviceAccountName: {{ .Name }}-oap
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: oap
+                  operator.skywalking.apache.org/oap-server-name: {{ .Name }}
       containers:
       - name: oap
         image: {{ .Spec.Image }}
@@ -75,6 +85,16 @@ spec:
         env:
         - name: JAVA_OPTS
           value: -Xmx2048M
+        - name: SW_CLUSTER
+          value: kubernetes
+        - name: SW_CLUSTER_K8S_NAMESPACE
+          value: "{{ .Namespace }}"
+        - name: SW_CLUSTER_K8S_LABEL
+          value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
+        - name: SKYWALKING_COLLECTOR_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
         - name: SW_TELEMETRY
           value: prometheus
         - name: SW_HEALTH_CHECKER

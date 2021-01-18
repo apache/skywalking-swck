@@ -23,11 +23,11 @@
 // fetcher/templates/service_account.yaml (1.088kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
-// oapserver/templates/deployment.yaml (2.688kB)
+// oapserver/templates/deployment.yaml (3.429kB)
 // oapserver/templates/ingress.yaml (1.672kB)
 // oapserver/templates/service.yaml (1.782kB)
 // oapserver/templates/service_account.yaml (1.09kB)
-// ui/templates/deployment.yaml (2.235kB)
+// ui/templates/deployment.yaml (2.604kB)
 // ui/templates/ingress.yaml (1.668kB)
 // ui/templates/service.yaml (1.681kB)
 
@@ -536,6 +536,16 @@ spec:
         operator.skywalking.apache.org/component: pod
     spec:
       serviceAccountName: {{ .Name }}-oap
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: oap
+                  operator.skywalking.apache.org/oap-server-name: {{ .Name }}
       containers:
       - name: oap
         image: {{ .Spec.Image }}
@@ -570,6 +580,16 @@ spec:
         env:
         - name: JAVA_OPTS
           value: -Xmx2048M
+        - name: SW_CLUSTER
+          value: kubernetes
+        - name: SW_CLUSTER_K8S_NAMESPACE
+          value: "{{ .Namespace }}"
+        - name: SW_CLUSTER_K8S_LABEL
+          value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
+        - name: SKYWALKING_COLLECTOR_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
         - name: SW_TELEMETRY
           value: prometheus
         - name: SW_HEALTH_CHECKER
@@ -592,7 +612,7 @@ func oapserverTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x75, 0x71, 0x76, 0x3a, 0x7c, 0x33, 0x6d, 0x3d, 0xa0, 0xb2, 0x49, 0x25, 0x16, 0x8b, 0x93, 0xc9, 0x4, 0x32, 0xf, 0x5e, 0xb5, 0x7d, 0x65, 0x41, 0xec, 0x25, 0xa7, 0xf8, 0x15, 0xfe, 0xcb, 0x81}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x21, 0x12, 0x5f, 0xe9, 0xad, 0xb3, 0xfa, 0xcb, 0x81, 0xcb, 0x77, 0x13, 0x31, 0x9c, 0xde, 0x1e, 0x64, 0x27, 0x1b, 0xde, 0xa4, 0x1c, 0xd5, 0x78, 0x92, 0x5b, 0x6e, 0xe6, 0x56, 0x16, 0xf1, 0xbb}}
 	return a, nil
 }
 
@@ -822,6 +842,16 @@ spec:
         operator.skywalking.apache.org/application: ui
         operator.skywalking.apache.org/component: deployment
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: ui
+                    operator.skywalking.apache.org/ui-name: {{ .Name }}
       containers:
       - name: ui
         image: {{ .Spec.Image }}
@@ -863,7 +893,7 @@ func uiTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x69, 0xdf, 0x8d, 0x6a, 0xbf, 0x74, 0x8f, 0xc4, 0xd1, 0x15, 0x6c, 0x96, 0x23, 0x71, 0x53, 0x46, 0xfa, 0xe6, 0x35, 0xec, 0x23, 0x23, 0xce, 0x87, 0xfd, 0xbb, 0xb4, 0xc, 0x7e, 0x3a, 0xb9, 0x14}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x19, 0x7d, 0xe7, 0x88, 0xad, 0x5b, 0x81, 0x96, 0xe0, 0xbd, 0x6c, 0xfe, 0x62, 0x8, 0x9f, 0x7b, 0xca, 0x2, 0x25, 0x75, 0x8c, 0x4, 0xee, 0xd4, 0xb9, 0xbf, 0xee, 0x8f, 0x2d, 0xa8, 0x5d, 0xb9}}
 	return a, nil
 }
 
