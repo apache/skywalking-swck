@@ -27,65 +27,53 @@ import (
 )
 
 // log is for logging in this package.
-var uilog = logf.Log.WithName("ui-resource")
+var fetcherlog = logf.Log.WithName("fetcher-resource")
 
-func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *Fetcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
 }
 
 // nolint: lll
-// +kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-ui,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,verbs=create;update,versions=v1alpha1,name=mui.kb.io
+// +kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,verbs=create;update,versions=v1alpha1,name=mfetcher.kb.io
 
-var _ webhook.Defaulter = &UI{}
+var _ webhook.Defaulter = &Fetcher{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *UI) Default() {
-	uilog.Info("default", "name", r.Name)
-
-	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-ui:%s", r.Spec.Version)
-	}
-
-	r.Spec.Service.Template.Default()
-	if r.Spec.OAPServerAddress == "" {
-		r.Spec.OAPServerAddress = fmt.Sprintf("%s-oap.%s:12800", r.Name, r.Namespace)
+func (r *Fetcher) Default() {
+	fetcherlog.Info("default", "name", r.Name)
+	if r.Spec.ClusterName == "" {
+		r.Spec.ClusterName = r.Name
 	}
 }
 
 // nolint: lll
-// +kubebuilder:webhook:verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-ui,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,versions=v1alpha1,name=vui.kb.io
+// +kubebuilder:webhook:verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,versions=v1alpha1,name=vfetcher.kb.io
 
-var _ webhook.Validator = &UI{}
+var _ webhook.Validator = &Fetcher{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateCreate() error {
-	uilog.Info("validate create", "name", r.Name)
+func (r *Fetcher) ValidateCreate() error {
+	fetcherlog.Info("validate create", "name", r.Name)
 	return r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateUpdate(old runtime.Object) error {
-	uilog.Info("validate update", "name", r.Name)
+func (r *Fetcher) ValidateUpdate(old runtime.Object) error {
+	fetcherlog.Info("validate update", "name", r.Name)
 	return r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateDelete() error {
-	uilog.Info("validate delete", "name", r.Name)
+func (r *Fetcher) ValidateDelete() error {
+	fetcherlog.Info("validate delete", "name", r.Name)
 	return nil
 }
 
-func (r *UI) validate() error {
-	if r.Spec.Image == "" {
-		return fmt.Errorf("image is absent")
-	}
-	if err := r.Spec.Service.Template.Validate(); err != nil {
-		return fmt.Errorf("service template is invalid: %w", err)
-	}
-	if r.Spec.OAPServerAddress == "" {
-		return fmt.Errorf("oap server address is absent")
+func (r *Fetcher) validate() error {
+	if r.Spec.ClusterName == "" {
+		return fmt.Errorf("cluster name is absent")
 	}
 	return nil
 }

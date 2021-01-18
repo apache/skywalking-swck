@@ -25,12 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8sreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/apache/skywalking-swck/apis/operator/v1alpha1"
@@ -38,31 +36,28 @@ import (
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 )
 
-var logger = logf.Log.WithName("unit-tests")
-var fileRepo = repo.NewRepo("oapserver")
-
-func TestNewObjectsOnReconciliation(t *testing.T) {
+func TestFetcherNewObjectsOnReconciliation(t *testing.T) {
 	// prepare
 	nsn := types.NamespacedName{Name: "my-instance", Namespace: "default"}
-	reconciler := controllers.OAPServerReconciler{
+	reconciler := controllers.FetcherReconciler{
 		Client:   k8sClient,
 		Log:      logger,
 		Scheme:   testScheme,
-		FileRepo: fileRepo,
+		FileRepo: repo.NewRepo("fetcher"),
 		Recorder: record.NewFakeRecorder(100),
 	}
-	created := &v1alpha1.OAPServer{
+	created := &v1alpha1.Fetcher{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OAPServer",
+			Kind:       "Fetcher",
 			APIVersion: v1alpha1.GroupVersion.Version,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nsn.Name,
 			Namespace: nsn.Namespace,
 		},
-		Spec: v1alpha1.OAPServerSpec{
-			Version:   "8.1.0",
-			Instances: 1,
+		Spec: v1alpha1.FetcherSpec{
+			Type:             []v1alpha1.FetcherType{v1alpha1.FetcherTypePrometheus},
+			OAPServerAddress: "oap.skywalking:12800",
 		},
 	}
 	created.Default()
@@ -82,21 +77,15 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 	opts := []client.ListOption{
 		client.InNamespace(nsn.Namespace),
 		client.MatchingLabels(map[string]string{
-			"operator.skywalking.apache.org/oap-server-name": nsn.Name,
-			"operator.skywalking.apache.org/application":     "oapserver",
+			"operator.skywalking.apache.org/fetcher-name": nsn.Name,
+			"operator.skywalking.apache.org/application":  "fetcher",
 		}),
 	}
 
 	// verify that we have at least one object for each of the types we create
 	// whether we have the right ones is up to the specific tests for each type
 	{
-		list := &corev1.ServiceAccountList{}
-		err = k8sClient.List(context.Background(), list, opts...)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, list.Items)
-	}
-	{
-		list := &corev1.ServiceList{}
+		list := &corev1.ConfigMapList{}
 		err = k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
@@ -104,26 +93,6 @@ func TestNewObjectsOnReconciliation(t *testing.T) {
 	{
 		list := &appsv1.DeploymentList{}
 		err = k8sClient.List(context.Background(), list, opts...)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, list.Items)
-	}
-
-	// the base query for the underlying objects
-	rbacOpts := []client.ListOption{
-		client.MatchingLabels(map[string]string{
-			"operator.skywalking.apache.org/application": "oapserver",
-			"operator.skywalking.apache.org/component":   "rbac",
-		}),
-	}
-	{
-		list := &rbacv1.ClusterRoleBindingList{}
-		err = k8sClient.List(context.Background(), list, rbacOpts...)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, list.Items)
-	}
-	{
-		list := &rbacv1.ClusterRoleList{}
-		err = k8sClient.List(context.Background(), list, rbacOpts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)
 	}

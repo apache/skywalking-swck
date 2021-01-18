@@ -28,6 +28,7 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -44,6 +45,7 @@ func TestUINewObjectsOnReconciliation(t *testing.T) {
 		Log:      logger,
 		Scheme:   testScheme,
 		FileRepo: repo.NewRepo("ui"),
+		Recorder: record.NewFakeRecorder(100),
 	}
 	created := &v1alpha1.UI{
 		TypeMeta: metav1.TypeMeta{
@@ -109,6 +111,7 @@ func TestUIIngressOnReconciliation(t *testing.T) {
 		Log:      logger,
 		Scheme:   testScheme,
 		FileRepo: repo.NewRepo("ui"),
+		Recorder: record.NewFakeRecorder(100),
 	}
 	created := &v1alpha1.UI{
 		TypeMeta: metav1.TypeMeta{

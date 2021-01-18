@@ -15,31 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: OAPServer
+# permissions for end users to view fetchers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: default
-spec:
-  version: 8.3.0
-  instances: 1
-  image: apache/skywalking-oap-server:8.3.0-es6
-  service:
-    template:
-      type: ClusterIP
-  
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
-metadata:
-  name: default
-spec:
-  version: 8.3.0
-  instances: 1
-  image: apache/skywalking-ui:8.3.0
-  OAPServerAddress: default-oap:12800
-  service:
-    template:
-      type: ClusterIP
-    ingress:
-      host: demo.ui.skywalking
-    
+  name: fetcher-viewer-role
+rules:
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - fetchers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - fetchers/status
+  verbs:
+  - get
+

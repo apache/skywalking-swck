@@ -40,6 +40,16 @@ spec:
         operator.skywalking.apache.org/application: ui
         operator.skywalking.apache.org/component: deployment
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: ui
+                    operator.skywalking.apache.org/ui-name: {{ .Name }}
       containers:
       - name: ui
         image: {{ .Spec.Image }}

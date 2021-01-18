@@ -54,23 +54,36 @@ test: generate operator-manifests
 operator: generate
 	go build -o bin/manager cmd/manager/manager.go
 
+# Install dev CRDs into a cluster
+operator-dev-install: operator-manifests operator-dev-uninstall
+	kustomize build config/dev/operator/crd | kubectl apply -f -
+
+# Uninstall dev CRDs from a cluster
+operator-dev-uninstall: operator-manifests operator-undeploy
+
 # Install CRDs into a cluster
 operator-install: operator-manifests
 	kustomize build config/operator/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster
 operator-uninstall: operator-manifests
-	kustomize build config/operator/crd | kubectl delete -f -
+	kustomize build config/operator/crd | kubectl delete --ignore-not-found=true -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 operator-deploy: operator-manifests
-	cd config/operator/manager && kustomize edit set image controller=${OPERATOR_IMG}
-	kustomize build config/operator/default | kubectl apply -f -
+	@echo "Deploy operator"
+	-hack/operator-deploy.sh d
+
+# Undeploy controller in the configured Kubernetes cluster in ~/.kube/config
+operator-undeploy: operator-manifests
+	@echo "Undeploy operator"
+	-hack/operator-deploy.sh u
 
 # Generate manifests e.g. CRD, RBAC etc.
 operator-manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./apis/..." output:crd:artifacts:config=config/operator/crd/bases \
 		output:webhook:artifacts:config=config/operator/webhook \
+		&& $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./apis/..." output:crd:artifacts:config=config/dev/operator/crd/bases \
 		&& $(CONTROLLER_GEN) rbac:roleName=manager-role paths="./controllers/..."  output:rbac:dir=config/operator/rbac \
 		&& go run github.com/apache/skywalking-swck/cmd/build license insert config
  

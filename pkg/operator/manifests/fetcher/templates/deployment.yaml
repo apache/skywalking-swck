@@ -1,0 +1,60 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-fetcher
+  namespace: {{ .Namespace }}
+  labels:
+    app: fetcher
+    operator.skywalking.apache.org/fetcher-name: {{ .Name }}
+    operator.skywalking.apache.org/application: fetcher
+    operator.skywalking.apache.org/component: deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fetcher
+      operator.skywalking.apache.org/fetcher-name: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: fetcher
+        operator.skywalking.apache.org/fetcher-name: {{ .Name }}
+        operator.skywalking.apache.org/application: fetcher
+        operator.skywalking.apache.org/component: pod
+    spec:
+      serviceAccountName: {{ .Name }}-fetcher
+      containers:
+        - args:
+            - --log-level=DEBUG
+            - --config=/conf/collector.yaml
+          image: otel/opentelemetry-collector:0.18.0
+          imagePullPolicy: IfNotPresent
+          name: otc-container
+          volumeMounts:
+            - mountPath: /conf
+              name: otc-internal
+      volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: collector.yaml
+                path: collector.yaml
+            name: {{ .Name }}-fetcher
+          name: otc-internal

@@ -38,8 +38,8 @@ spec:
         paths:
           - path: /*
             backend:
-              serviceName: {{ .Name }}-ui
-              servicePort: 80
+              serviceName: {{ .Name }}-oap
+              servicePort: 12800
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}

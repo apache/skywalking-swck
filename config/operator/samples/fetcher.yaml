@@ -16,6 +16,16 @@
 # under the License.
 
 apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: Fetcher
+metadata:
+  name: istio-prod-cluster
+spec:
+  type: ["prometheus"]
+  OAPServerAddress: "default-oap:11800"
+  clusterName: "istio-prod-cluster"
+
+---
+apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: OAPServer
 metadata:
   name: default
@@ -23,13 +33,16 @@ spec:
   version: 8.3.0
   instances: 1
   image: apache/skywalking-oap-server:8.3.0-es6
+  config:
+    - name: SW_OTEL_RECEIVER
+      value: default
   service:
     template:
       type: ClusterIP
-  
+
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
+kind: UI
 metadata:
   name: default
 spec:
@@ -42,4 +55,3 @@ spec:
       type: ClusterIP
     ingress:
       host: demo.ui.skywalking
-    

@@ -100,7 +100,7 @@ func stripCharacters(bb []byte) []byte {
 	return []byte(s)
 }
 
-const commentChars = "#;"
+const commentChars = "#"
 
 func stripComment(source string) string {
 	sc := bufio.NewScanner(strings.NewReader(source))

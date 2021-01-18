@@ -20,6 +20,7 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 ## Operator
 
+ * To install the operator in an existing cluster, make sure you have [`cert-manager` installed](https://cert-manager.io/docs/installation/)
  * Apply the manifests for the Controller and CRDs in release/config:
  
  ```
@@ -27,6 +28,13 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
  ```
 
 For more details, please refer to [deploy operator](docs/operator.md)
+
+### Examples of the Operator
+
+There are some instant examples to represent the functions or features of the Operator.
+
+ - [Deploy OAP server and UI with default settings](./docs/examples/default-backend.md)
+ - [Fetch metrics from the Istio control plane(istiod)](./docs/examples/istio-controlplane.md)
 
 ## Custom Metrics Adapter
   

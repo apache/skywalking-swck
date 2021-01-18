@@ -35,6 +35,9 @@ type OAPServerSpec struct {
 	Instances int32 `json:"instances"`
 	// Config holds the OAP server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
+	// Service relevant settings
+	// +kubebuilder:validation:Optional
+	Service Service `json:"service,omitempty"`
 }
 
 // OAPServerStatus defines the observed state of OAPServer
