@@ -1,4 +1,4 @@
-# Apache SkyWalking Clould on Kubernetes release guide
+# Apache SkyWalking Cloud on Kubernetes release guide
 
 This documentation guides the release manager to release the SkyWalking Cloud on Kubernetes in the Apache Way, and also helps people to check the release for vote.
 
