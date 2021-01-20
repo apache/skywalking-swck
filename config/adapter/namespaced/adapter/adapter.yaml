@@ -42,7 +42,7 @@ spec:
         - name: adapter
           image: metrics-adapter:latest
           imagePullPolicy: IfNotPresent
-          command: ["/bin/adapter-amd64"]
+          command: ["/adapter"]
           args:
             - --secure-port=6443
             - --logtostderr=true

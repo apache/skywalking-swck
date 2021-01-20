@@ -194,9 +194,12 @@ update-templates: $(GO_BINDATA)
 release-operator: generate
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 cmd/manager/manager.go
 
+release-adapter: generate
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/adapter-linux-amd64 cmd/adapter/adapter.go
+
 RELEASE_SCRIPTS := ./build/package/release.sh
 
-release-binary: release-operator
+release-binary: release-operator release-adapter
 	${RELEASE_SCRIPTS} -b
 	
 release-source:
