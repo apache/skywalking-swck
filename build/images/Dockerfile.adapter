@@ -34,8 +34,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o adapter 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
-WORKDIR /tmp
-COPY --from=builder --chown=nonroot:nonroot /workspace/adapter /bin/adapter-amd64
+WORKDIR /
+COPY --from=builder --chown=nonroot:nonroot /workspace/adapter .
 USER nonroot:nonroot
 
-ENTRYPOINT ["/bin/adapter-amd64"]
+ENTRYPOINT ["/adapter"]

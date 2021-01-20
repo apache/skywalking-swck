@@ -33,11 +33,14 @@ binary(){
     cp -Rfv ${ROOTDIR}/README.md ${bindir}
     cp -Rfv ${ROOTDIR}/dist/* ${bindir}
     # Generates CRDs and deployment manifests
-    kustomize build config/crd > ${bindir}/config/crds.yaml
-    pushd ${ROOTDIR}/config/manager
+    pushd ${ROOTDIR}/config/operator/manager
     kustomize edit set image controller=apache/skywalking-swck:${RELEASE_TAG}
     popd
-    kustomize build config/default > ${bindir}/config/deploy.yaml
+    kustomize build config/operator/default > ${bindir}/config/operator-bundle.yaml
+    pushd ${ROOTDIR}/config/adapter/namespaced/adapter
+    kustomize edit set image metrics-adapter=apache/skywalking-swck:${RELEASE_TAG}
+    popd
+    kustomize build config/adapter > ${bindir}/config/adapter-bundle.yaml
     # Package
     tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_TAG}-bin.tgz -C ${bindir} .
     rm -rf ${bindir}
