@@ -18,8 +18,11 @@
 package provider
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,10 +39,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	apischema "k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/klog/v2"
 	"k8s.io/metrics/pkg/apis/external_metrics"
 )
+
+const labelValueTypeStr string = "str"
+const labelValueTypeByte string = "byte"
 
 var (
 	NsGroupResource = apischema.GroupResource{Resource: "namespaces"}
@@ -52,6 +57,7 @@ type externalMetricsProvider struct {
 	ctx                     *cli.Context
 	regex                   string
 	refreshRegistryInterval time.Duration
+	namespace               string
 }
 
 type stringValue string
@@ -66,7 +72,7 @@ func (sv *stringValue) Set(s string) error {
 }
 
 // NewProvider returns an instance of externalMetricsProvider
-func NewProvider(baseURL string, metricRegex string, refreshRegistryInterval time.Duration) (apiprovider.ExternalMetricsProvider, error) {
+func NewProvider(baseURL string, metricRegex string, refreshRegistryInterval time.Duration, namespace string) (apiprovider.ExternalMetricsProvider, error) {
 	fs := flag.NewFlagSet("mock", flag.ContinueOnError)
 	var k stringValue
 	if err := k.Set(baseURL); err != nil {
@@ -81,6 +87,7 @@ func NewProvider(baseURL string, metricRegex string, refreshRegistryInterval tim
 		ctx:                     ctx,
 		regex:                   metricRegex,
 		refreshRegistryInterval: refreshRegistryInterval,
+		namespace:               namespace,
 	}
 	provider.sync()
 
@@ -92,11 +99,75 @@ type paramValue struct {
 	val *string
 }
 
+func (pv *paramValue) extractValue(requirements labels.Requirements) error {
+	vv := make([]string, 10)
+	for _, r := range requirements {
+		if !strings.HasPrefix(r.Key(), pv.key) {
+			continue
+		}
+		kk := strings.Split(r.Key(), ".")
+		if len(kk) == 1 {
+			vv, _ = bufferEntity(vv, 0, r, nil)
+			pv.val = &vv[0]
+			return nil
+		} else if len(kk) < 3 {
+			return fmt.Errorf("invalid label key:%s", r.Key())
+		}
+		i, err := strconv.ParseInt(kk[2], 10, 8)
+		if err != nil {
+			return fmt.Errorf("failed to parse index string to int: %v", err)
+		}
+
+		index := int(i)
+		switch kk[1] {
+		case labelValueTypeStr:
+			vv, _ = bufferEntity(vv, index, r, nil)
+		case labelValueTypeByte:
+			vv, err = bufferEntity(vv, index, r, func(encoded string) (string, error) {
+				var bytes []byte
+				bytes, err = hex.DecodeString(encoded)
+				if err != nil {
+					return "", fmt.Errorf("failed to decode hex to string: %v", err)
+				}
+				return string(bytes), nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	val := strings.Join(vv, "")
+	pv.val = &val
+	return nil
+}
+
+type decoder func(string) (string, error)
+
+func bufferEntity(buff []string, index int, requirement labels.Requirement, dec decoder) ([]string, error) {
+	if cap(buff) <= index {
+		old := buff
+		buff = make([]string, index+1)
+		copy(buff, old)
+	}
+	if v, exist := requirement.Values().PopAny(); exist {
+		if dec != nil {
+			var err error
+			buff[index], err = dec(v)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			buff[index] = v
+		}
+	}
+	return buff, nil
+}
+
 func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSelector labels.Selector,
 	info apiprovider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
 	var md *swctlschema.MetricDefinition
 	for _, m := range p.metricDefines {
-		if m.Name == info.Metric {
+		if p.getMetricNameWithNamespace(m.Name) == info.Metric {
 			md = m
 		}
 	}
@@ -217,13 +288,10 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 }
 
 func extractValue(requirement labels.Requirements, paramValues ...*paramValue) {
-	for _, r := range requirement {
-		for _, pv := range paramValues {
-			if r.Key() == pv.key && r.Operator() == selection.Equals {
-				if v, exist := r.Values().PopAny(); exist {
-					pv.val = &v
-				}
-			}
+	for _, pv := range paramValues {
+		err := pv.extractValue(requirement)
+		if err != nil {
+			klog.Errorf("failed to parse label %s: %v ", pv.key, err)
 		}
 	}
 }
@@ -237,4 +305,8 @@ func (p *externalMetricsProvider) selectGroupResource(namespace string) apischem
 		Group:    "",
 		Resource: "",
 	}
+}
+
+func (p *externalMetricsProvider) getMetricNameWithNamespace(metricName string) string {
+	return strings.Join([]string{p.namespace, metricName}, "|")
 }

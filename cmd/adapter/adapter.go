@@ -44,6 +44,8 @@ type Adapter struct {
 	RefreshRegistryInterval time.Duration
 	// Message is printed on successful startup
 	Message string
+	// Namespace groups metrics into a single set in case of duplicated metric name
+	Namespace string
 }
 
 func main() {
@@ -59,6 +61,7 @@ func main() {
 	cmd.Flags().StringVar(&cmd.Message, "msg", "starting adapter...", "startup message")
 	cmd.Flags().StringVar(&cmd.BaseURL, "oap-addr", "http://oap:12800/graphql", "the address of OAP cluster")
 	cmd.Flags().StringVar(&cmd.MetricRegex, "metric-filter-regex", "", "a regular expression to filter metrics retrieved from OAP cluster")
+	cmd.Flags().StringVar(&cmd.Namespace, "namespace", "skywalking.apache.org", "a prefix to which metrics are appended. The format is 'namespace|metric_name'")
 	cmd.Flags().DurationVar(&cmd.RefreshRegistryInterval, "refresh-interval", 10*time.Second,
 		"the interval at which to update the cache of available metrics from OAP cluster")
 	cmd.Flags().AddGoFlagSet(flag.CommandLine) // make sure we get the klog flags
@@ -66,7 +69,7 @@ func main() {
 		klog.Fatalf("failed to parse arguments: %v", err)
 	}
 
-	p, err := swckprov.NewProvider(cmd.BaseURL, cmd.MetricRegex, cmd.RefreshRegistryInterval)
+	p, err := swckprov.NewProvider(cmd.BaseURL, cmd.MetricRegex, cmd.RefreshRegistryInterval, cmd.Namespace)
 	if err != nil {
 		klog.Fatalf("unable to build p: %v", err)
 	}
