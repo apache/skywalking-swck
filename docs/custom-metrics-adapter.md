@@ -31,6 +31,7 @@ It takes the following addition arguments specific to configuring how the adapte
  * `--oap-addr` The address of OAP cluster.
  * `--metric-filter-regex` A regular expression to filter metrics retrieved from OAP cluster.
  * `--refresh-interval` This is the interval at which to update the cache of available metrics from OAP cluster. 
+ * `--namespace` A prefix to which metrics are appended. The format is 'namespace|metric_name', defaults to `skywalking.apache.org`
  
 ## HPA Configuration
 
