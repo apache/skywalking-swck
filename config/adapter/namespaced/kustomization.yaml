@@ -17,7 +17,7 @@
 
 # Adds namespace to all resources.
 # If you update the namespace, ../apiserver_auth_reader_role_binding_patch.yaml should be changed correspondingly.
-namespace: skywalking-cutome-metrics-system
+namespace: skywalking-custom-metrics-system
 
 resources:
 - rbac

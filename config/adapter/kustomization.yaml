@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-namePrefix: skywalking-cutome-metrics-
+namePrefix: skywalking-custom-metrics-
 
 resources:
 - namespaced

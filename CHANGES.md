@@ -2,6 +2,13 @@ Changes by Version
 ==================
 Release Notes.
 
+0.2.1
+------------------
+
+#### Features
+- Support special characters in the metric selector of HPA metric adapter.
+- Add the namespace to HPA metric name.
+
 0.2.0
 ------------------
 

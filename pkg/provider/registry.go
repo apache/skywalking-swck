@@ -35,7 +35,7 @@ func (p *externalMetricsProvider) ListAllExternalMetrics() (externalMetricsInfo 
 
 	for _, md := range p.metricDefines {
 		info := apiprovider.ExternalMetricInfo{
-			Metric: md.Name,
+			Metric: p.getMetricNameWithNamespace(md.Name),
 		}
 		externalMetricsInfo = append(externalMetricsInfo, info)
 	}

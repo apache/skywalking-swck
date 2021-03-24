@@ -26,6 +26,6 @@ roleRef:
   name: extension-apiserver-authentication-reader
 subjects:
   - kind: ServiceAccount
-    name: skywalking-cutome-metrics-apiserver
-    namespace: skywalking-cutome-metrics-system
+    name: skywalking-custom-metrics-apiserver
+    namespace: skywalking-custom-metrics-system
 
