@@ -20,11 +20,8 @@ package provider
 import (
 	"encoding/json"
 
-	"github.com/apache/skywalking-cli/assets"
-	"github.com/apache/skywalking-cli/graphql/client"
-	swctlschema "github.com/apache/skywalking-cli/graphql/schema"
+	"github.com/apache/skywalking-cli/pkg/graphql/metrics"
 	apiprovider "github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/provider"
-	"github.com/machinebox/graphql"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 )
@@ -51,16 +48,10 @@ func (p *externalMetricsProvider) sync() {
 }
 
 func (p *externalMetricsProvider) updateMetrics() error {
-	var response map[string][]*swctlschema.MetricDefinition
-	request := graphql.NewRequest(assets.Read("graphqls/metrics/ListMetrics.graphql"))
-	request.Var("regex", p.regex)
-
-	err := client.ExecuteQuery(p.ctx, request, &response)
+	mdd, err := metrics.ListMetrics(p.ctx, p.regex)
 	if err != nil {
 		return err
 	}
-
-	mdd := response["result"]
 	klog.Infof("Get service metrics: %s", display(mdd))
 	if len(mdd) > 0 {
 		p.lock.Lock()

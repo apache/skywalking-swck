@@ -9,6 +9,9 @@ Release Notes.
 - Support special characters in the metric selector of HPA metric adapter.
 - Add the namespace to HPA metric name.
 
+#### Chores
+- Upgrade skywalking-cli dependency.
+
 0.2.0
 ------------------
 

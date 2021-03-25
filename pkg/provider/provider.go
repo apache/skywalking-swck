@@ -26,13 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/skywalking-cli/assets"
-	"github.com/apache/skywalking-cli/commands/interceptor"
-	"github.com/apache/skywalking-cli/graphql/client"
-	swctlschema "github.com/apache/skywalking-cli/graphql/schema"
-	"github.com/apache/skywalking-cli/graphql/utils"
+	swctlapi "github.com/apache/skywalking-cli/api"
+	"github.com/apache/skywalking-cli/pkg/graphql/metrics"
 	apiprovider "github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/provider"
-	"github.com/machinebox/graphql"
 	"github.com/urfave/cli"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -45,6 +41,7 @@ import (
 
 const labelValueTypeStr string = "str"
 const labelValueTypeByte string = "byte"
+const stepMinute string = "2006-01-02 1504"
 
 var (
 	NsGroupResource = apischema.GroupResource{Resource: "namespaces"}
@@ -52,7 +49,7 @@ var (
 
 // externalMetricsProvider is a implementation of provider.MetricsProvider which provides metrics from OAP
 type externalMetricsProvider struct {
-	metricDefines           []*swctlschema.MetricDefinition
+	metricDefines           []*swctlapi.MetricDefinition
 	lock                    sync.RWMutex
 	ctx                     *cli.Context
 	regex                   string
@@ -165,7 +162,7 @@ func bufferEntity(buff []string, index int, requirement labels.Requirement, dec 
 
 func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSelector labels.Selector,
 	info apiprovider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
-	var md *swctlschema.MetricDefinition
+	var md *swctlapi.MetricDefinition
 	for _, m := range p.metricDefines {
 		if p.getMetricNameWithNamespace(m.Name) == info.Metric {
 			md = m
@@ -193,61 +190,50 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 	now := time.Now()
 	startTime := now.Add(-3 * time.Minute)
 	endTime := now
-	step := swctlschema.StepMinute
-	duration := swctlschema.Duration{
-		Start: startTime.Format(utils.StepFormats[step]),
-		End:   endTime.Format(utils.StepFormats[step]),
+	step := swctlapi.StepMinute
+	duration := swctlapi.Duration{
+		Start: startTime.Format(stepMinute),
+		End:   endTime.Format(stepMinute),
 		Step:  step,
 	}
 
 	normal := true
-	condition := swctlschema.MetricsCondition{
-		Name: md.Name,
-		Entity: &swctlschema.Entity{
-			Scope:               interceptor.ParseScope(md.Name),
-			ServiceName:         svc.val,
-			ServiceInstanceName: instance.val,
-			EndpointName:        endpoint.val,
-			Normal:              &normal,
-		},
+	empty := ""
+	entity := &swctlapi.Entity{
+		ServiceName:             svc.val,
+		ServiceInstanceName:     instance.val,
+		EndpointName:            endpoint.val,
+		Normal:                  &normal,
+		DestServiceName:         &empty,
+		DestNormal:              &normal,
+		DestServiceInstanceName: &empty,
+		DestEndpointName:        &empty,
 	}
-	var metricsValues swctlschema.MetricsValues
-	if md.Type == swctlschema.MetricsTypeRegularValue {
-		var response map[string]swctlschema.MetricsValues
-
-		request := graphql.NewRequest(assets.Read("graphqls/metrics/MetricsValues.graphql"))
-
-		request.Var("condition", condition)
-		request.Var("duration", duration)
-
-		if err := client.ExecuteQuery(p.ctx, request, &response); err != nil {
+	entity.Scope = parseScope(entity)
+	condition := swctlapi.MetricsCondition{
+		Name:   md.Name,
+		Entity: entity,
+	}
+	var metricsValues swctlapi.MetricsValues
+	if md.Type == swctlapi.MetricsTypeRegularValue {
+		var err error
+		metricsValues, err = metrics.LinearIntValues(p.ctx, condition, duration)
+		if err != nil {
 			return nil, apierr.NewInternalError(fmt.Errorf("unable to fetch metrics: %v", err))
 		}
-
-		klog.V(4).Infof("Linear request{condition:%s, duration:%s}  response %s", display(condition), display(duration), display(response))
-
-		metricsValues = response["result"]
-	} else if md.Type == swctlschema.MetricsTypeLabeledValue {
+		klog.V(4).Infof("Linear request{condition:%s, duration:%s}  response %s", display(condition), display(duration), display(metricsValues))
+	} else if md.Type == swctlapi.MetricsTypeLabeledValue {
 		if *label.val == "" {
 			klog.Errorf("%s is lack of required label 'label'", md.Name)
 			return nil, apierr.NewBadRequest(fmt.Sprintf("%s is lack of required label 'label'", md.Name))
 		}
-		var response map[string][]swctlschema.MetricsValues
-
-		request := graphql.NewRequest(assets.Read("graphqls/metrics/LabeledMetricsValues.graphql"))
-
-		request.Var("duration", duration)
-		request.Var("condition", condition)
-		request.Var("labels", []string{*label.val})
-
-		if err := client.ExecuteQuery(p.ctx, request, &response); err != nil {
+		result, err := metrics.MultipleLinearIntValues(p.ctx, condition, []string{*label.val}, duration)
+		if err != nil {
 			return nil, apierr.NewInternalError(fmt.Errorf("unable to fetch metrics: %v", err))
 		}
 
 		klog.V(4).Infof("Labeled request{condition:%s, duration:%s, labels:%s}  response %s",
-			display(condition), display(duration), *label.val, display(response))
-
-		result := response["result"]
+			display(condition), display(duration), *label.val, display(result))
 
 		for _, r := range result {
 			if *r.Label == *label.val {
@@ -272,7 +258,7 @@ func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSele
 	if sValue == 0 {
 		sTime = endTime
 	}
-	klog.V(4).Infof("metric value: %d, timestamp: %s", sValue, sTime.Format(utils.StepFormats[step]))
+	klog.V(4).Infof("metric value: %d, timestamp: %s", sValue, sTime.Format(stepMinute))
 
 	return &external_metrics.ExternalMetricValueList{
 		Items: []external_metrics.ExternalMetricValue{
@@ -309,4 +295,25 @@ func (p *externalMetricsProvider) selectGroupResource(namespace string) apischem
 
 func (p *externalMetricsProvider) getMetricNameWithNamespace(metricName string) string {
 	return strings.Join([]string{p.namespace, metricName}, "|")
+}
+
+// TODO: remove this function once cli move it from internal module to pkg
+func parseScope(entity *swctlapi.Entity) swctlapi.Scope {
+	scope := swctlapi.ScopeAll
+
+	if *entity.DestEndpointName != "" {
+		scope = swctlapi.ScopeEndpointRelation
+	} else if *entity.DestServiceInstanceName != "" {
+		scope = swctlapi.ScopeServiceInstanceRelation
+	} else if *entity.DestServiceName != "" {
+		scope = swctlapi.ScopeServiceRelation
+	} else if *entity.EndpointName != "" {
+		scope = swctlapi.ScopeEndpoint
+	} else if *entity.ServiceInstanceName != "" {
+		scope = swctlapi.ScopeServiceInstance
+	} else if *entity.ServiceName != "" {
+		scope = swctlapi.ScopeService
+	}
+
+	return scope
 }
