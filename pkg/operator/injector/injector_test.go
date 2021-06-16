@@ -31,7 +31,7 @@ func Test_needInject(t *testing.T) {
 	}
 
 	// set a pod with a wrong label
-	unlabeled_pod := &corev1.Pod{
+	unlabeledPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"swck-agent-injected": "false",
@@ -40,7 +40,7 @@ func Test_needInject(t *testing.T) {
 	}
 
 	// set a pod with a right label
-	labeled_pod := &corev1.Pod{
+	labeledPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"swck-agent-injected": "true",
@@ -56,7 +56,7 @@ func Test_needInject(t *testing.T) {
 		{
 			name: "don't need injected",
 			args: args{
-				pod: unlabeled_pod,
+				pod: unlabeledPod,
 			},
 			// false means we don't need injected
 			want: false,
@@ -64,7 +64,7 @@ func Test_needInject(t *testing.T) {
 		{
 			name: "need injected",
 			args: args{
-				pod: labeled_pod,
+				pod: labeledPod,
 			},
 			// true means we need injected
 			want: true,

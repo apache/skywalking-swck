@@ -39,7 +39,7 @@ type PodInjector struct {
 	decoder *admission.Decoder
 }
 
-// PodInjector will process every comming pod under the
+// PodInjector will process every coming pod under the
 // specified namespace which labeled "swck-injection=enabled"
 func (r *PodInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}

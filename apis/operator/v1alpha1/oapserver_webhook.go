@@ -39,7 +39,7 @@ func (r *OAPServer) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // nolint: lll
 // this line is to have controller-gen generate the webhook configuration,
-// the real path /mutate-v1-pod is handled in injector_webhook.go
+// the real path /mutate-v1-pod is handled in injector.go
 // +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
 
 // nolint: lll
