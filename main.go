@@ -26,10 +26,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	controllers "github.com/apache/skywalking-swck/controllers/operator"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
+	"github.com/apache/skywalking-swck/pkg/operator/injector"
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
 )
@@ -115,6 +117,13 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	// register a webhook to enable the agent injector，
+	setupLog.Info("registering /mutate-v1-pod webhook")
+	mgr.GetWebhookServer().Register("/mutate-v1-pod",
+		&webhook.Admission{
+			Handler: &injector.PodInjector{Client: mgr.GetClient()}})
+	setupLog.Info("/mutate-v1-pod webhook is registered")
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
