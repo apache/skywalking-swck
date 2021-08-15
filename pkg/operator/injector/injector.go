@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	labelKeyagentInjector       = "swck-agent-injected"
+	labelKeyagentInjector       = "swck-java-agent-injected"
 	defaultConfigmapNamespace   = "skywalking-swck-system"
 	agentConfigAnnotationPrefix = "agent.skywalking.apache.org/"
 	// If user want to use other Plugins' config ,the annotation must have the following form
@@ -138,7 +138,7 @@ func (s *SidecarInjectField) GetInjectStrategy(containers []corev1.Container, la
 	s.injectContainer = ""
 	s.agentOverlay = false
 
-	// set needInject's value , if the pod has the label "swck-agent-injected=true",means need inject
+	// set needInject's value , if the pod has the label "swck-java-agent-injected=true",means need inject
 	if *labels == nil {
 		labels = new(map[string]string)
 		s.needInject = false
@@ -466,7 +466,7 @@ func (r *PodInjector) Handle(ctx context.Context, req admission.Request) admissi
 			log.Info("inject successfully!")
 		}
 	} else {
-		// if the pod don't have the label "swck-agent-injected=true",return ok
+		// if the pod don't have the label "swck-java-agent-injected=true",return ok
 		log.Info("don't inject agent!")
 		return admission.Allowed("ok")
 	}
