@@ -47,6 +47,13 @@ var log = logf.Log.WithName("injector")
 
 // SidecarInjectField contains all info that will be injected
 type SidecarInjectField struct {
+	// determine whether to inject , default is not to inject
+	needInject bool
+	// determine whether to use annotation to overlay agent config ,
+	// default is not to overlay，which means only use configmap to set agent config
+	// Otherwise, the way to overlay is set jvm agent ,just like following
+	// -javaagent: /sky/agent/skywalking-agent,jar={config1}={value1},{config2}={value2}
+	agentOverlay bool
 	// initcontainer is a container that has the agent folder
 	initcontainer corev1.Container
 	// sidecarVolume is a shared directory between App's container and initcontainer
@@ -64,15 +71,8 @@ type SidecarInjectField struct {
 	// the string is used to set jvm agent ,just like following
 	// -javaagent: /sky/agent/skywalking-agent,jar=jvmAgentConfigStr
 	jvmAgentConfigStr string
-	// determine whether to inject , default is not to inject
-	needInject bool
 	// determine which container to inject , default is to inject all containers
 	injectContainer string
-	// determine whether to use annotation to overlay agent config ,
-	// default is not to overlay，which means only use configmap to set agent config
-	// Otherwise, the way to overlay is set jvm agent ,just like following
-	// -javaagent: /sky/agent/skywalking-agent,jar={config1}={value1},{config2}={value2}
-	agentOverlay bool
 }
 
 // NewSidecarInjectField will create a new SidecarInjectField
@@ -452,11 +452,9 @@ func (r *PodInjector) Handle(ctx context.Context, req admission.Request) admissi
 		case s.agentOverlay && (!s.OverlayAgentConfig(as, &pod.ObjectMeta.Annotations) ||
 			!s.OverlayPluginsConfig(&pod.ObjectMeta.Annotations)):
 			log.Info("overlay agent config error!please look the error annotation!")
-			break
 		// configmap will always overwrite the original agent.config in image
 		case !s.CreateConfigmap(ctx, r.Client, req.Namespace, &pod.ObjectMeta.Annotations):
 			log.Info("create configmap error!please look the error annotation!")
-			break
 		// add jvmStr to EnvVar and do real injection
 		default:
 			if s.jvmAgentConfigStr != "" {

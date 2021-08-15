@@ -27,6 +27,8 @@ import (
 
 func TestSidecarInjectField_Inject(t *testing.T) {
 	type fields struct {
+		needInject           bool
+		agentOverlay         bool
 		initcontainer        corev1.Container
 		sidecarVolume        corev1.Volume
 		sidecarVolumeMount   corev1.VolumeMount
@@ -34,9 +36,7 @@ func TestSidecarInjectField_Inject(t *testing.T) {
 		configmapVolumeMount corev1.VolumeMount
 		env                  corev1.EnvVar
 		jvmAgentConfigStr    string
-		needInject           bool
 		injectContainer      string
-		agentOverlay         bool
 	}
 	type args struct {
 		pod *corev1.Pod
@@ -164,6 +164,8 @@ func TestSidecarInjectField_Inject(t *testing.T) {
 
 func TestSidecarInjectField_GetInjectStrategy(t *testing.T) {
 	type fields struct {
+		needInject           bool
+		agentOverlay         bool
 		initcontainer        corev1.Container
 		sidecarVolume        corev1.Volume
 		sidecarVolumeMount   corev1.VolumeMount
@@ -171,9 +173,7 @@ func TestSidecarInjectField_GetInjectStrategy(t *testing.T) {
 		configmapVolumeMount corev1.VolumeMount
 		env                  corev1.EnvVar
 		jvmAgentConfigStr    string
-		needInject           bool
 		injectContainer      string
-		agentOverlay         bool
 	}
 	type args struct {
 		containers []corev1.Container
@@ -233,6 +233,8 @@ func TestSidecarInjectField_GetInjectStrategy(t *testing.T) {
 
 func TestSidecarInjectField_OverlaySidecar(t *testing.T) {
 	type fields struct {
+		needInject           bool
+		agentOverlay         bool
 		initcontainer        corev1.Container
 		sidecarVolume        corev1.Volume
 		sidecarVolumeMount   corev1.VolumeMount
@@ -240,9 +242,7 @@ func TestSidecarInjectField_OverlaySidecar(t *testing.T) {
 		configmapVolumeMount corev1.VolumeMount
 		env                  corev1.EnvVar
 		jvmAgentConfigStr    string
-		needInject           bool
 		injectContainer      string
-		agentOverlay         bool
 	}
 	type args struct {
 		as         *Annotations
@@ -356,6 +356,8 @@ func TestSidecarInjectField_OverlaySidecar(t *testing.T) {
 
 func TestSidecarInjectField_OverlayAgentConfig(t *testing.T) {
 	type fields struct {
+		needInject           bool
+		agentOverlay         bool
 		initcontainer        corev1.Container
 		sidecarVolume        corev1.Volume
 		sidecarVolumeMount   corev1.VolumeMount
@@ -363,9 +365,7 @@ func TestSidecarInjectField_OverlayAgentConfig(t *testing.T) {
 		configmapVolumeMount corev1.VolumeMount
 		env                  corev1.EnvVar
 		jvmAgentConfigStr    string
-		needInject           bool
 		injectContainer      string
-		agentOverlay         bool
 	}
 	type args struct {
 		as         *Annotations
@@ -454,6 +454,8 @@ func TestSidecarInjectField_OverlayAgentConfig(t *testing.T) {
 
 func TestSidecarInjectField_OverlayPluginsConfig(t *testing.T) {
 	type fields struct {
+		needInject           bool
+		agentOverlay         bool
 		initcontainer        corev1.Container
 		sidecarVolume        corev1.Volume
 		sidecarVolumeMount   corev1.VolumeMount
@@ -461,9 +463,7 @@ func TestSidecarInjectField_OverlayPluginsConfig(t *testing.T) {
 		configmapVolumeMount corev1.VolumeMount
 		env                  corev1.EnvVar
 		jvmAgentConfigStr    string
-		needInject           bool
 		injectContainer      string
-		agentOverlay         bool
 	}
 	type args struct {
 		annotation *map[string]string
