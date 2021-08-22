@@ -16,7 +16,7 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 # Quick Start
 
- * Go to the [download page](https://skywalking.apache.org/downloads/) to download latest release manifest. 
+ * Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download latest release manifest. 
 
 ## Operator
 
