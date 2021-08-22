@@ -17,90 +17,78 @@
 
 package injector
 
-//Annotation is used to set default value
+import (
+	"fmt"
+	"strings"
+
+	"github.com/ghodss/yaml"
+
+	"github.com/apache/skywalking-swck/pkg/operator/repo"
+)
+
+// Annotation defines configuration that user can overlay, including
+// sidecar configuration and java agent configuration.
 type Annotation struct {
-	Name         string
-	DefaultValue string
+	// Name defines the reference to configuration used in Pod's AnnotationOverlay.
+	Name string `yaml:"name"`
+	// DefaultValue defines the default value of configuration, if there
+	// isn't a default value, it will be "nil".
+	DefaultValue string `yaml:"defaultValue"`
+	// ValidateFunc defines a Validate func to judge whether the value
+	// is valid, if there isn't a validate func, it will be "nil".
+	ValidateFunc string `yaml:"validateFunc"`
+	// UseQuotes defines whether the key or value of the annotation needs
+	// to be wrapped in quotes, if don't need quotes, it will be "nil" .
+	// if UseQuotes is set to "key", it means the key of annotation need quotes.
+	// if UseQuotes is set to "value", it means the value of annotation need quotes.
+	UseQuotes string `yaml:"useQuotes"`
+	// EnvName represent the environment variable , just like following
+	// in agent.namespace=${SW_AGENT_NAMESPACE:} , the EnvName is SW_AGENT_NAMESPACE
+	EnvName string `yaml:"envName"`
 }
 
-//Annotations is used to set overlaied value
-type Annotations map[Annotation]string
+// Annotations are
+type Annotations struct {
+	Annotations []Annotation
+}
 
-func setDefaultAnnotation(name, value string) Annotation {
-	return Annotation{
-		Name:         name,
-		DefaultValue: value,
+//AnnotationOverlay is used to set overlaied value
+type AnnotationOverlay map[Annotation]string
+
+// NewAnnotations will create a new AnnotationOverlay
+func NewAnnotations() (*Annotations, error) {
+	fileRepo := repo.NewRepo("injector")
+	data, err := fileRepo.ReadFile("injector/templates/annotations.yaml")
+	if err != nil {
+		return nil, err
 	}
+	a := new(Annotations)
+	if err := yaml.Unmarshal(data, a); err != nil {
+		return nil,
+			fmt.Errorf("unmarshal annotations.yaml to struct Annotations :%s", err.Error())
+	}
+	return a, nil
 }
 
-const (
-	namePrefix = "skywalking-swck-"
-)
+// GetAnnotationsByPrefix is
+func GetAnnotationsByPrefix(a Annotations, prefixName string) *Annotations {
+	anno := new(Annotations)
+	for _, v := range a.Annotations {
+		if strings.HasPrefix(v.Name, prefixName) {
+			anno.Annotations = append(anno.Annotations, v)
+		}
+	}
+	return anno
+}
 
-// nolint
-var (
-	//set sidecar's basic information
-	AnnoInitcontainerName  = setDefaultAnnotation(SidecarInitcontainerName, "inject-sky-agent")
-	AnnoInitcontainerImage = setDefaultAnnotation(SidecarInitcontainerImage,
-		"apache/skywalking-java-agent:8.6.0-jdk8")
-	AnnoInitcontainerCommand     = setDefaultAnnotation(SidecarInitcontainerCommand, "sh")
-	AnnoInitcontainerArgsOption  = setDefaultAnnotation(SidecarInitcontainerArgsOption, "-c")
-	AnnoInitcontainerArgsCommand = setDefaultAnnotation(SidecarInitcontainerArgsCommand,
-		"mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent")
-	AnnoSidecarVolumeName             = setDefaultAnnotation(SidecarVolumeName, "sky-agent")
-	AnnoSidecarVolumemountMountpath   = setDefaultAnnotation(SidecarVolumemountMountpath, "/sky/agent")
-	AnnoConfigmapName                 = setDefaultAnnotation(ConfigmapName, namePrefix+"java-agent-configmap")
-	AnnoConfigmapVolumeName           = setDefaultAnnotation(ConfigmapVolumeName, "java-agent-configmap-volume")
-	AnnoConfigmapVolumemountMountpath = setDefaultAnnotation(ConfigmapVolumemountMountpath, "/sky/agent/config")
-	AnnoEnvVarName                    = setDefaultAnnotation(SidecarEnvVarName, "AGENT_OPTS")
-	AnnoEnvVarValue                   = setDefaultAnnotation(SidecarEnvValue,
-		"-javaagent:/sky/agent/skywalking-agent.jar")
-	AnnoInjectContainerName = setDefaultAnnotation(SidecarInjectContainerName, "")
-	//set nil
-	AnnoInjectErrorInfo    = setDefaultAnnotation(SidecarInjectErrorInfo, "")
-	AnnoAgentConfigOverlay = setDefaultAnnotation(SidecarAgentConfigOverlay, "false")
-	//set agent config
-	AnnoAgentNamespace      = setDefaultAnnotation(AgentNamespace, "default-namespace")
-	AnnoAgentServiceName    = setDefaultAnnotation(AgentServiceName, "")
-	AnnoAgentSampleNumber   = setDefaultAnnotation(AgentSampleNumber, "-1")
-	AnnoAgentAuthentication = setDefaultAnnotation(AgentAuthentication, "xxxx")
-	AnnoAgentSpanLimit      = setDefaultAnnotation(AgentSpanLimit, "150")
-	AnnoAgentIgnoreSuffix   = setDefaultAnnotation(AgentIgnoreSuffix,
-		".jpg,.jpeg,.js,.css,.png,.bmp,.gif,.ico,.mp3,.mp4,.html,.svg")
-	AnnoAgentIsOpenDebugging        = setDefaultAnnotation(AgentIsOpenDebugging, "true")
-	AnnoAgentIsCacheEnhaned         = setDefaultAnnotation(AgentIsCacheEnhaned, "false")
-	AnnoAgentClassCache             = setDefaultAnnotation(AgentClassCache, "MEMORY")
-	AnnoAgentOperationName          = setDefaultAnnotation(AgentOperationName, "150")
-	AnnoAgentForceTLS               = setDefaultAnnotation(AgentForceTLS, "false")
-	AnnoAgentProfileActive          = setDefaultAnnotation(AgentProfileActive, "true")
-	AnnoAgentProfileMaxParallel     = setDefaultAnnotation(AgentProfileMaxParallel, "5")
-	AnnoAgentProfileMaxDuration     = setDefaultAnnotation(AgentProfileMaxDuration, "10")
-	AnnoAgentProfileDump            = setDefaultAnnotation(AgentProfileDump, "500")
-	AnnoAgentProfileSnapshot        = setDefaultAnnotation(AgentProfileSnapshot, "50")
-	AnnoAgentCollectorService       = setDefaultAnnotation(AgentCollectorService, "127.0.0.1:11800")
-	AnnoAgentLoggingName            = setDefaultAnnotation(AgentLoggingName, "skywalking-api.log")
-	AnnoAgentLoggingLevel           = setDefaultAnnotation(AgentLoggingLevel, "INFO")
-	AnnoAgentLoggingDir             = setDefaultAnnotation(AgentLoggingDir, "")
-	AnnoAgentLoggingMaxSize         = setDefaultAnnotation(AgentLoggingMaxSize, "314572800")
-	AnnoAgentLoggingMaxFiles        = setDefaultAnnotation(AgentLoggingMaxFiles, "-1")
-	AnnoAgentStatuscheckExceptions  = setDefaultAnnotation(AgentStatuscheckExceptions, "")
-	AnnoAgentStatuscheckDepth       = setDefaultAnnotation(AgentStatuscheckDepth, "1")
-	AnnoAgentPluginMount            = setDefaultAnnotation(AgentPluginMount, "plugins,activations")
-	AnnoAgentExcludePlugins         = setDefaultAnnotation(AgentExcludePlugins, "")
-	AnnoAgentPluginJdbc             = setDefaultAnnotation(AgentPluginJdbc, "false")
-	AnnoAgentPluginKafkaServers     = setDefaultAnnotation(AgentPluginKafkaServers, "localhost:9092")
-	AnnoAgentPluginKafkaNamespace   = setDefaultAnnotation(AgentPluginKafkaNamespace, "")
-	AnnoAgentPluginSpringannotation = setDefaultAnnotation(AgentPluginSpringannotation, "")
-)
-
-//NewAnnotations will create a new Annotations
-func NewAnnotations() *Annotations {
-	a := make(Annotations)
+//NewAnnotationOverlay will create a new AnnotationOverlay
+func NewAnnotationOverlay() *AnnotationOverlay {
+	a := make(AnnotationOverlay)
 	return &a
 }
 
 //GetFinalValue will get overlaied value first , then default
-func (as *Annotations) GetFinalValue(a Annotation) string {
+func (as *AnnotationOverlay) GetFinalValue(a Annotation) string {
 	ov := a.DefaultValue
 	if v, ok := (*as)[a]; ok {
 		ov = v
@@ -109,10 +97,11 @@ func (as *Annotations) GetFinalValue(a Annotation) string {
 }
 
 //SetOverlay will set overlaied value
-func (as *Annotations) SetOverlay(annotations *map[string]string, a Annotation) error {
-	if v, ok := (*annotations)[a.Name]; ok {
+func (as *AnnotationOverlay) SetOverlay(AnnotationOverlay *map[string]string, a Annotation) error {
+	if v, ok := (*AnnotationOverlay)[a.Name]; ok {
 		//if annotation has validate func then validate
-		if f, funok := AnnotationValidate[a.Name]; funok {
+		f := FindValidateFunc(a.ValidateFunc)
+		if f != nil {
 			err := f(a.Name, v)
 			//validate error
 			if err != nil {
@@ -126,7 +115,7 @@ func (as *Annotations) SetOverlay(annotations *map[string]string, a Annotation) 
 }
 
 //GetOverlayValue will get overlaied value, if not then return ""
-func (as *Annotations) GetOverlayValue(a Annotation) string {
+func (as *AnnotationOverlay) GetOverlayValue(a Annotation) string {
 	if v, ok := (*as)[a]; ok {
 		return v
 	}

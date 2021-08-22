@@ -19,37 +19,45 @@ package injector
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
 
-type annotationValidateFunc func(annotation, value string) error
+// AnnotationValidateFunc is the type of validate function
+type AnnotationValidateFunc func(annotation, value string) error
 
 var (
-	//AnnotationValidate is a map between an Annotation and its validate function
-	AnnotationValidate = map[string]annotationValidateFunc{
-		AgentSampleNumber:       ValidateInt,
-		AgentSpanLimit:          ValidateInt,
-		AgentIsOpenDebugging:    ValidateBool,
-		AgentIsCacheEnhaned:     ValidateBool,
-		AgentClassCache:         ValidateClassCacheMode,
-		AgentOperationName:      ValidateInt,
-		AgentForceTLS:           ValidateBool,
-		AgentProfileActive:      ValidateBool,
-		AgentProfileMaxParallel: ValidateInt,
-		AgentProfileMaxDuration: ValidateInt,
-		AgentProfileDump:        ValidateInt,
-		AgentProfileSnapshot:    ValidateInt,
-		AgentCollectorService:   ValidateIpandPort,
-		AgentLoggingLevel:       ValidateLoggingLevel,
-		AgentLoggingMaxSize:     ValidateInt,
-		AgentLoggingMaxFiles:    ValidateInt,
-		AgentStatuscheckDepth:   ValidateInt,
-		AgentPluginJdbc:         ValidateBool,
-		AgentPluginKafkaServers: ValidateIpandPort,
+	//AnnotationValidateFuncs define all validate functions
+	AnnotationValidateFuncs = []AnnotationValidateFunc{
+		ValidateBool,
+		ValidateInt,
+		ValidateClassCacheMode,
+		ValidateIpandPort,
+		ValidateLoggingLevel,
+		ValidateResolver,
+		ValidateOutput,
 	}
 )
+
+// FindValidateFunc is find the validate function for an annotation
+func FindValidateFunc(funcName string) AnnotationValidateFunc {
+	for _, f := range AnnotationValidateFuncs {
+		// extract the function name into a string , it will be like following
+		// github.com/apache/skywalking-swck/pkg/operator/injector.ValidateBool
+		fname := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+		// get real validate function name in injector
+		index := strings.LastIndex(fname, ".")
+		funcname := fname[index+1:]
+
+		if funcname == funcName {
+			return f
+		}
+	}
+	return nil
+}
 
 //ValidateBool validates an annotation's value is bool
 func ValidateBool(annotation, value string) error {
@@ -79,7 +87,6 @@ func ValidateClassCacheMode(annotation, value string) error {
 
 //ValidateIpandPort validates an annotation's value is valid ip and port
 func ValidateIpandPort(annotation, value string) error {
-
 	match, err := regexp.MatchString(`(^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
 		`(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
 		`(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
@@ -102,6 +109,22 @@ func ValidateLoggingLevel(annotation, value string) error {
 		!strings.EqualFold(value, "INFO") && !strings.EqualFold(value, "WARN") &&
 		!strings.EqualFold(value, "ERROR") && !strings.EqualFold(value, "OFF") {
 		return fmt.Errorf("%s error:the Level is not in [TRACE,DEBUG,INFO,WARN,ERROR,OFF]", annotation)
+	}
+	return nil
+}
+
+//ValidateResolver validates logging.resolver
+func ValidateResolver(annotation, value string) error {
+	if !strings.EqualFold(value, "PATTERN") && !strings.EqualFold(value, "JSON") {
+		return fmt.Errorf("%s error:the mode is not PATTERN or JSON", annotation)
+	}
+	return nil
+}
+
+//ValidateOutput validates logging.output
+func ValidateOutput(annotation, value string) error {
+	if !strings.EqualFold(value, "FILE") && !strings.EqualFold(value, "CONSOLE") {
+		return fmt.Errorf("%s error:the mode is not FILE or CONSOLE", annotation)
 	}
 	return nil
 }

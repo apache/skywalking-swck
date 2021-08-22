@@ -23,14 +23,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
+
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
 )
@@ -105,6 +104,16 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
 		os.Exit(1)
 	}
+
+	if err = (&operatorcontroller.ConfigMapReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("ConfigMap"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("injector"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
+		os.Exit(1)
+	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServer")
@@ -122,7 +131,7 @@ func main() {
 		setupLog.Info("registering /mutate-v1-pod webhook")
 		mgr.GetWebhookServer().Register("/mutate-v1-pod",
 			&webhook.Admission{
-				Handler: &injector.PodInjector{Client: mgr.GetClient()}})
+				Handler: &operatorv1alpha1.Javaagent{Client: mgr.GetClient()}})
 		setupLog.Info("/mutate-v1-pod webhook is registered")
 	}
 	// +kubebuilder:scaffold:builder

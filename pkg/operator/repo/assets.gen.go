@@ -21,6 +21,8 @@
 // fetcher/templates/configmap.yaml (3.082kB)
 // fetcher/templates/deployment.yaml (2.084kB)
 // fetcher/templates/service_account.yaml (1.088kB)
+// injector/templates/annotations.yaml (12.09kB)
+// injector/templates/configmap.yaml (2.044kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
 // oapserver/templates/deployment.yaml (3.429kB)
@@ -393,6 +395,476 @@ func fetcherTemplatesService_accountYaml() (*asset, error) {
 
 	info := bindataFileInfo{name: "fetcher/templates/service_account.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb, 0x75, 0x7a, 0xa, 0x7f, 0xf7, 0x92, 0x19, 0x6b, 0x9d, 0x83, 0x8f, 0xf3, 0x4, 0x78, 0xe, 0x5a, 0x50, 0xab, 0x85, 0xd7, 0xc8, 0x78, 0xc3, 0x68, 0x53, 0xd3, 0xc6, 0x66, 0x93, 0xf3, 0x5c}}
+	return a, nil
+}
+
+var _injectorTemplatesAnnotationsYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# name means the reference to configuration used in pod's annotations.
+# defaultValue is the default value in agent.config
+# vaildateFunc means use which function to validate the value
+# Notice , the vaildateFunc must exist in validate.go , 
+# if don't have the vaildateFunc , please set nil
+# useQuotes means a separator(, or =) in the option or value, it should be wrapped in quotes.
+# if there is a separator in the option, then set useQuotes: option
+# if there is a separator in the value, then set useQuotes: value
+# if there isn't a separator,then set useQuotes: nil
+# envName is the environment variable in agent.config
+
+annotations:
+  # Next is the annotation of the sidecar configuration
+  - name: sidecar.skywalking.apache.org/initcontainer.Name
+    defaultValue: inject-skywalking-agent
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/initcontainer.Image
+    defaultValue: apache/skywalking-java-agent:8.7.0-jdk8
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/initcontainer.Command
+    defaultValue: sh
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/initcontainer.args.Option
+    defaultValue: -c
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/initcontainer.args.Command
+    defaultValue: "mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent"
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/sidecarVolume.Name
+    defaultValue: sky-agent
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/sidecarVolumeMount.MountPath
+    defaultValue: /sky/agent
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/configmapVolume.ConfigMap.Name
+    defaultValue: skywalking-swck-java-agent-configmap
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/configmapVolume.Name
+    defaultValue: java-agent-configmap-volume
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/configmapVolumeMount.MountPath
+    defaultValue: /sky/agent/config
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/env.Name
+    defaultValue: AGENT_OPTS
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/env.Value
+    defaultValue: -javaagent:/sky/agent/skywalking-agent.jar
+    validateFunc: nil
+    useQuotes: nil
+    envName: nil
+
+  # Next is the annotation of the java agent configuration
+  - name: agent.skywalking.apache.org/agent.namespace
+    defaultValue: default-namespace
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_NAMESPACE
+
+  - name: agent.skywalking.apache.org/agent.service_name
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_NAME
+
+  - name: agent.skywalking.apache.org/agent.instance_name
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_INSTANCE_NAME
+
+  - name: agent.skywalking.apache.org/agent.sample_n_per_3_secs
+    defaultValue: -1
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_SAMPLE
+
+  - name: agent.skywalking.apache.org/agent.authentication
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_AUTHENTICATION
+
+  - name: agent.skywalking.apache.org/agent.span_limit_per_segment
+    defaultValue: 300
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_SPAN_LIMIT
+
+  - name: agent.skywalking.apache.org/agent.ignore_suffix
+    defaultValue: .jpg,.jpeg,.js,.css,.png,.bmp,.gif,.ico,.mp3,.mp4,.html,.svg
+    validateFunc: nil
+    useQuotes: value
+    envName: SW_AGENT_IGNORE_SUFFIX
+
+  - name: agent.skywalking.apache.org/agent.is_open_debugging_class
+    defaultValue: true
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_AGENT_OPEN_DEBUG
+
+  - name: agent.skywalking.apache.org/agent.is_cache_enhanced_class
+    defaultValue: false
+    validateFunc: ValidateBool
+    useQuotes: nil  
+    envName: SW_AGENT_CACHE_CLASS
+
+  - name: agent.skywalking.apache.org/agent.class_cache_mode
+    defaultValue: MEMORY
+    validateFunc: ValidateClassCacheMode
+    useQuotes: nil
+    envName: SW_AGENT_CLASS_CACHE_MODE
+
+  - name: agent.skywalking.apache.org/agent.cause_exception_depth
+    defaultValue: 5
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_CAUSE_EXCEPTION_DEPTH
+
+  - name: agent.skywalking.apache.org/agent.force_reconnection_period
+    defaultValue: 1
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_FORCE_RECONNECTION_PERIOD
+
+  - name: agent.skywalking.apache.org/agent.operation_name_threshold
+    defaultValue: 150
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_OPERATION_NAME_THRESHOLD
+
+  - name: agent.skywalking.apache.org/agent.keep_tracing
+    defaultValue: false
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_AGENT_KEEP_TRACING
+
+  - name: agent.skywalking.apache.org/agent.force_tls
+    defaultValue: false
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_AGENT_FORCE_TLS
+
+  - name: agent.skywalking.apache.org/osinfo.ipv4_list_size
+    defaultValue: 10
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_OSINFO_IPV4_LIST_SIZE
+
+  - name: agent.skywalking.apache.org/collector.grpc_channel_check_interval
+    defaultValue: 30
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_GRPC_CHANNEL_CHECK_INTERVAL
+
+  - name: agent.skywalking.apache.org/collector.heartbeat_period
+    defaultValue: 30
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_HEARTBEAT_PERIOD
+
+  - name: agent.skywalking.apache.org/collector.properties_report_period_factor
+    defaultValue: 10
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_PROPERTIES_REPORT_PERIOD_FACTOR
+
+  - name: agent.skywalking.apache.org/collector.backend_service
+    defaultValue: 127.0.0.1:11800
+    validateFunc: ValidateIpandPort
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_BACKEND_SERVICES
+
+  - name: agent.skywalking.apache.org/collector.grpc_upstream_timeout
+    defaultValue: 30
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_GRPC_UPSTREAM_TIMEOUT
+
+  - name: agent.skywalking.apache.org/collector.get_profile_task_interval
+    defaultValue: 20
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_GET_PROFILE_TASK_INTERVAL 
+
+  - name: agent.skywalking.apache.org/collector.get_agent_dynamic_config_interval
+    defaultValue: 20
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_GET_AGENT_DYNAMIC_CONFIG_INTERVAL 
+
+  - name: agent.skywalking.apache.org/collector.is_resolve_dns_periodically
+    defaultValue: false
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_AGENT_COLLECTOR_IS_RESOLVE_DNS_PERIODICALLY 
+
+  - name: agent.skywalking.apache.org/logging.level
+    defaultValue: INFO
+    validateFunc: ValidateLoggingLevel
+    useQuotes: nil
+    envName: SW_LOGGING_LEVEL
+
+  - name: agent.skywalking.apache.org/logging.file_name
+    defaultValue: skywalking-api.log
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_LOGGING_FILE_NAME
+
+  - name: agent.skywalking.apache.org/logging.output
+    defaultValue: FILE
+    validateFunc: ValidateOutput
+    useQuotes: nil
+    envName: SW_LOGGING_OUTPUT
+
+  - name: agent.skywalking.apache.org/logging.dir
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_LOGGING_DIR 
+
+  - name: agent.skywalking.apache.org/logging.resolver
+    defaultValue: PATTERN
+    validateFunc: ValidateResolver
+    useQuotes: nil
+    envName: SW_LOGGING_RESOLVER
+
+  - name: agent.skywalking.apache.org/logging.pattern
+    defaultValue: "%level %timestamp %thread %class : %msg %throwable"
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_LOGGING_PATTERN
+
+  - name: agent.skywalking.apache.org/logging.max_file_size
+    defaultValue: 314572800
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_LOGGING_MAX_FILE_SIZE
+
+  - name: agent.skywalking.apache.org/logging.max_history_files
+    defaultValue: -1
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_LOGGING_MAX_HISTORY_FILES  
+
+  - name: agent.skywalking.apache.org/statuscheck.ignored_exceptions
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_STATUSCHECK_IGNORED_EXCEPTIONS
+
+  - name: agent.skywalking.apache.org/statuscheck.max_recursive_depth
+    defaultValue: 1
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_STATUSCHECK_MAX_RECURSIVE_DEPTH
+
+  - name: agent.skywalking.apache.org/correlation.element_max_number
+    defaultValue: 3
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_CORRELATION_ELEMENT_MAX_NUMBER
+
+  - name: agent.skywalking.apache.org/correlation.value_max_length
+    defaultValue: 128
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_CORRELATION_VALUE_MAX_LENGTH
+
+  - name: agent.skywalking.apache.org/correlation.auto_tag_keys
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_CORRELATION_AUTO_TAG_KEYS
+
+  - name: agent.skywalking.apache.org/jvm.buffer_size
+    defaultValue: 600
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_JVM_BUFFER_SIZE
+
+  - name: agent.skywalking.apache.org/buffer.channel_size
+    defaultValue: 5
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_BUFFER_CHANNEL_SIZE
+
+  - name: agent.skywalking.apache.org/buffer.buffer_size
+    defaultValue: 300
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_BUFFER_BUFFER_SIZE
+
+  - name: agent.skywalking.apache.org/profile.active
+    defaultValue: true
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_AGENT_PROFILE_ACTIVE
+
+  - name: agent.skywalking.apache.org/profile.max_parallel
+    defaultValue: 5
+    validateFunc: ValidateInt
+    useQuotes: nil    
+    envName: SW_AGENT_PROFILE_MAX_PARALLEL
+
+  - name: agent.skywalking.apache.org/profile.duration
+    defaultValue: 10
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_PROFILE_DURATION
+
+  - name: agent.skywalking.apache.org/profile.dump_max_stack_depth
+    defaultValue: 500
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_PROFILE_DUMP_MAX_STACK_DEPTH
+
+  - name: agent.skywalking.apache.org/profile.snapshot_transport_buffer_size
+    defaultValue: 50
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_AGENT_PROFILE_SNAPSHOT_TRANSPORT_BUFFER_SIZE
+
+  - name: agent.skywalking.apache.org/meter.active
+    defaultValue: true
+    validateFunc: ValidateBool
+    useQuotes: nil
+    envName: SW_METER_ACTIVE
+
+  - name: agent.skywalking.apache.org/meter.report_interval
+    defaultValue: 20
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_METER_REPORT_INTERVAL
+
+  - name: agent.skywalking.apache.org/meter.max_meter_size
+    defaultValue: 500
+    validateFunc: ValidateInt
+    useQuotes: nil
+    envName: SW_METER_MAX_METER_SIZE
+`)
+
+func injectorTemplatesAnnotationsYamlBytes() ([]byte, error) {
+	return _injectorTemplatesAnnotationsYaml, nil
+}
+
+func injectorTemplatesAnnotationsYaml() (*asset, error) {
+	bytes, err := injectorTemplatesAnnotationsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "injector/templates/annotations.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xf9, 0xc2, 0xdf, 0xf4, 0x18, 0x79, 0xe0, 0xe9, 0xef, 0x5, 0x66, 0x53, 0xb7, 0x97, 0x36, 0x11, 0x62, 0xea, 0xc2, 0xfc, 0xb8, 0xd0, 0x11, 0xa5, 0xbb, 0x7e, 0x58, 0x90, 0x37, 0x64, 0x3a, 0xa3}}
+	return a, nil
+}
+
+var _injectorTemplatesConfigmapYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skywalking-swck-java-agent-configmap 
+  namespace: skywalking-swck-system
+data:
+  agent.config: |
+    # Licensed to the Apache Software Foundation (ASF) under one
+    # or more contributor license agreements.  See the NOTICE file
+    # distributed with this work for additional information
+    # regarding copyright ownership.  The ASF licenses this file
+    # to you under the Apache License, Version 2.0 (the
+    # "License"); you may not use this file except in compliance
+    # with the License.  You may obtain a copy of the License at
+    #
+    #     http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+    {{- $anno := getAgentAnnotations }}
+    {{- range $anno -}}
+    {{- if ne .DefaultValue "nil" }}
+    {{parse .Name}}=${ {{- .EnvName}}:{{.DefaultValue -}} }
+    {{- else}}
+    {{parse .Name}}=${ {{- .EnvName}}:}
+    {{- end -}}
+    {{- end -}}`)
+
+func injectorTemplatesConfigmapYamlBytes() ([]byte, error) {
+	return _injectorTemplatesConfigmapYaml, nil
+}
+
+func injectorTemplatesConfigmapYaml() (*asset, error) {
+	bytes, err := injectorTemplatesConfigmapYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "injector/templates/configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa4, 0xf9, 0x1c, 0x4f, 0x27, 0xe7, 0x88, 0xed, 0xfb, 0xf0, 0x9c, 0xa1, 0x33, 0x40, 0xba, 0x8c, 0xf3, 0x0, 0x71, 0xfc, 0xa9, 0x2b, 0x46, 0x1d, 0x53, 0xb3, 0x48, 0xd3, 0x1b, 0x5d, 0xe7, 0x9f}}
 	return a, nil
 }
 
@@ -1126,6 +1598,8 @@ var _bindata = map[string]func() (*asset, error){
 	"fetcher/templates/configmap.yaml":              fetcherTemplatesConfigmapYaml,
 	"fetcher/templates/deployment.yaml":             fetcherTemplatesDeploymentYaml,
 	"fetcher/templates/service_account.yaml":        fetcherTemplatesService_accountYaml,
+	"injector/templates/annotations.yaml":           injectorTemplatesAnnotationsYaml,
+	"injector/templates/configmap.yaml":             injectorTemplatesConfigmapYaml,
 	"oapserver/templates/cluster_role.yaml":         oapserverTemplatesCluster_roleYaml,
 	"oapserver/templates/cluster_role_binding.yaml": oapserverTemplatesCluster_role_bindingYaml,
 	"oapserver/templates/deployment.yaml":           oapserverTemplatesDeploymentYaml,
@@ -1188,6 +1662,12 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"configmap.yaml":            &bintree{fetcherTemplatesConfigmapYaml, map[string]*bintree{}},
 			"deployment.yaml":           &bintree{fetcherTemplatesDeploymentYaml, map[string]*bintree{}},
 			"service_account.yaml":      &bintree{fetcherTemplatesService_accountYaml, map[string]*bintree{}},
+		}},
+	}},
+	"injector": &bintree{nil, map[string]*bintree{
+		"templates": &bintree{nil, map[string]*bintree{
+			"annotations.yaml": &bintree{injectorTemplatesAnnotationsYaml, map[string]*bintree{}},
+			"configmap.yaml":   &bintree{injectorTemplatesConfigmapYaml, map[string]*bintree{}},
 		}},
 	}},
 	"oapserver": &bintree{nil, map[string]*bintree{

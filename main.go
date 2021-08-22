@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -31,7 +30,6 @@ import (
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	controllers "github.com/apache/skywalking-swck/controllers/operator"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
 )
@@ -122,7 +120,7 @@ func main() {
 	setupLog.Info("registering /mutate-v1-pod webhook")
 	mgr.GetWebhookServer().Register("/mutate-v1-pod",
 		&webhook.Admission{
-			Handler: &injector.PodInjector{Client: mgr.GetClient()}})
+			Handler: &operatorv1alpha1.Javaagent{Client: mgr.GetClient()}})
 	setupLog.Info("/mutate-v1-pod webhook is registered")
 
 	setupLog.Info("starting manager")
