@@ -85,7 +85,7 @@ func ValidateConfigmap(configmap *corev1.ConfigMap) (bool, error) {
 
 			// if option has environment variable like SW_AGENT_NAME
 			if strings.Contains(str[i], ":") {
-				valueStart := strings.LastIndex(str[i], ":")
+				valueStart := strings.Index(str[i], ":")
 				valueEnd := strings.Index(str[i], "}")
 				if valueStart == -1 || valueEnd == -1 || valueStart >= valueEnd {
 					continue

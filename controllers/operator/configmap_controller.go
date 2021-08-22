@@ -21,8 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apache/skywalking-swck/pkg/kubernetes"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
 	"github.com/go-logr/logr"
 	core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +29,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/apache/skywalking-swck/pkg/kubernetes"
+	"github.com/apache/skywalking-swck/pkg/operator/injector"
 )
 
 // ConfigMapReconciler reconciles a ConfigMap object

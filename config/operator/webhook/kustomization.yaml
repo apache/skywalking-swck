@@ -20,7 +20,7 @@ resources:
 - manifests.yaml
 
 patchesStrategicMerge:
-- add_nsSelector.yaml
+- ns_selector_patch.yaml
 
 configurations:
 - kustomizeconfig.yaml

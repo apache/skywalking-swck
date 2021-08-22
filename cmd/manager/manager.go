@@ -29,7 +29,6 @@ import (
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
-
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
 )

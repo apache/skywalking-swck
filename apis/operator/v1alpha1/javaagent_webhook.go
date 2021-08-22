@@ -32,6 +32,9 @@ import (
 // log is for logging in this package.
 var javaagentlog = logf.Log.WithName("javaagent")
 
+// nolint: lll
+// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
+
 // Javaagent injects java agent into Pods
 type Javaagent struct {
 	Client  client.Client
@@ -40,7 +43,6 @@ type Javaagent struct {
 
 // Handle will process every coming pod under the
 // specified namespace which labeled "swck-injection=enabled"
-// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
 func (r *Javaagent) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 
@@ -68,7 +70,7 @@ func (r *Javaagent) Handle(ctx context.Context, req admission.Request) admission
 	return ip.Run()
 }
 
-// PodInjector implements admission.DecoderInjector.
+// Javaagent implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
