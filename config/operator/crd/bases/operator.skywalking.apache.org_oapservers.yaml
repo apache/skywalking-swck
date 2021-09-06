@@ -279,6 +279,9 @@ spec:
                       type: string
                   type: object
               type: object
+            tls:
+              description: tls relevant settings
+              type: string
             version:
               description: Version of OAP.
               type: string

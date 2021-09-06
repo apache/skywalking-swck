@@ -38,6 +38,8 @@ type OAPServerSpec struct {
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`
+	// tls relevant settings
+	TLS string `json:"tls,omitempty"`
 }
 
 // OAPServerStatus defines the observed state of OAPServer

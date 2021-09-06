@@ -103,6 +103,18 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
 		os.Exit(1)
 	}
+
+	if err = (&operatorcontroller.StorageReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Storage"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("storage"),
+		Recorder: mgr.GetEventRecorderFor("storage-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Storage")
+		os.Exit(1)
+	}
+
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServer")
@@ -114,6 +126,10 @@ func main() {
 		}
 		if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "storage")
 			os.Exit(1)
 		}
 	}

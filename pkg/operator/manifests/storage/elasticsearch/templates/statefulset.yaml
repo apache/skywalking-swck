@@ -1,0 +1,72 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Name }}-elasticsearch
+  namespace: {{ .Namespace }}
+  labels:
+    app: es
+    operator.skywalking.apache.org/es-name: {{ .Name }}
+    operator.skywalking.apache.org/application: elasticsearch
+    operator.skywalking.apache.org/component: statefulset
+spec:
+  serviceName: {{ .Name }}-elasticsearch
+  replicas: {{ .Spec.Instances }}
+  selector:
+    matchLabels:
+      app: es
+      operator.skywalking.apache.org/es-name: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: es
+        operator.skywalking.apache.org/es-name: {{ .Name }}
+        operator.skywalking.apache.org/application: elasticsearch
+        operator.skywalking.apache.org/component: statefulset
+    spec:
+      serviceAccountName: {{ .Name }}-elasticsearch
+      containers:
+        - name: elasticsearch
+          image: {{ .Spec.Image }}
+          resources:
+            limits:
+              cpu: 1000m
+            requests:
+              cpu: 100m
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9200
+              name: rest
+              protocol: TCP
+            - containerPort: 9300
+              name: inter-node
+              protocol: TCP
+          env:
+            - name: cluster.name
+              value: "{{ .Name }}-skywalking-es"
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: discovery.zen.minimum_master_nodes
+              value: "2"
+            - name: discovery.zen.ping.unicast.hosts
+              value: "{{ .Name }}-elasticsearch"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"

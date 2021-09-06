@@ -20,6 +20,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -54,6 +55,8 @@ type OAPServerReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
+// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=storages,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=storages/status,verbs=get;update;patch
 
 func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("oapserver", req.NamespacedName)
@@ -75,6 +78,7 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
 		Recorder: r.Recorder,
 	}
+	r.InjectStorage(ctx, log, &oapServer)
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -118,6 +122,77 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	log.Info("updated Status sub resource")
 
 	return errCol.Error()
+}
+
+// InjectStorage Inject Storage Address
+func (r *OAPServerReconciler) InjectStorage(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) {
+	storageList := operatorv1alpha1.StorageList{}
+	err := r.Client.List(ctx, &storageList)
+	if err == nil && len(storageList.Items) > 0 {
+		storage := &storageList.Items[0]
+		r.ConfigStorage(ctx, log, storage, oapServer)
+		log.Info("success inject storage")
+
+	} else {
+		log.Info("fail inject storage")
+	}
+}
+
+func (r *OAPServerReconciler) ConfigStorage(ctx context.Context, log logr.Logger, s *operatorv1alpha1.Storage, o *operatorv1alpha1.OAPServer) {
+	user, tls := s.Spec.Security.User, s.Spec.Security.TLS
+	SwStorageEsHTTPProtocol := "http"
+	SwEsUser := ""
+	SwEsPassword := ""
+	SwStorageEsSslJksPath := ""
+	SwStorageEsSslJksPass := ""
+	SwStorageEsClusterNodes := ""
+	o.Spec.TLS = ""
+	if user.SecretName != "" {
+		if user.SecretName == "default" {
+			SwEsUser = "elastic"
+			SwEsPassword = "changeme"
+		} else {
+			usersecret := core.Secret{}
+			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: s.Namespace, Name: user.SecretName}, &usersecret); err != nil && !apierrors.IsNotFound(err) {
+				log.Info("fail get usersecret ")
+			}
+			for k, v := range usersecret.Data {
+				if k == "username" {
+					SwEsUser = string(v)
+				} else if k == "password" {
+					SwEsPassword = string(v)
+				}
+			}
+		}
+	}
+	if tls {
+		o.Spec.TLS = "true"
+		SwStorageEsHTTPProtocol = "https"
+		SwStorageEsSslJksPath = "/skywalking/p12/storage.p12"
+		SwStorageEsClusterNodes = "skywalking-storage"
+	} else {
+		SwStorageEsClusterNodes = s.Name + "-" + s.Spec.Type
+	}
+
+	o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE", Value: s.Spec.Type})
+	if user.SecretName != "" {
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_ES_USER", Value: SwEsUser})
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_ES_PASSWORD", Value: SwEsPassword})
+	}
+	if tls {
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_SSL_JKS_PATH", Value: SwStorageEsSslJksPath})
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_SSL_JKS_PASS", Value: SwStorageEsSslJksPass})
+	}
+	if apiequal.Semantic.DeepDerivative(s.Spec.ConnectType, "external") {
+		parseurl, _ := url.Parse(s.Spec.ConnectAddress)
+		SwStorageEsHTTPProtocol = parseurl.Scheme
+		SwStorageEsClusterNodes = parseurl.Host
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_HTTP_PROTOCOL", Value: SwStorageEsHTTPProtocol})
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_CLUSTER_NODES", Value: SwStorageEsClusterNodes})
+	} else {
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_HTTP_PROTOCOL", Value: SwStorageEsHTTPProtocol})
+		o.Spec.Config = append(o.Spec.Config, core.EnvVar{Name: "SW_STORAGE_ES_CLUSTER_NODES", Value: SwStorageEsClusterNodes + ":9200"})
+	}
 }
 
 func (r *OAPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
