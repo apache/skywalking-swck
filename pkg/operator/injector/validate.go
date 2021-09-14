@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -32,13 +31,8 @@ type AnnotationValidateFunc func(annotation, value string) error
 var (
 	//AnnotationValidateFuncs define all validate functions
 	AnnotationValidateFuncs = []AnnotationValidateFunc{
-		ValidateBool,
-		ValidateInt,
-		ValidateClassCacheMode,
+		ValidateServiceName,
 		ValidateIpandPort,
-		ValidateLoggingLevel,
-		ValidateResolver,
-		ValidateOutput,
 	}
 )
 
@@ -59,28 +53,10 @@ func FindValidateFunc(funcName string) AnnotationValidateFunc {
 	return nil
 }
 
-//ValidateBool validates an annotation's value is bool
-func ValidateBool(annotation, value string) error {
-	_, err := strconv.ParseBool(value)
-	if err != nil {
-		return fmt.Errorf("%s error:%s", annotation, err.Error())
-	}
-	return nil
-}
-
-//ValidateInt validates an annotation's value is int
-func ValidateInt(annotation, value string) error {
-	_, err := strconv.ParseInt(value, 10, 32)
-	if err != nil {
-		return fmt.Errorf("%s error:%s", annotation, err.Error())
-	}
-	return nil
-}
-
-//ValidateClassCacheMode validates an annotation's value is right cache mode
-func ValidateClassCacheMode(annotation, value string) error {
-	if !strings.EqualFold(value, "MEMORY") && !strings.EqualFold(value, "FILE") {
-		return fmt.Errorf("%s error:the mode is not MEMORY or FILE", annotation)
+//ValidateServiceName validates the ServiceName is nil or not
+func ValidateServiceName(annotation, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s error:the service name is nil", annotation)
 	}
 	return nil
 }
@@ -99,32 +75,6 @@ func ValidateIpandPort(annotation, value string) error {
 	}
 	if !match {
 		return fmt.Errorf("%s error:not a valid ip and port", annotation)
-	}
-	return nil
-}
-
-//ValidateLoggingLevel validates an annotation's value is right logging level
-func ValidateLoggingLevel(annotation, value string) error {
-	if !strings.EqualFold(value, "TRACE") && !strings.EqualFold(value, "DEBUG") &&
-		!strings.EqualFold(value, "INFO") && !strings.EqualFold(value, "WARN") &&
-		!strings.EqualFold(value, "ERROR") && !strings.EqualFold(value, "OFF") {
-		return fmt.Errorf("%s error:the Level is not in [TRACE,DEBUG,INFO,WARN,ERROR,OFF]", annotation)
-	}
-	return nil
-}
-
-//ValidateResolver validates logging.resolver
-func ValidateResolver(annotation, value string) error {
-	if !strings.EqualFold(value, "PATTERN") && !strings.EqualFold(value, "JSON") {
-		return fmt.Errorf("%s error:the mode is not PATTERN or JSON", annotation)
-	}
-	return nil
-}
-
-//ValidateOutput validates logging.output
-func ValidateOutput(annotation, value string) error {
-	if !strings.EqualFold(value, "FILE") && !strings.EqualFold(value, "CONSOLE") {
-		return fmt.Errorf("%s error:the mode is not FILE or CONSOLE", annotation)
 	}
 	return nil
 }

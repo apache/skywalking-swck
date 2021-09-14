@@ -41,7 +41,7 @@ type Injection interface {
 // 1.Get injection strategy
 // 2.Overlay the sidecar info
 // 3.Overlay the agent by setting jvm string
-// 4.Overlay the plugins by setting jvm string
+// 4.Overlay the plugins by setting jvm string and set the optional plugins
 // 5.Get the ConfigMap
 // 6.Inject fields into Pod
 // After all steps are completed, return fully injected Pod, Or there is an error
@@ -133,7 +133,7 @@ type OverlayPlugins struct {
 	next Injection
 }
 
-// OverlayPlugins is similar to OverlayAgent , but it don't hava validate function
+// OverlayPlugins contains two step , the first is to set jvm string , the second is to set optional plugins
 // during the step , we need to add jvm string to the Env of injected container
 func (op *OverlayPlugins) execute(ipd *InjectProcessData) admission.Response {
 	if !ipd.injectFileds.AgentOverlay {
@@ -143,6 +143,7 @@ func (op *OverlayPlugins) execute(ipd *InjectProcessData) admission.Response {
 	if ipd.injectFileds.JvmAgentConfigStr != "" {
 		ipd.injectFileds.Env.Value = strings.Join([]string{ipd.injectFileds.Env.Value, ipd.injectFileds.JvmAgentConfigStr}, "=")
 	}
+	ipd.injectFileds.OverlayOptional(&ipd.pod.ObjectMeta.Annotations)
 	return op.next.execute(ipd)
 }
 func (op *OverlayPlugins) setNext(next Injection) {

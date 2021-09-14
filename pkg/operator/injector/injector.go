@@ -47,6 +47,11 @@ const (
 	// for example , if user want to enable plugin.mongodb.trace_param
 	// the annotation is plugins.skywalking.apache.org/plugin.mongodb.trace_param: "true"
 	pluginsAnnotationPrefix = "plugins.skywalking.apache.org/"
+	// If user want to use optional-plugins , the annotation must specify a specific plugin
+	// such as optional.skywaking.apache.org/customize-enhance-plugin-8.7.0
+	// Notice , If the injected container's image don't has the optional plugin ,
+	// the container will panic
+	optionsAnnotationPrefix = "optional.skywalking.apache.org/"
 )
 
 // log is for logging in this package.
@@ -291,6 +296,29 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 		}
 	}
 	return true
+}
+
+// OverlayOptional overlays optional plugins and move optional plugins to the directory(/plugins)
+// user must ensure that the optional plugins are in the injected container's image
+// Notice , user must specify the optional plugins' version
+// such as spring-cloud-gateway-2.0.x or spring-cloud-gateway-2.1.x
+// the final command will be "mv /optional-plugins/*spring-cloud-gateway-2.0.x*  /plugins/"
+func (s *SidecarInjectField) OverlayOptional(annotation *map[string]string) {
+	sourcePath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-plugins/"}, "/")
+	targetPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "plugins/"}, "/")
+
+	for k, v := range *annotation {
+		if strings.HasPrefix(k, optionsAnnotationPrefix) {
+			optionalName := strings.TrimPrefix(k, optionsAnnotationPrefix)
+			command := strings.Join([]string{"cp", sourcePath}, " ")
+			if strings.ToLower(v) == "true" {
+				realName := strings.Join([]string{"*", "*"}, optionalName)
+				command = command + realName + " " + targetPath
+				s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
+			}
+		}
+	}
+
 }
 
 // OverlayPlugins will add Plugins' config to JvmAgentStr without verification

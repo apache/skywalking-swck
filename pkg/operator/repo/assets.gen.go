@@ -21,7 +21,7 @@
 // fetcher/templates/configmap.yaml (3.082kB)
 // fetcher/templates/deployment.yaml (2.084kB)
 // fetcher/templates/service_account.yaml (1.088kB)
-// injector/templates/annotations.yaml (12.09kB)
+// injector/templates/annotations.yaml (11.792kB)
 // injector/templates/configmap.yaml (2.044kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
@@ -508,8 +508,8 @@ annotations:
     envName: SW_AGENT_NAMESPACE
 
   - name: agent.skywalking.apache.org/agent.service_name
-    defaultValue: nil
-    validateFunc: nil
+    defaultValue: Your_ApplicationName
+    validateFunc: ValidateServiceName
     useQuotes: nil
     envName: SW_AGENT_NAME
 
@@ -521,7 +521,7 @@ annotations:
 
   - name: agent.skywalking.apache.org/agent.sample_n_per_3_secs
     defaultValue: -1
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_SAMPLE
 
@@ -533,7 +533,7 @@ annotations:
 
   - name: agent.skywalking.apache.org/agent.span_limit_per_segment
     defaultValue: 300
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_SPAN_LIMIT
 
@@ -545,73 +545,73 @@ annotations:
 
   - name: agent.skywalking.apache.org/agent.is_open_debugging_class
     defaultValue: true
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_OPEN_DEBUG
 
   - name: agent.skywalking.apache.org/agent.is_cache_enhanced_class
     defaultValue: false
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil  
     envName: SW_AGENT_CACHE_CLASS
 
   - name: agent.skywalking.apache.org/agent.class_cache_mode
     defaultValue: MEMORY
-    validateFunc: ValidateClassCacheMode
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_CLASS_CACHE_MODE
 
   - name: agent.skywalking.apache.org/agent.cause_exception_depth
     defaultValue: 5
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_CAUSE_EXCEPTION_DEPTH
 
   - name: agent.skywalking.apache.org/agent.force_reconnection_period
     defaultValue: 1
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_FORCE_RECONNECTION_PERIOD
 
   - name: agent.skywalking.apache.org/agent.operation_name_threshold
     defaultValue: 150
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_OPERATION_NAME_THRESHOLD
 
   - name: agent.skywalking.apache.org/agent.keep_tracing
     defaultValue: false
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_KEEP_TRACING
 
   - name: agent.skywalking.apache.org/agent.force_tls
     defaultValue: false
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_FORCE_TLS
 
   - name: agent.skywalking.apache.org/osinfo.ipv4_list_size
     defaultValue: 10
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_OSINFO_IPV4_LIST_SIZE
 
   - name: agent.skywalking.apache.org/collector.grpc_channel_check_interval
     defaultValue: 30
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_GRPC_CHANNEL_CHECK_INTERVAL
 
   - name: agent.skywalking.apache.org/collector.heartbeat_period
     defaultValue: 30
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_HEARTBEAT_PERIOD
 
   - name: agent.skywalking.apache.org/collector.properties_report_period_factor
     defaultValue: 10
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_PROPERTIES_REPORT_PERIOD_FACTOR
 
@@ -623,31 +623,31 @@ annotations:
 
   - name: agent.skywalking.apache.org/collector.grpc_upstream_timeout
     defaultValue: 30
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_GRPC_UPSTREAM_TIMEOUT
 
   - name: agent.skywalking.apache.org/collector.get_profile_task_interval
     defaultValue: 20
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_GET_PROFILE_TASK_INTERVAL 
 
   - name: agent.skywalking.apache.org/collector.get_agent_dynamic_config_interval
     defaultValue: 20
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_GET_AGENT_DYNAMIC_CONFIG_INTERVAL 
 
   - name: agent.skywalking.apache.org/collector.is_resolve_dns_periodically
     defaultValue: false
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_COLLECTOR_IS_RESOLVE_DNS_PERIODICALLY 
 
   - name: agent.skywalking.apache.org/logging.level
     defaultValue: INFO
-    validateFunc: ValidateLoggingLevel
+    validateFunc: nil
     useQuotes: nil
     envName: SW_LOGGING_LEVEL
 
@@ -659,7 +659,7 @@ annotations:
 
   - name: agent.skywalking.apache.org/logging.output
     defaultValue: FILE
-    validateFunc: ValidateOutput
+    validateFunc: nil
     useQuotes: nil
     envName: SW_LOGGING_OUTPUT
 
@@ -671,7 +671,7 @@ annotations:
 
   - name: agent.skywalking.apache.org/logging.resolver
     defaultValue: PATTERN
-    validateFunc: ValidateResolver
+    validateFunc: nil
     useQuotes: nil
     envName: SW_LOGGING_RESOLVER
 
@@ -683,13 +683,13 @@ annotations:
 
   - name: agent.skywalking.apache.org/logging.max_file_size
     defaultValue: 314572800
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_LOGGING_MAX_FILE_SIZE
 
   - name: agent.skywalking.apache.org/logging.max_history_files
     defaultValue: -1
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_LOGGING_MAX_HISTORY_FILES  
 
@@ -701,19 +701,19 @@ annotations:
 
   - name: agent.skywalking.apache.org/statuscheck.max_recursive_depth
     defaultValue: 1
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_STATUSCHECK_MAX_RECURSIVE_DEPTH
 
   - name: agent.skywalking.apache.org/correlation.element_max_number
     defaultValue: 3
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_CORRELATION_ELEMENT_MAX_NUMBER
 
   - name: agent.skywalking.apache.org/correlation.value_max_length
     defaultValue: 128
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_CORRELATION_VALUE_MAX_LENGTH
 
@@ -725,67 +725,67 @@ annotations:
 
   - name: agent.skywalking.apache.org/jvm.buffer_size
     defaultValue: 600
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_JVM_BUFFER_SIZE
 
   - name: agent.skywalking.apache.org/buffer.channel_size
     defaultValue: 5
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_BUFFER_CHANNEL_SIZE
 
   - name: agent.skywalking.apache.org/buffer.buffer_size
     defaultValue: 300
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_BUFFER_BUFFER_SIZE
 
   - name: agent.skywalking.apache.org/profile.active
     defaultValue: true
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_PROFILE_ACTIVE
 
   - name: agent.skywalking.apache.org/profile.max_parallel
     defaultValue: 5
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil    
     envName: SW_AGENT_PROFILE_MAX_PARALLEL
 
   - name: agent.skywalking.apache.org/profile.duration
     defaultValue: 10
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_PROFILE_DURATION
 
   - name: agent.skywalking.apache.org/profile.dump_max_stack_depth
     defaultValue: 500
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_PROFILE_DUMP_MAX_STACK_DEPTH
 
   - name: agent.skywalking.apache.org/profile.snapshot_transport_buffer_size
     defaultValue: 50
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_PROFILE_SNAPSHOT_TRANSPORT_BUFFER_SIZE
 
   - name: agent.skywalking.apache.org/meter.active
     defaultValue: true
-    validateFunc: ValidateBool
+    validateFunc: nil
     useQuotes: nil
     envName: SW_METER_ACTIVE
 
   - name: agent.skywalking.apache.org/meter.report_interval
     defaultValue: 20
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_METER_REPORT_INTERVAL
 
   - name: agent.skywalking.apache.org/meter.max_meter_size
     defaultValue: 500
-    validateFunc: ValidateInt
+    validateFunc: nil
     useQuotes: nil
     envName: SW_METER_MAX_METER_SIZE
 `)
@@ -801,7 +801,7 @@ func injectorTemplatesAnnotationsYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "injector/templates/annotations.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xf9, 0xc2, 0xdf, 0xf4, 0x18, 0x79, 0xe0, 0xe9, 0xef, 0x5, 0x66, 0x53, 0xb7, 0x97, 0x36, 0x11, 0x62, 0xea, 0xc2, 0xfc, 0xb8, 0xd0, 0x11, 0xa5, 0xbb, 0x7e, 0x58, 0x90, 0x37, 0x64, 0x3a, 0xa3}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x80, 0x70, 0xea, 0x8c, 0x8a, 0xa2, 0xc3, 0x6a, 0xec, 0x88, 0x88, 0x90, 0x41, 0x13, 0xe7, 0x8f, 0x23, 0xba, 0x13, 0x44, 0x89, 0x20, 0xed, 0xbe, 0xa2, 0xdd, 0x40, 0x71, 0xa6, 0x67, 0xf0, 0xdd}}
 	return a, nil
 }
 
