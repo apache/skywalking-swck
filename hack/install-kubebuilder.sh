@@ -15,9 +15,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set -ex
 
 os=$(go env GOOS)
 arch=$(go env GOARCH)
-curl -L https://go.kubebuilder.io/dl/2.3.1/${os}/${arch} | tar -xz -C /tmp/
+curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.1/kubebuilder_2.3.1_${os}_${arch}.tar.gz | tar -xz -C /tmp/
 sudo mv /tmp/kubebuilder_2.3.1_${os}_${arch} /usr/local/kubebuilder
 export PATH=$PATH:/usr/local/kubebuilder/bin
