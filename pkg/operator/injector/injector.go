@@ -47,11 +47,14 @@ const (
 	// for example , if user want to enable plugin.mongodb.trace_param
 	// the annotation is plugins.skywalking.apache.org/plugin.mongodb.trace_param: "true"
 	pluginsAnnotationPrefix = "plugins.skywalking.apache.org/"
-	// If user want to use optional-plugins , the annotation must specify a specific plugin
-	// such as optional.skywaking.apache.org/customize-enhance-plugin-8.7.0
+	// If user want to use optional-plugins , the annotation must match a optinal plugin
+	// such as optional.skywalking.apache.org: "*ehcache*"
 	// Notice , If the injected container's image don't has the optional plugin ,
 	// the container will panic
-	optionsAnnotationPrefix = "optional.skywalking.apache.org/"
+	optionsAnnotation = "optional.skywalking.apache.org"
+	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
+	// such as optional-exporter.skywalking.apache.org: "kafka*"
+	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
 )
 
 // log is for logging in this package.
@@ -300,22 +303,25 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 
 // OverlayOptional overlays optional plugins and move optional plugins to the directory(/plugins)
 // user must ensure that the optional plugins are in the injected container's image
-// Notice , user must specify the optional plugins' version
-// such as spring-cloud-gateway-2.0.x or spring-cloud-gateway-2.1.x
-// the final command will be "mv /optional-plugins/*spring-cloud-gateway-2.0.x*  /plugins/"
+// Notice , user must specify the correctness of the regular value
+// such as optional.skywalking.apache.org: "*ehcache*" or optional-reporter.skywalking.apache.org: "kafka*"
+// the final command will be "cp /optional-plugins/*ehcache*  /plugins/" or
+// "cp /optional-exporter-plugins/kafka*  /plugins/"
 func (s *SidecarInjectField) OverlayOptional(annotation *map[string]string) {
-	sourcePath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-plugins/"}, "/")
+	sourceOptionalPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-plugins/"}, "/")
+	sourceOptionalReporterPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-reporter-plugins/"}, "/")
 	targetPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "plugins/"}, "/")
 
 	for k, v := range *annotation {
-		if strings.HasPrefix(k, optionsAnnotationPrefix) {
-			optionalName := strings.TrimPrefix(k, optionsAnnotationPrefix)
-			command := strings.Join([]string{"cp", sourcePath}, " ")
-			if strings.ToLower(v) == "true" {
-				realName := strings.Join([]string{"*", "*"}, optionalName)
-				command = command + realName + " " + targetPath
-				s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
-			}
+		command := ""
+		if strings.EqualFold(k, optionsAnnotation) {
+			command = strings.Join([]string{"cp", sourceOptionalPath}, " ")
+		} else if strings.EqualFold(k, optionsReporterAnnotation) {
+			command = strings.Join([]string{"cp", sourceOptionalReporterPath}, " ")
+		}
+		if command != "" {
+			command = command + v + " " + targetPath
+			s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
 		}
 	}
 
