@@ -55,7 +55,7 @@ func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log 
 	var changedFf []string
 	for _, f := range manifestFiles {
 		sl := log.WithName(f)
-		changed, err := a.Apply(ctx, f, sl)
+		changed, err := a.Apply(ctx, f, sl, true)
 		if err != nil {
 			l.Error(err, "failed to apply resource")
 			a.Recorder.Eventf(a.CR, v1.EventTypeWarning, "failed to apply resource", "encountered err: %v", err)
@@ -72,7 +72,7 @@ func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log 
 }
 
 // Apply a template represents a component to api server
-func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logger) (bool, error) {
+func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logger, needCompose bool) (bool, error) {
 	manifests, err := a.FileRepo.ReadFile(manifest)
 	if err != nil {
 		return false, err
@@ -86,31 +86,35 @@ func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logge
 	if err != nil {
 		return false, fmt.Errorf("failed to load %s template: %w", manifest, err)
 	}
-	return a.apply(ctx, proto, log)
+	return a.apply(ctx, proto, log, needCompose)
 }
 
 // ApplyFromObject apply an object to api server
-func (a *Application) ApplyFromObject(ctx context.Context, obj runtime.Object, log logr.Logger) (bool, error) {
+func (a *Application) ApplyFromObject(ctx context.Context, obj runtime.Object, log logr.Logger, needCompose bool) (bool, error) {
 	proto, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
 		return false, fmt.Errorf("failed to convert object to unstructed: %v", err)
 	}
-	return a.apply(ctx, &unstructured.Unstructured{Object: proto}, log)
+	return a.apply(ctx, &unstructured.Unstructured{Object: proto}, log, needCompose)
 }
 
-func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) (bool, error) {
+func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger, needCompose bool) (bool, error) {
 	key := client.ObjectKeyFromObject(obj)
 	current := &unstructured.Unstructured{}
 	current.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	err := a.Get(ctx, key, current)
+
 	if apierrors.IsNotFound(err) {
 		log.Info("could not find existing resource, creating one...")
-		curr, errComp := a.compose(obj)
-		if errComp != nil {
-			return false, fmt.Errorf("failed to compose: %w", errComp)
+		if needCompose {
+			curr, errComp := a.compose(obj)
+			if errComp != nil {
+				return false, fmt.Errorf("failed to compose: %w", errComp)
+			}
+			obj = curr
 		}
 
-		if err = a.Create(ctx, curr); err != nil {
+		if err = a.Create(ctx, obj); err != nil {
 			return false, fmt.Errorf("failed to create: %w", err)
 		}
 
@@ -121,16 +125,19 @@ func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured,
 		return false, fmt.Errorf("failed to get %v : %w", key, err)
 	}
 
-	object, err := a.compose(obj)
-	if err != nil {
-		return false, fmt.Errorf("failed to compose: %w", err)
+	if needCompose {
+		object, err := a.compose(obj)
+		if err != nil {
+			return false, fmt.Errorf("failed to compose: %w", err)
+		}
+		obj = object
 	}
 
-	if getVersion(current, a.versionKey()) == getVersion(object, a.versionKey()) {
+	if getVersion(current, a.versionKey()) == getVersion(obj, a.versionKey()) {
 		log.Info("resource keeps the same as before")
 		return false, nil
 	}
-	if err := a.Update(ctx, object); err != nil {
+	if err := a.Update(ctx, obj); err != nil {
 		return false, fmt.Errorf("failed to update: %w", err)
 	}
 	log.Info("updated")

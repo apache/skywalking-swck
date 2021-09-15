@@ -98,7 +98,7 @@ adapter-deploy:
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./apis/..."
+	#$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./apis/..."
 	$(MAKE) format
 
 GO_LICENSER := $(GOBIN)/go-licenser

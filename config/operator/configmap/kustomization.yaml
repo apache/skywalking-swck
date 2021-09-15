@@ -16,12 +16,5 @@
 # under the License.
 
 resources:
-- service.yaml
-- manifests.yaml
-
-patchesStrategicMerge:
-- ns_selector_patch.yaml
-
-configurations:
-- kustomizeconfig.yaml
+- configmap.yaml
 
