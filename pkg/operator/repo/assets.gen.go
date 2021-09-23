@@ -21,7 +21,7 @@
 // fetcher/templates/configmap.yaml (3.082kB)
 // fetcher/templates/deployment.yaml (2.084kB)
 // fetcher/templates/service_account.yaml (1.088kB)
-// injector/templates/annotations.yaml (11.792kB)
+// injector/templates/annotations.yaml (11.969kB)
 // injector/templates/configmap.yaml (2.044kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
@@ -513,12 +513,6 @@ annotations:
     useQuotes: nil
     envName: SW_AGENT_NAME
 
-  - name: agent.skywalking.apache.org/agent.instance_name
-    defaultValue: nil
-    validateFunc: nil
-    useQuotes: nil
-    envName: SW_AGENT_INSTANCE_NAME
-
   - name: agent.skywalking.apache.org/agent.sample_n_per_3_secs
     defaultValue: -1
     validateFunc: nil
@@ -530,6 +524,12 @@ annotations:
     validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_AUTHENTICATION
+
+  - name: agent.skywalking.apache.org/agent.trace_segment_ref_limit_per_span
+    defaultValue: 500
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_TRACE_SEGMENT_LIMIT
 
   - name: agent.skywalking.apache.org/agent.span_limit_per_segment
     defaultValue: 300
@@ -560,6 +560,12 @@ annotations:
     validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_CLASS_CACHE_MODE
+
+  - name: agent.skywalking.apache.org/agent.instance_name
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_INSTANCE_NAME
 
   - name: agent.skywalking.apache.org/agent.cause_exception_depth
     defaultValue: 5
@@ -801,7 +807,7 @@ func injectorTemplatesAnnotationsYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "injector/templates/annotations.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x80, 0x70, 0xea, 0x8c, 0x8a, 0xa2, 0xc3, 0x6a, 0xec, 0x88, 0x88, 0x90, 0x41, 0x13, 0xe7, 0x8f, 0x23, 0xba, 0x13, 0x44, 0x89, 0x20, 0xed, 0xbe, 0xa2, 0xdd, 0x40, 0x71, 0xa6, 0x67, 0xf0, 0xdd}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x8b, 0x7e, 0x7b, 0x2, 0x4d, 0x83, 0x3f, 0x32, 0x2c, 0xa9, 0x31, 0xba, 0x70, 0xe2, 0x7b, 0xe1, 0x1f, 0xce, 0x7, 0x6b, 0x65, 0x9e, 0xc1, 0xe7, 0xb0, 0x6d, 0x5c, 0xc, 0x72, 0x57, 0x3, 0x50}}
 	return a, nil
 }
 
