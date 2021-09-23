@@ -113,12 +113,6 @@ annotations:
     useQuotes: nil
     envName: SW_AGENT_NAME
 
-  - name: agent.skywalking.apache.org/agent.instance_name
-    defaultValue: nil
-    validateFunc: nil
-    useQuotes: nil
-    envName: SW_AGENT_INSTANCE_NAME
-
   - name: agent.skywalking.apache.org/agent.sample_n_per_3_secs
     defaultValue: -1
     validateFunc: nil
@@ -130,6 +124,12 @@ annotations:
     validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_AUTHENTICATION
+
+  - name: agent.skywalking.apache.org/agent.trace_segment_ref_limit_per_span
+    defaultValue: 500
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_TRACE_SEGMENT_LIMIT
 
   - name: agent.skywalking.apache.org/agent.span_limit_per_segment
     defaultValue: 300
@@ -160,6 +160,12 @@ annotations:
     validateFunc: nil
     useQuotes: nil
     envName: SW_AGENT_CLASS_CACHE_MODE
+
+  - name: agent.skywalking.apache.org/agent.instance_name
+    defaultValue: nil
+    validateFunc: nil
+    useQuotes: nil
+    envName: SW_AGENT_INSTANCE_NAME
 
   - name: agent.skywalking.apache.org/agent.cause_exception_depth
     defaultValue: 5
