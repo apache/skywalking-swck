@@ -15,13 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resources:
-- service.yaml
-- manifests.yaml
-
-patchesStrategicMerge:
-- ns_selector_patch.yaml
-
-configurations:
-- kustomizeconfig.yaml
-
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-v1-pod
+  name: mpod.kb.io
+  namespaceSelector:
+    matchLabels:
+      swck-injection: enabled
