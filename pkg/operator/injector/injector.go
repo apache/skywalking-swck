@@ -254,38 +254,15 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 
 // AgentOverlayandGetValue will do real annotation overlay
 func (s *SidecarInjectField) AgentOverlayandGetValue(ao *AnnotationOverlay, annotation *map[string]string,
-	a Annotation) (string, bool) {
+	a Annotation) bool {
 	if _, ok := (*annotation)[a.Name]; ok {
 		err := ao.SetOverlay(annotation, a)
 		if err != nil {
 			s.injectErrorAnnotation(annotation, err.Error())
-			return "", false
+			return false
 		}
 	}
-	return ao.GetOverlayValue(a), true
-}
-
-func (s *SidecarInjectField) setJvmAgentStr(ao *AnnotationOverlay, annotation *map[string]string, a Annotation) bool {
-	v, ok := s.AgentOverlayandGetValue(ao, annotation, a)
-	if v != "" && ok {
-		// get {config1}={value1}
-		configName := strings.TrimPrefix(a.Name, agentAnnotationPrefix)
-		switch a.UseQuotes {
-		case "option":
-			configName = strings.Join([]string{"'", "'"}, configName)
-		case "value":
-			v = strings.Join([]string{"'", "'"}, v)
-		}
-		config := strings.Join([]string{configName, v}, "=")
-
-		// add to jvmAgentConfigStr
-		if s.JvmAgentConfigStr != "" {
-			s.JvmAgentConfigStr = strings.Join([]string{s.JvmAgentConfigStr, config}, ",")
-		} else {
-			s.JvmAgentConfigStr = config
-		}
-	}
-	return ok
+	return true
 }
 
 // OverlayAgent overlays agent
@@ -293,9 +270,23 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 	// jvmAgentConfigStr init
 	s.JvmAgentConfigStr = ""
 	anno := GetAnnotationsByPrefix(a, agentAnnotationPrefix)
-	for _, v := range anno.Annotations {
-		if !s.setJvmAgentStr(ao, annotation, v) {
-			return false
+	for k, v := range *annotation {
+		if strings.HasPrefix(k, agentAnnotationPrefix) {
+			for _, an := range anno.Annotations {
+				if strings.EqualFold(k, an.Name) {
+					if !s.AgentOverlayandGetValue(ao, annotation, an) {
+						return false
+					}
+				}
+			}
+			configName := strings.TrimPrefix(k, agentAnnotationPrefix)
+			config := strings.Join([]string{configName, v}, "=")
+			// add to jvmAgentConfigStr
+			if s.JvmAgentConfigStr != "" {
+				s.JvmAgentConfigStr = strings.Join([]string{s.JvmAgentConfigStr, config}, ",")
+			} else {
+				s.JvmAgentConfigStr = config
+			}
 		}
 	}
 	return true
