@@ -1,14 +1,14 @@
 # Java agent injector Usage
 
-In this example , you will learn how to use the java agent injector in three ways.
+In this example, you will learn how to use the java agent injector in three ways.
 
 ## Install injector
 
-The java agent injector is builded in the operator , so you need to follow [Operator installation instrument](../../README.md#operator) to install the operator firstly.
+The java agent injector is a component of the operator, so you need to follow [Operator installation instrument](../../README.md#operator) to install the operator firstly.
 
 ## Use default configuration
 
-At first , set the injection label in your namespace as below.
+At first, set the injection label in your namespace as below.
 
 ```shell
 kubectl label namespace default(your namespace) swck-injection=enabled
@@ -82,7 +82,7 @@ skywalking-swck-java-agent-configmap   1      61s
 
 ## Use annotation to override sidecar configuration
 
-At first , set the injection label in your namespace as below.
+At first, set the injection label in your namespace as below.
 
 ```shell
 kubectl label namespace default(your namespace) swck-injection=enabled
@@ -164,7 +164,7 @@ skywalking-swck-java-agent-configmap   1      61s
 
 #### Use annotation to set the coverage strategy and override the agent configuration
 
-At first , set the injection label in your namespace as below.
+At first, set the injection label in your namespace as below.
 
 ```shell
 kubectl label namespace default(your namespace) swck-injection=enabled
