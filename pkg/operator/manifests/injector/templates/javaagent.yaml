@@ -14,22 +14,19 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-domain: skywalking.apache.org
-multigroup: true
-repo: github.com/apache/skywalking-swck
-resources:
-- group: operator
-  kind: OAPServer
-  version: v1alpha1
-- group: operator
-  kind: UI
-  version: v1alpha1
-- group: operator
-  kind: Fetcher
-  version: v1alpha1
-- group: operator
-  kind: JavaAgent
-  version: v1alpha1
-version: "2"
+{{- $pod := req }}
+{{- $configuration := config }}
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: JavaAgent
+metadata:
+  name: {{ $pod.Name }}-javaagent
+  namespace: {{ $pod.Namespace }}
+spec:
+  pod: {{ $pod.Name }}
+  serviceName: {{ServiceName}}
+  backendService: {{BackendService}}
+  agentConfiguration: 
+  {{ range $key, $value := $configuration }}
+    {{$key}}: {{$value}}
+  {{- end -}}

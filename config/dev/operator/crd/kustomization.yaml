@@ -22,4 +22,5 @@ resources:
 - bases/operator.skywalking.apache.org_oapservers.yaml
 - bases/operator.skywalking.apache.org_uis.yaml
 - bases/operator.skywalking.apache.org_fetchers.yaml
+- bases/operator.skywalking.apache.org_javaagents.yaml
 # +kubebuilder:scaffold:crdkustomizeresource

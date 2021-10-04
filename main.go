@@ -114,6 +114,25 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
 		os.Exit(1)
 	}
+
+	if err = (&operatorcontroller.ConfigMapReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("ConfigMap"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("injector"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
+		os.Exit(1)
+	}
+
+	if err = (&operatorcontroller.JavaAgentReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("JavaAgent"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	// register a webhook to enable the agent injector，

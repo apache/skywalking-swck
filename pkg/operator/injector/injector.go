@@ -32,6 +32,8 @@ import (
 const (
 	// the label means whether to enbale injection , "true" of "false"
 	labelKeyagentInjector = "swck-java-agent-injected"
+	// SidecarInjectSucceedAnno represents injection succeed
+	SidecarInjectSucceedAnno = "sidecar.skywalking.apache.org/succeed"
 	// the annotation means which container to inject
 	sidecarInjectContainerAnno = "strategy.skywalking.apache.org/inject.Container"
 	// the annotation means whether to enable overlay agent, "true" of "false"
@@ -55,6 +57,9 @@ const (
 	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
 	// such as optional-exporter.skywalking.apache.org: "kafka"
 	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
+	// the ServiceName and BackendService are important information that need to be printed
+	ServiceName    = "agent.service_name"
+	BackendService = "collector.backend_service"
 )
 
 // log is for logging in this package.
@@ -153,7 +158,7 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 		return
 	}
 
-	if strings.ToLower((*labels)[labelKeyagentInjector]) == "true" {
+	if strings.EqualFold(strings.ToLower((*labels)[labelKeyagentInjector]), "true") {
 		s.NeedInject = true
 	}
 
@@ -168,7 +173,7 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 
 	// set AgentOverlay's value
 	if v, ok := (*annotation)[sidecarAgentOverlayAnno]; ok {
-		if strings.ToLower(v) == "true" {
+		if strings.EqualFold(strings.ToLower(v), "true") {
 			s.AgentOverlay = true
 		}
 	}
@@ -187,8 +192,13 @@ func (s *SidecarInjectField) findInjectContainer(containers []corev1.Container) 
 	}
 	return nil
 }
+
 func (s *SidecarInjectField) injectErrorAnnotation(annotation *map[string]string, errorInfo string) {
 	(*annotation)[sidecarInjectErrorAnno] = errorInfo
+}
+
+func (s *SidecarInjectField) injectSucceedAnnotation(annotation *map[string]string) {
+	(*annotation)[SidecarInjectSucceedAnno] = "true"
 }
 
 // SidecarOverlayandGetValue get final value of sidecar
@@ -384,4 +394,41 @@ func (s *SidecarInjectField) CreateConfigmap(ctx context.Context, kubeclient cli
 		return false
 	}
 	return true
+}
+
+func GetInjectedAgentConfig(annotation *map[string]string, configuration *map[string]string) {
+	if strings.ToLower((*annotation)[sidecarAgentOverlayAnno]) != "true" {
+		return
+	}
+	for k, v := range *annotation {
+		if strings.HasPrefix(k, agentAnnotationPrefix) {
+			option := strings.TrimPrefix(k, agentAnnotationPrefix)
+			(*configuration)[option] = strings.Join([]string{"\"", "\""}, v)
+		} else if strings.HasPrefix(k, pluginsAnnotationPrefix) {
+			option := strings.TrimPrefix(k, pluginsAnnotationPrefix)
+			(*configuration)[option] = strings.Join([]string{"\"", "\""}, v)
+		} else if strings.EqualFold(k, optionsAnnotation) {
+			option := "optional-plugin"
+			(*configuration)[option] = strings.Join([]string{"\"", "\""}, v)
+		} else if strings.EqualFold(k, optionsReporterAnnotation) {
+			option := "optional-reporter-plugin"
+			(*configuration)[option] = strings.Join([]string{"\"", "\""}, v)
+		}
+	}
+}
+
+func GetServiceName(configuration *map[string]string) string {
+	v, ok := (*configuration)[ServiceName]
+	if !ok {
+		return ""
+	}
+	return v
+}
+
+func GetBackendService(configuration *map[string]string) string {
+	v, ok := (*configuration)[BackendService]
+	if !ok {
+		return ""
+	}
+	return v
 }
