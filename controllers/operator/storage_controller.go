@@ -27,6 +27,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
@@ -75,10 +76,10 @@ func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if storage.Spec.ConnectType == "external" {
 		return ctrl.Result{RequeueAfter: schedDuration}, nil
 	}
-	if storage.Spec.Type == "elasticsearch7" {
-		r.createCert(ctx, log, &storage)
-		r.checkSecurity(ctx, log, &storage)
-	}
+
+	r.createCert(ctx, log, &storage)
+	r.checkSecurity(ctx, log, &storage)
+
 	ff, err := r.FileRepo.GetFilesRecursive(storage.Spec.Type + "/templates")
 	if err != nil {
 		log.Error(err, "failed to load resource templates")
@@ -154,7 +155,14 @@ func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, 
 	} else {
 		s.Spec.ServiceName = s.Name + "-" + s.Spec.Type
 	}
+	if s.Spec.ResourceCnfig.Limit == "" && s.Spec.ResourceCnfig.Requests == "" {
+		s.Spec.ResourceCnfig.Limit, s.Spec.ResourceCnfig.Requests = "1000m", "100m"
+	}
+	clusterInitialMasterNodes := s.Name + "-elasticsearch7-0" + "," + s.Name + "-elasticsearch7-1"
+	esJavaOptsValue := "-Xms512m -Xmx512m"
 	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "discovery.seed_hosts", Value: s.Spec.ServiceName})
+	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "cluster.initial_master_nodes", Value: clusterInitialMasterNodes})
+	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ES_JAVA_OPTS", Value: esJavaOptsValue})
 }
 
 func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *operatorv1alpha1.Storage) {
@@ -162,11 +170,28 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 	if err != nil {
 		return
 	}
-	secret2, _ := clientset.CoreV1().Secrets(s.Namespace).Get(ctx, "skywalking-storage", metav1.GetOptions{})
-	if secret2.Name != "" {
+	existSecret, err := clientset.CoreV1().Secrets(s.Namespace).Get(ctx, "skywalking-storage", metav1.GetOptions{})
+	if err != nil {
+		log.Info("fail get skywalking-storage secret")
 		return
 	}
-	key, _ := rsa.GenerateKey(rand.Reader, 4096)
+	if existSecret.Name != "" {
+		_, verifyCert, err := pkcs12.Decode(existSecret.Data["storage.p12"], "")
+		if err != nil {
+			log.Info("decode storage.p12 error")
+			return
+		}
+		if verifyCert.NotAfter.Sub(time.Now()).Hours() < 24 {
+			log.Info("storage cert will expire,the storage cert will re-generate!")
+		} else {
+			return
+		}
+	}
+	key, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		log.Info("fail generate privatekey")
+		return
+	}
 	subj := pkix.Name{
 		CommonName:         "skywalking-storage",
 		Country:            []string{"CN"},
@@ -183,10 +208,15 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		RawSubject:         asn1Subj,
 		SignatureAlgorithm: x509.SHA256WithRSA,
 	}
-	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	if err != nil {
+		log.Info("fail create certificaterequest")
+		return
+	}
 	buffer := new(bytes.Buffer)
 	err = pem.Encode(buffer, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 	if err != nil {
+		log.Info("fail encode CERTIFICATE REQUEST")
 		return
 	}
 	singername := "kubernetes.io/kube-apiserver-client"
@@ -237,8 +267,18 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		}
 	}
 	block, _ := pem.Decode(csr.Status.Certificate)
-	cert, _ := x509.ParseCertificate(block.Bytes)
-	p12, _ := pkcs12.Encode(rand.Reader, key, cert, nil, "")
+	cert, err := x509.ParseCertificate(block.Bytes)
+
+	if err != nil {
+		log.Info("fail parse certificate")
+		return
+	}
+	p12, err := pkcs12.Encode(rand.Reader, key, cert, nil, "")
+
+	if err != nil {
+		log.Info("fail encode pkcs12")
+		return
+	}
 	err = clientset.CoreV1().Secrets(s.Namespace).Delete(ctx, "skywalking-storage", metav1.DeleteOptions{})
 	if err != nil {
 		log.Info("fail delete secret skywalking-storage")

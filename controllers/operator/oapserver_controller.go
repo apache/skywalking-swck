@@ -78,7 +78,9 @@ func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("OAPServer"),
 		Recorder: r.Recorder,
 	}
+
 	r.InjectStorage(ctx, log, &oapServer)
+
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -124,15 +126,13 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	return errCol.Error()
 }
 
-// InjectStorage Inject Storage Address
+//InjectStorage Inject Storage
 func (r *OAPServerReconciler) InjectStorage(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) {
-	storageList := operatorv1alpha1.StorageList{}
-	err := r.Client.List(ctx, &storageList)
-	if err == nil && len(storageList.Items) > 0 {
-		storage := &storageList.Items[0]
+	storage := &operatorv1alpha1.Storage{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Spec.StorageConfig.Name}, storage)
+	if err == nil {
 		r.ConfigStorage(ctx, log, storage, oapServer)
 		log.Info("success inject storage")
-
 	} else {
 		log.Info("fail inject storage")
 	}
@@ -146,14 +146,14 @@ func (r *OAPServerReconciler) ConfigStorage(ctx context.Context, log logr.Logger
 	SwStorageEsSslJksPath := ""
 	SwStorageEsSslJksPass := ""
 	SwStorageEsClusterNodes := ""
-	o.Spec.TLS = ""
+	o.Spec.StorageConfig.Storage = *s
 	if user.SecretName != "" {
 		if user.SecretName == "default" {
 			SwEsUser = "elastic"
 			SwEsPassword = "changeme"
 		} else {
-			usersecret := core.Secret{}
-			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: s.Namespace, Name: user.SecretName}, &usersecret); err != nil && !apierrors.IsNotFound(err) {
+			usersecret := &core.Secret{}
+			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: s.Namespace, Name: user.SecretName}, usersecret); err != nil && !apierrors.IsNotFound(err) {
 				log.Info("fail get usersecret ")
 			}
 			for k, v := range usersecret.Data {
@@ -166,7 +166,6 @@ func (r *OAPServerReconciler) ConfigStorage(ctx context.Context, log logr.Logger
 		}
 	}
 	if tls {
-		o.Spec.TLS = "true"
 		SwStorageEsHTTPProtocol = "https"
 		SwStorageEsSslJksPath = "/skywalking/p12/storage.p12"
 		SwStorageEsClusterNodes = "skywalking-storage"

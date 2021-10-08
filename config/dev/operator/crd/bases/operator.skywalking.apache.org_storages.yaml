@@ -30,10 +30,6 @@ spec:
     description: The number of expected instance
     name: Instances
     type: string
-  - JSONPath: .status.readyReplicas
-    description: The number of expected instance
-    name: ReadyReplicas
-    type: string
   - JSONPath: .spec.type
     description: The type of strorage
     name: Type
@@ -190,6 +186,14 @@ spec:
               description: Instance is the number of storage.
               format: int32
               type: integer
+            resource:
+              description: ResourceCnfig relevant settings
+              properties:
+                limit:
+                  type: string
+                requests:
+                  type: string
+              type: object
             security:
               description: Security relevant settings
               properties:
@@ -247,10 +251,6 @@ spec:
                 - type
                 type: object
               type: array
-            readyReplicas:
-              description: readyReplicas is the number of Pods created by the StatefulSet
-              format: int32
-              type: integer
           type: object
       type: object
   version: v1alpha1

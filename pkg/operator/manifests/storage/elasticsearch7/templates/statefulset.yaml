@@ -41,15 +41,24 @@ spec:
         operator.skywalking.apache.org/component: statefulset
     spec:
       serviceAccountName: {{ .Name }}-elasticsearch7
-      nodeName: n3
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - "es"
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: elasticsearch
           image: {{ .Spec.Image }}
           resources:
             limits:
-              cpu: 1000m
+              cpu: {{ .Spec.ResourceCnfig.Limit }}
             requests:
-              cpu: 100m
+              cpu: {{ .Spec.ResourceCnfig.Requests }}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9200
@@ -74,14 +83,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: cluster.initial_master_nodes
-              value: "{{ .Name }}-elasticsearch7-0,{{ .Name }}-elasticsearch7-1"
-            - name: ES_JAVA_OPTS
-              value: "-Xms512m -Xmx512m"
+            - name: thread_pool.write.queue_size
+              value: "1000"
             {{ range .Spec.Config }}
             - name: {{ .Name }}
               value: {{ .Value }}
             {{end}}
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
       volumes:
         - name: config
           configMap:
@@ -94,4 +105,3 @@ spec:
           secret:
             secretName:  "skywalking-storage"
         {{end}}
-

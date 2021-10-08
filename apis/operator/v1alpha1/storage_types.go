@@ -50,6 +50,8 @@ type StorageSpec struct {
 	ServiceName string `json:"servicename,omitempty"`
 	// Config holds the Storage configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
+	//ResourceCnfig relevant settings
+	ResourceCnfig Resource `json:"resource,omitempty"`
 }
 
 // SecuritySpec defines the security setting of Storage
@@ -69,11 +71,13 @@ type UserSpec struct {
 	SecretName string `json:"secretName,omitempty"`
 }
 
+type Resource struct {
+	Limit    string `json:"limit,omitempty"`
+	Requests string `json:"requests,omitempty"`
+}
+
 // StorageStatus defines the observed state of Storage
 type StorageStatus struct {
-	// readyReplicas is the number of Pods created by the StatefulSet
-	// +kubebuilder:validation:Optional
-	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
 	// Represents the latest available observations of the underlying statefulset's current state.
 	// +kubebuilder:validation:Optional
 	Conditions []appsv1.StatefulSetCondition `json:"conditions,omitempty"`
@@ -82,7 +86,6 @@ type StorageStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
-// +kubebuilder:printcolumn:name="ReadyReplicas",type="string",JSONPath=".status.readyReplicas",description="The number of expected instance"
 // +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type",description="The type of strorage"
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version"
 // +kubebuilder:printcolumn:name="ConnectType",type="string",JSONPath=".spec.connectType",description="the way to connect storage"

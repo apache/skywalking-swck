@@ -25,17 +25,14 @@
 // injector/templates/configmap.yaml (2.044kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
-// oapserver/templates/deployment.yaml (3.863kB)
+// oapserver/templates/deployment.yaml (3.933kB)
 // oapserver/templates/ingress.yaml (1.672kB)
 // oapserver/templates/service.yaml (1.782kB)
 // oapserver/templates/service_account.yaml (1.09kB)
-// storage/elasticsearch/templates/service.yaml (1.285kB)
-// storage/elasticsearch/templates/service_account.yaml (1.095kB)
-// storage/elasticsearch/templates/statefulset.yaml (2.513kB)
 // storage/elasticsearch7/templates/configmap.yaml (1.568kB)
 // storage/elasticsearch7/templates/service.yaml (1.29kB)
 // storage/elasticsearch7/templates/service_account.yaml (1.096kB)
-// storage/elasticsearch7/templates/statefulset.yaml (3.322kB)
+// storage/elasticsearch7/templates/statefulset.yaml (3.673kB)
 // ui/templates/deployment.yaml (2.604kB)
 // ui/templates/ingress.yaml (1.668kB)
 // ui/templates/service.yaml (1.681kB)
@@ -999,6 +996,7 @@ metadata:
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}
     operator.skywalking.apache.org/application: oapserver
     operator.skywalking.apache.org/component: deployment
+
 spec:
   replicas: {{ .Spec.Instances }}
   minReadySeconds: 5
@@ -1056,7 +1054,7 @@ spec:
               command:
                 - /skywalking/bin/swctl
                 - ch
-          {{ if .Spec.TLS }}
+          {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
           volumeMounts:
             - name: cert
               mountPath: /skywalking/p12
@@ -1082,12 +1080,13 @@ spec:
           - name: {{ .Name }}
             value: {{ .Value }}
           {{end}}
-      {{ if .Spec.TLS }}
+      {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
       volumes:
         - name: cert
           secret:
             secretName:  "skywalking-storage"
-      {{end}}`)
+      {{end}}
+`)
 
 func oapserverTemplatesDeploymentYamlBytes() ([]byte, error) {
 	return _oapserverTemplatesDeploymentYaml, nil
@@ -1100,7 +1099,7 @@ func oapserverTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "oapserver/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xef, 0x80, 0x5, 0xf0, 0x8, 0x69, 0x81, 0x8a, 0x57, 0x40, 0xa6, 0x57, 0x94, 0x84, 0x8e, 0x69, 0x44, 0x41, 0x49, 0x22, 0x7b, 0xcf, 0xf4, 0xe9, 0x14, 0x8, 0xc2, 0xda, 0xb5, 0x82, 0xb5, 0x33}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x4e, 0x7a, 0x69, 0xf2, 0xdb, 0x58, 0x23, 0x88, 0xba, 0x1b, 0x8f, 0xa8, 0xb4, 0x6c, 0xc7, 0x2e, 0x93, 0xb3, 0x4b, 0x44, 0xfa, 0x74, 0x13, 0xe9, 0x68, 0x99, 0x45, 0x1a, 0x9f, 0x3b, 0xf4, 0x7}}
 	return a, nil
 }
 
@@ -1285,195 +1284,6 @@ func oapserverTemplatesService_accountYaml() (*asset, error) {
 
 	info := bindataFileInfo{name: "oapserver/templates/service_account.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x35, 0x3b, 0x36, 0x6, 0xcc, 0x9, 0x84, 0x7d, 0x62, 0x48, 0x31, 0xcf, 0x17, 0xec, 0xd1, 0xdd, 0x83, 0x0, 0x86, 0x6a, 0x50, 0xd5, 0xb6, 0x4a, 0x23, 0xdc, 0xea, 0xd, 0x80, 0x87, 0x2, 0x24}}
-	return a, nil
-}
-
-var _storageElasticsearchTemplatesServiceYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
-# license agreements. See the NOTICE file distributed with
-# this work for additional information regarding copyright
-# ownership. Apache Software Foundation (ASF) licenses this file to you under
-# the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
-kind: Service
-apiVersion: v1
-metadata:
-  name: {{ .Name }}-elasticsearch
-  namespace: {{ .Namespace }}
-  labels:
-    app: es
-    operator.skywalking.apache.org/es-name: {{ .Name }}
-    operator.skywalking.apache.org/application: elasticsearch
-    operator.skywalking.apache.org/component: service
-spec:
-  clusterIP: None
-  selector:
-    app: es
-    operator.skywalking.apache.org/es-name: {{ .Name }}
-  ports:
-  - name: rest
-    port: 9200
-  - name: inter-node
-    port: 9300
-
-
-
-`)
-
-func storageElasticsearchTemplatesServiceYamlBytes() ([]byte, error) {
-	return _storageElasticsearchTemplatesServiceYaml, nil
-}
-
-func storageElasticsearchTemplatesServiceYaml() (*asset, error) {
-	bytes, err := storageElasticsearchTemplatesServiceYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "storage/elasticsearch/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6, 0x9f, 0x38, 0xa7, 0x37, 0xce, 0x68, 0xe5, 0x25, 0xe3, 0x71, 0x8e, 0x7b, 0x66, 0xa1, 0xc4, 0x2a, 0x16, 0xbe, 0x6a, 0xfc, 0x98, 0x6, 0xee, 0x44, 0x30, 0x5f, 0x3e, 0x44, 0x49, 0x5c, 0xb2}}
-	return a, nil
-}
-
-var _storageElasticsearchTemplatesService_accountYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
-# license agreements. See the NOTICE file distributed with
-# this work for additional information regarding copyright
-# ownership. Apache Software Foundation (ASF) licenses this file to you under
-# the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ .Name }}-elasticsearch
-  namespace: {{ .Namespace }}
-  labels:
-    operator.skywalking.apache.org/es-name: {{ .Name }}
-    operator.skywalking.apache.org/application: elasticsearch
-    operator.skywalking.apache.org/component: rbac
-`)
-
-func storageElasticsearchTemplatesService_accountYamlBytes() ([]byte, error) {
-	return _storageElasticsearchTemplatesService_accountYaml, nil
-}
-
-func storageElasticsearchTemplatesService_accountYaml() (*asset, error) {
-	bytes, err := storageElasticsearchTemplatesService_accountYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "storage/elasticsearch/templates/service_account.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe6, 0xe2, 0x5d, 0x98, 0xe2, 0xbb, 0x1, 0xf0, 0x92, 0x2e, 0x76, 0x6f, 0xc2, 0x7d, 0x95, 0x7, 0xd4, 0x74, 0xa7, 0x40, 0x55, 0x1f, 0x9f, 0xf9, 0x25, 0x92, 0x9f, 0xea, 0x13, 0x49, 0xca, 0x43}}
-	return a, nil
-}
-
-var _storageElasticsearchTemplatesStatefulsetYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
-# license agreements. See the NOTICE file distributed with
-# this work for additional information regarding copyright
-# ownership. Apache Software Foundation (ASF) licenses this file to you under
-# the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: {{ .Name }}-elasticsearch
-  namespace: {{ .Namespace }}
-  labels:
-    app: es
-    operator.skywalking.apache.org/es-name: {{ .Name }}
-    operator.skywalking.apache.org/application: elasticsearch
-    operator.skywalking.apache.org/component: statefulset
-spec:
-  serviceName: {{ .Name }}-elasticsearch
-  replicas: {{ .Spec.Instances }}
-  selector:
-    matchLabels:
-      app: es
-      operator.skywalking.apache.org/es-name: {{ .Name }}
-  template:
-    metadata:
-      labels:
-        app: es
-        operator.skywalking.apache.org/es-name: {{ .Name }}
-        operator.skywalking.apache.org/application: elasticsearch
-        operator.skywalking.apache.org/component: statefulset
-    spec:
-      serviceAccountName: {{ .Name }}-elasticsearch
-      containers:
-        - name: elasticsearch
-          image: {{ .Spec.Image }}
-          resources:
-            limits:
-              cpu: 1000m
-            requests:
-              cpu: 100m
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 9200
-              name: rest
-              protocol: TCP
-            - containerPort: 9300
-              name: inter-node
-              protocol: TCP
-          env:
-            - name: cluster.name
-              value: "{{ .Name }}-skywalking-es"
-            - name: node.name
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: discovery.zen.minimum_master_nodes
-              value: "2"
-            - name: discovery.zen.ping.unicast.hosts
-              value: "{{ .Name }}-elasticsearch"
-            - name: ES_JAVA_OPTS
-              value: "-Xms512m -Xmx512m"
-`)
-
-func storageElasticsearchTemplatesStatefulsetYamlBytes() ([]byte, error) {
-	return _storageElasticsearchTemplatesStatefulsetYaml, nil
-}
-
-func storageElasticsearchTemplatesStatefulsetYaml() (*asset, error) {
-	bytes, err := storageElasticsearchTemplatesStatefulsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "storage/elasticsearch/templates/statefulset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc7, 0xbc, 0x13, 0x6d, 0x98, 0x4e, 0x87, 0x5c, 0x35, 0x2e, 0x72, 0xda, 0x36, 0x5d, 0xbe, 0xcc, 0x63, 0xaa, 0x15, 0x64, 0xe6, 0x2a, 0x26, 0x75, 0x2a, 0x5e, 0xd3, 0xee, 0x6d, 0x73, 0xa4, 0xa4}}
 	return a, nil
 }
 
@@ -1675,15 +1485,24 @@ spec:
         operator.skywalking.apache.org/component: statefulset
     spec:
       serviceAccountName: {{ .Name }}-elasticsearch7
-      nodeName: n3
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - "es"
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: elasticsearch
           image: {{ .Spec.Image }}
           resources:
             limits:
-              cpu: 1000m
+              cpu: {{ .Spec.ResourceCnfig.Limit }}
             requests:
-              cpu: 100m
+              cpu: {{ .Spec.ResourceCnfig.Requests }}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9200
@@ -1708,14 +1527,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: cluster.initial_master_nodes
-              value: "{{ .Name }}-elasticsearch7-0,{{ .Name }}-elasticsearch7-1"
-            - name: ES_JAVA_OPTS
-              value: "-Xms512m -Xmx512m"
+            - name: thread_pool.write.queue_size
+              value: "1000"
             {{ range .Spec.Config }}
             - name: {{ .Name }}
               value: {{ .Value }}
             {{end}}
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
       volumes:
         - name: config
           configMap:
@@ -1727,9 +1548,7 @@ spec:
         - name: cert
           secret:
             secretName:  "skywalking-storage"
-        {{end}}
-
-`)
+        {{end}}`)
 
 func storageElasticsearch7TemplatesStatefulsetYamlBytes() ([]byte, error) {
 	return _storageElasticsearch7TemplatesStatefulsetYaml, nil
@@ -1742,7 +1561,7 @@ func storageElasticsearch7TemplatesStatefulsetYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "storage/elasticsearch7/templates/statefulset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xd2, 0x7e, 0xb3, 0xeb, 0x8c, 0x71, 0xa3, 0x5a, 0x8a, 0x56, 0x7f, 0x35, 0x1f, 0xfd, 0x73, 0xf7, 0x36, 0xdb, 0x46, 0x6a, 0x6b, 0x2d, 0x89, 0xf, 0xcc, 0x41, 0xce, 0x80, 0x8f, 0x90, 0xfa, 0x2}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xdc, 0x8b, 0x8, 0x38, 0xc7, 0x1e, 0xc9, 0xab, 0xef, 0x48, 0x64, 0x60, 0xeb, 0x68, 0x7e, 0x39, 0x44, 0x5a, 0x7, 0x47, 0x26, 0xea, 0x9d, 0xcc, 0x65, 0x8f, 0xf5, 0xd0, 0x96, 0x92, 0xaf, 0x55}}
 	return a, nil
 }
 
@@ -2072,7 +1891,7 @@ var _bindata = map[string]func() (*asset, error){
 	"fetcher/templates/configmap.yaml":                      fetcherTemplatesConfigmapYaml,
 	"fetcher/templates/deployment.yaml":                     fetcherTemplatesDeploymentYaml,
 	"fetcher/templates/service_account.yaml":                fetcherTemplatesService_accountYaml,
-  "injector/templates/annotations.yaml":                   injectorTemplatesAnnotationsYaml,
+	"injector/templates/annotations.yaml":                   injectorTemplatesAnnotationsYaml,
 	"injector/templates/configmap.yaml":                     injectorTemplatesConfigmapYaml,
 	"oapserver/templates/cluster_role.yaml":                 oapserverTemplatesCluster_roleYaml,
 	"oapserver/templates/cluster_role_binding.yaml":         oapserverTemplatesCluster_role_bindingYaml,
@@ -2080,9 +1899,6 @@ var _bindata = map[string]func() (*asset, error){
 	"oapserver/templates/ingress.yaml":                      oapserverTemplatesIngressYaml,
 	"oapserver/templates/service.yaml":                      oapserverTemplatesServiceYaml,
 	"oapserver/templates/service_account.yaml":              oapserverTemplatesService_accountYaml,
-	"storage/elasticsearch/templates/service.yaml":          storageElasticsearchTemplatesServiceYaml,
-	"storage/elasticsearch/templates/service_account.yaml":  storageElasticsearchTemplatesService_accountYaml,
-	"storage/elasticsearch/templates/statefulset.yaml":      storageElasticsearchTemplatesStatefulsetYaml,
 	"storage/elasticsearch7/templates/configmap.yaml":       storageElasticsearch7TemplatesConfigmapYaml,
 	"storage/elasticsearch7/templates/service.yaml":         storageElasticsearch7TemplatesServiceYaml,
 	"storage/elasticsearch7/templates/service_account.yaml": storageElasticsearch7TemplatesService_accountYaml,
@@ -2162,13 +1978,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		}},
 	}},
 	"storage": &bintree{nil, map[string]*bintree{
-		"elasticsearch": &bintree{nil, map[string]*bintree{
-			"templates": &bintree{nil, map[string]*bintree{
-				"service.yaml":         &bintree{storageElasticsearchTemplatesServiceYaml, map[string]*bintree{}},
-				"service_account.yaml": &bintree{storageElasticsearchTemplatesService_accountYaml, map[string]*bintree{}},
-				"statefulset.yaml":     &bintree{storageElasticsearchTemplatesStatefulsetYaml, map[string]*bintree{}},
-			}},
-		}},
 		"elasticsearch7": &bintree{nil, map[string]*bintree{
 			"templates": &bintree{nil, map[string]*bintree{
 				"configmap.yaml":       &bintree{storageElasticsearch7TemplatesConfigmapYaml, map[string]*bintree{}},

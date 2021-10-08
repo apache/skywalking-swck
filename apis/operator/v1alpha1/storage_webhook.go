@@ -44,14 +44,9 @@ var _ webhook.Defaulter = &Storage{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Storage) Default() {
 	storagelog.Info("default", "name", r.Name)
-
 	if r.Spec.ConnectType == "internal" {
 		if r.Spec.Image == "" {
-			if r.Spec.Type == "elasticsearch" {
-				r.Spec.Image = " docker.elastic.co/elasticsearch/elasticsearch:6.4.3"
-			} else {
-				r.Spec.Image = "docker.elastic.co/elasticsearch/elasticsearch:7.5.1"
-			}
+			r.Spec.Image = "docker.elastic.co/elasticsearch/elasticsearch:7.5.1"
 		}
 		if r.Spec.Instances == 0 {
 			r.Spec.Instances = 3
@@ -84,18 +79,18 @@ func (r *Storage) ValidateDelete() error {
 
 func (r *Storage) valid() error {
 	var allErrs field.ErrorList
-	if (r.Spec.Type != "elasticsearch" && r.Spec.Type != "elasticsearch7") || (r.Spec.Type == "") {
+	if r.Spec.Type != "elasticsearch7" {
 		storagelog.Info("Invalid Storage Type")
 		err := field.Invalid(field.NewPath("spec").Child("type"),
 			r.Spec.Type,
-			"d. must be elasticsearch or elasticsearch7 and not nil")
+			"d. must be elasticsearch or elasticsearch7")
 		allErrs = append(allErrs, err)
 	}
-	if (r.Spec.ConnectType != "internal" && r.Spec.ConnectType != "external") || (r.Spec.ConnectType == "") {
+	if r.Spec.ConnectType != "internal" && r.Spec.ConnectType != "external" {
 		storagelog.Info("Invalid Storage ConnectType")
 		err := field.Invalid(field.NewPath("spec").Child("connecttype"),
 			r.Spec.ConnectType,
-			"d. must be internal or external and not nil")
+			"d. must be internal or external ")
 		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) != 0 {
