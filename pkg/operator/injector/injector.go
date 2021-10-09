@@ -48,12 +48,12 @@ const (
 	// the annotation is plugins.skywalking.apache.org/plugin.mongodb.trace_param: "true"
 	pluginsAnnotationPrefix = "plugins.skywalking.apache.org/"
 	// If user want to use optional-plugins , the annotation must match a optinal plugin
-	// such as optional.skywalking.apache.org: "*ehcache*"
+	// such as optional.skywalking.apache.org: "trace|webflux|cloud-gateway-2.1.x"
 	// Notice , If the injected container's image don't has the optional plugin ,
 	// the container will panic
 	optionsAnnotation = "optional.skywalking.apache.org"
 	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
-	// such as optional-exporter.skywalking.apache.org: "kafka*"
+	// such as optional-exporter.skywalking.apache.org: "kafka"
 	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
 )
 
@@ -254,38 +254,15 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 
 // AgentOverlayandGetValue will do real annotation overlay
 func (s *SidecarInjectField) AgentOverlayandGetValue(ao *AnnotationOverlay, annotation *map[string]string,
-	a Annotation) (string, bool) {
+	a Annotation) bool {
 	if _, ok := (*annotation)[a.Name]; ok {
 		err := ao.SetOverlay(annotation, a)
 		if err != nil {
 			s.injectErrorAnnotation(annotation, err.Error())
-			return "", false
+			return false
 		}
 	}
-	return ao.GetOverlayValue(a), true
-}
-
-func (s *SidecarInjectField) setJvmAgentStr(ao *AnnotationOverlay, annotation *map[string]string, a Annotation) bool {
-	v, ok := s.AgentOverlayandGetValue(ao, annotation, a)
-	if v != "" && ok {
-		// get {config1}={value1}
-		configName := strings.TrimPrefix(a.Name, agentAnnotationPrefix)
-		switch a.UseQuotes {
-		case "option":
-			configName = strings.Join([]string{"'", "'"}, configName)
-		case "value":
-			v = strings.Join([]string{"'", "'"}, v)
-		}
-		config := strings.Join([]string{configName, v}, "=")
-
-		// add to jvmAgentConfigStr
-		if s.JvmAgentConfigStr != "" {
-			s.JvmAgentConfigStr = strings.Join([]string{s.JvmAgentConfigStr, config}, ",")
-		} else {
-			s.JvmAgentConfigStr = config
-		}
-	}
-	return ok
+	return true
 }
 
 // OverlayAgent overlays agent
@@ -293,9 +270,23 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 	// jvmAgentConfigStr init
 	s.JvmAgentConfigStr = ""
 	anno := GetAnnotationsByPrefix(a, agentAnnotationPrefix)
-	for _, v := range anno.Annotations {
-		if !s.setJvmAgentStr(ao, annotation, v) {
-			return false
+	for k, v := range *annotation {
+		if strings.HasPrefix(k, agentAnnotationPrefix) {
+			for _, an := range anno.Annotations {
+				if strings.EqualFold(k, an.Name) {
+					if !s.AgentOverlayandGetValue(ao, annotation, an) {
+						return false
+					}
+				}
+			}
+			configName := strings.TrimPrefix(k, agentAnnotationPrefix)
+			config := strings.Join([]string{configName, v}, "=")
+			// add to jvmAgentConfigStr
+			if s.JvmAgentConfigStr != "" {
+				s.JvmAgentConfigStr = strings.Join([]string{s.JvmAgentConfigStr, config}, ",")
+			} else {
+				s.JvmAgentConfigStr = config
+			}
 		}
 	}
 	return true
@@ -304,9 +295,10 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 // OverlayOptional overlays optional plugins and move optional plugins to the directory(/plugins)
 // user must ensure that the optional plugins are in the injected container's image
 // Notice , user must specify the correctness of the regular value
-// such as optional.skywalking.apache.org: "*ehcache*" or optional-reporter.skywalking.apache.org: "kafka*"
-// the final command will be "cp /optional-plugins/*ehcache*  /plugins/" or
-// "cp /optional-exporter-plugins/kafka*  /plugins/"
+// such as optional.skywalking.apache.org: "trace|webflux|cloud-gateway-2.1.x" or
+// optional-reporter.skywalking.apache.org: "kafka"
+// the final command will be "cd /optional-plugins && ls | grep -E "trace|webflux|cloud-gateway-2.1.x" | xargs -i cp {}  /plugins
+// or "cd /optional-reporter-plugins && ls | grep -E "kafka" | xargs -i cp {}  /plugins"
 func (s *SidecarInjectField) OverlayOptional(annotation *map[string]string) {
 	sourceOptionalPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-plugins/"}, "/")
 	sourceOptionalReporterPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-reporter-plugins/"}, "/")
@@ -315,12 +307,11 @@ func (s *SidecarInjectField) OverlayOptional(annotation *map[string]string) {
 	for k, v := range *annotation {
 		command := ""
 		if strings.EqualFold(k, optionsAnnotation) {
-			command = strings.Join([]string{"cp", sourceOptionalPath}, " ")
+			command = "cd " + sourceOptionalPath + "&& ls | grep -E \"" + v + "\"  | xargs -i cp {} " + targetPath
 		} else if strings.EqualFold(k, optionsReporterAnnotation) {
-			command = strings.Join([]string{"cp", sourceOptionalReporterPath}, " ")
+			command = "cd " + sourceOptionalReporterPath + "&& ls | grep -E \"" + v + "\"  | xargs -i cp {} " + targetPath
 		}
 		if command != "" {
-			command = command + v + " " + targetPath
 			s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
 		}
 	}

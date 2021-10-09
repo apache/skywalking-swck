@@ -37,17 +37,12 @@ type Annotation struct {
 	// ValidateFunc defines a Validate func to judge whether the value
 	// is valid, if there isn't a validate func, it will be "nil".
 	ValidateFunc string `yaml:"validateFunc"`
-	// UseQuotes defines whether the key or value of the annotation needs
-	// to be wrapped in quotes, if don't need quotes, it will be "nil" .
-	// if UseQuotes is set to "key", it means the key of annotation need quotes.
-	// if UseQuotes is set to "value", it means the value of annotation need quotes.
-	UseQuotes string `yaml:"useQuotes"`
 	// EnvName represent the environment variable , just like following
 	// in agent.namespace=${SW_AGENT_NAMESPACE:} , the EnvName is SW_AGENT_NAMESPACE
 	EnvName string `yaml:"envName"`
 }
 
-// Annotations are
+// Annotations are set of
 type Annotations struct {
 	Annotations []Annotation
 }
@@ -70,7 +65,7 @@ func NewAnnotations() (*Annotations, error) {
 	return a, nil
 }
 
-// GetAnnotationsByPrefix is
+// GetAnnotationsByPrefix gets annotations from annotations.yaml
 func GetAnnotationsByPrefix(a Annotations, prefixName string) *Annotations {
 	anno := new(Annotations)
 	for _, v := range a.Annotations {

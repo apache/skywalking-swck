@@ -92,9 +92,7 @@ func ValidateConfigmap(configmap *corev1.ConfigMap) (bool, error) {
 				}
 				value = strings.Trim(str[i][valueStart+1:valueEnd], " ")
 			}
-			if len(value) == 0 {
-				continue
-			}
+
 			for _, a := range anno.Annotations {
 				if strings.Contains(a.Name, option) {
 					f := FindValidateFunc(a.ValidateFunc)
