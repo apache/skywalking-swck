@@ -176,12 +176,12 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		return
 	}
 	if existSecret.Name != "" {
-		_, verifyCert, err := pkcs12.Decode(existSecret.Data["storage.p12"], "")
-		if err != nil {
+		_, verifyCert, decodeErr := pkcs12.Decode(existSecret.Data["storage.p12"], "")
+		if decodeErr != nil {
 			log.Info("decode storage.p12 error")
 			return
 		}
-		if verifyCert.NotAfter.Sub(time.Now()).Hours() < 24 {
+		if time.Until(verifyCert.NotAfter).Hours() < 24 {
 			log.Info("storage cert will expire,the storage cert will re-generate!")
 		} else {
 			return
