@@ -26,9 +26,9 @@ metadata:
   name: javaagents.operator.skywalking.apache.org
 spec:
   additionalPrinterColumns:
-  - JSONPath: .spec.pod
-    description: The name of injected Pod
-    name: Pod
+  - JSONPath: .spec.podSelector
+    description: The selector label of injected Pod
+    name: PodSelector
     type: string
   - JSONPath: .spec.serviceName
     description: The name of service in the injected agent
@@ -45,7 +45,8 @@ spec:
     plural: javaagents
     singular: javaagent
   scope: Namespaced
-  subresources: {}
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: JavaAgent is the Schema for the javaagents API
@@ -71,16 +72,34 @@ spec:
               description: AgentConfiguration is the injected agent's final configuration
               type: object
             backendService:
-              description: backend_service is the backend service in the injected
-                agent, which need to be printed
+              description: BackendService is the backend service in the injected agent,
+                which need to be printed
               type: string
-            pod:
-              description: Pod is the name of injected Pod
+            podSelector:
+              description: PodSelector is the selector label of injected Pod
               type: string
             serviceName:
               description: ServiceName is the name of service in the injected agent,
                 which need to be printed
               type: string
+          type: object
+        status:
+          description: JavaAgentStatus defines the observed state of JavaAgent
+          properties:
+            creationTime:
+              description: The time the JavaAgent was created.
+              format: date-time
+              type: string
+            expectedInjectiedNum:
+              description: The number of pods that need to be injected
+              type: integer
+            lastUpdateTime:
+              description: The last time this condition was updated.
+              format: date-time
+              type: string
+            realInjectedNum:
+              description: The number of pods that injected successfully
+              type: integer
           type: object
       type: object
   version: v1alpha1

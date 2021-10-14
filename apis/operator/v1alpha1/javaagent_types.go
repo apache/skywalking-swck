@@ -23,18 +23,35 @@ import (
 
 // JavaAgentSpec defines the desired state of JavaAgent
 type JavaAgentSpec struct {
-	// Pod is the name of injected Pod
-	Pod string `json:"pod,omitempty"`
+	// PodSelector is the selector label of injected Pod
+	// +kubebuilder:validation:Optional
+	PodSelector string `json:"podSelector,omitempty"`
 	// ServiceName is the name of service in the injected agent, which need to be printed
+	// +kubebuilder:validation:Required
 	ServiceName string `json:"serviceName,omitempty"`
-	// backend_service is the backend service in the injected agent, which need to be printed
+	// BackendService is the backend service in the injected agent, which need to be printed
+	// +kubebuilder:validation:Required
 	BackendService string `json:"backendService,omitempty"`
 	// AgentConfiguration is the injected agent's final configuration
+	// +kubebuilder:validation:Optional
 	AgentConfiguration map[string]string `json:"agentConfiguration,omitempty"`
 }
 
+// JavaAgentStatus defines the observed state of JavaAgent
+type JavaAgentStatus struct {
+	// The number of pods that need to be injected
+	ExpectedInjectedNum int `json:"expectedInjectiedNum,omitempty"`
+	// The number of pods that injected successfully
+	RealInjectedNum int `json:"realInjectedNum,omitempty"`
+	// The time the JavaAgent was created.
+	CreationTime metav1.Time `json:"creationTime,omitempty"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+}
+
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Pod",type="string",JSONPath=".spec.pod",description="The name of injected Pod"
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="PodSelector",type="string",JSONPath=".spec.podSelector",description="The selector label of injected Pod"
 // +kubebuilder:printcolumn:name="ServiceName",type="string",JSONPath=".spec.serviceName",description="The name of service in the injected agent"
 // +kubebuilder:printcolumn:name="BackendService",type="string",JSONPath=".spec.backendService",description="The backend service in the injected agent"
 
@@ -43,7 +60,8 @@ type JavaAgent struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec JavaAgentSpec `json:"spec,omitempty"`
+	Spec   JavaAgentSpec   `json:"spec,omitempty"`
+	Status JavaAgentStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

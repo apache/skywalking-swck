@@ -64,6 +64,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-javaagent
+  failurePolicy: Fail
+  name: mjavaagent.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - javaagents
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-skywalking-apache-org-v1alpha1-oapserver
   failurePolicy: Fail
   name: moapserver.kb.io
@@ -121,6 +139,24 @@ webhooks:
     - UPDATE
     resources:
     - fetchers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-javaagent
+  failurePolicy: Fail
+  name: vjavaagent.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - javaagents
 - clientConfig:
     caBundle: Cg==
     service:

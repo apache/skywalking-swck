@@ -23,7 +23,7 @@
 // fetcher/templates/service_account.yaml (1.088kB)
 // injector/templates/annotations.yaml (3.355kB)
 // injector/templates/configmap.yaml (1.2kB)
-// injector/templates/javaagent.yaml (1.206kB)
+// injector/templates/javaagent.yaml (1.462kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
 // oapserver/templates/deployment.yaml (3.429kB)
@@ -576,15 +576,21 @@ var _injectorTemplatesJavaagentYaml = []byte(`# Licensed to Apache Software Foun
 # specific language governing permissions and limitations
 # under the License.
 
-{{- $pod := req }}
 {{- $configuration := config }}
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: JavaAgent
 metadata:
-  name: {{ $pod.Name }}-javaagent
-  namespace: {{ $pod.Namespace }}
+  name: {{SelectorName}}-javaagent
+  namespace: {{Namespace}}
+  ownerReferences:
+  - apiVersion: {{ownerReference.APIVersion}}
+    blockOwnerDeletion: {{ownerReference.BlockOwnerDeletion}}
+    controller: {{ownerReference.Controller}}
+    kind: {{ownerReference.Kind}}
+    name: {{ownerReference.Name}}
+    uid: {{ownerReference.UID}}
 spec:
-  pod: {{ $pod.Name }}
+  podSelector: {{PodSelector}}
   serviceName: {{ServiceName}}
   backendService: {{BackendService}}
   agentConfiguration: 
@@ -603,7 +609,7 @@ func injectorTemplatesJavaagentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "injector/templates/javaagent.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x87, 0xf6, 0xd1, 0x69, 0x1d, 0xf1, 0xca, 0x58, 0x24, 0x2f, 0x27, 0x97, 0x82, 0x93, 0xa0, 0x47, 0x3b, 0x47, 0x65, 0xa7, 0x2f, 0xcb, 0x4d, 0x70, 0xb3, 0x8a, 0xed, 0xd6, 0xef, 0xe5, 0x78, 0x3c}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x97, 0x6d, 0x88, 0xd3, 0x8d, 0xaa, 0x80, 0x98, 0xd0, 0x29, 0x76, 0x5e, 0x57, 0x90, 0xdf, 0x8a, 0x29, 0xb5, 0x7d, 0x71, 0x5e, 0xc2, 0xb4, 0xcb, 0xfa, 0x46, 0x29, 0x3c, 0x71, 0xd2, 0x74, 0x32}}
 	return a, nil
 }
 

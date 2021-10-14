@@ -133,13 +133,17 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
 		os.Exit(1)
 	}
+	if err = (&operatorv1alpha1.JavaAgent{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "JavaAgent")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
-	// register a webhook to enable the agent injector，
+	// register a webhook to enable the java agent injector
 	setupLog.Info("registering /mutate-v1-pod webhook")
 	mgr.GetWebhookServer().Register("/mutate-v1-pod",
 		&webhook.Admission{
-			Handler: &operatorv1alpha1.Javaagent{Client: mgr.GetClient()}})
+			Handler: &operatorv1alpha1.JavaagentInjector{Client: mgr.GetClient()}})
 	setupLog.Info("/mutate-v1-pod webhook is registered")
 
 	setupLog.Info("starting manager")

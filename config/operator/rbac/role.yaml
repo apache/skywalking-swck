@@ -49,7 +49,6 @@ rules:
   - pods
   verbs:
   - create
-  - delete
   - get
   - list
   - patch
@@ -137,6 +136,7 @@ rules:
   resources:
   - javaagents/status
   verbs:
+  - delete
   - get
   - patch
   - update

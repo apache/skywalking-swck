@@ -31,7 +31,7 @@ import (
 
 const (
 	// the label means whether to enbale injection , "true" of "false"
-	labelKeyagentInjector = "swck-java-agent-injected"
+	ActiveInjectorLabel = "swck-java-agent-injected"
 	// SidecarInjectSucceedAnno represents injection succeed
 	SidecarInjectSucceedAnno = "sidecar.skywalking.apache.org/succeed"
 	// the annotation means which container to inject
@@ -158,7 +158,7 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 		return
 	}
 
-	if strings.EqualFold(strings.ToLower((*labels)[labelKeyagentInjector]), "true") {
+	if strings.EqualFold(strings.ToLower((*labels)[ActiveInjectorLabel]), "true") {
 		s.NeedInject = true
 	}
 
