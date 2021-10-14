@@ -28,10 +28,6 @@ import (
 	"github.com/apache/skywalking-swck/pkg/operator/injector"
 )
 
-const (
-	AbsentName = "NotFound"
-)
-
 // log is for logging in this package.
 var javaagentlog = logf.Log.WithName("javaagent-resource")
 
@@ -52,25 +48,17 @@ func (r *JavaAgent) Default() {
 
 	config := r.Spec.AgentConfiguration
 	if config == nil {
-		r.Spec.ServiceName = AbsentName
-		r.Spec.BackendService = AbsentName
 		return
 	}
 
 	service := injector.GetServiceName(&config)
 	backend := injector.GetBackendService(&config)
 
-	if r.Spec.ServiceName == "" {
-		if service != "" {
-			r.Spec.ServiceName = service
-		}
-		r.Spec.ServiceName = AbsentName
+	if r.Spec.ServiceName == "" && service != "" {
+		r.Spec.ServiceName = service
 	}
-	if r.Spec.BackendService == "" {
-		if backend != "" {
-			r.Spec.BackendService = backend
-		}
-		r.Spec.BackendService = AbsentName
+	if r.Spec.BackendService == "" && backend != "" {
+		r.Spec.BackendService = backend
 	}
 }
 
