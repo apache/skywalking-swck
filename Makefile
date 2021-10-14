@@ -185,7 +185,7 @@ GO_BINDATA := $(GOBIN)/go-bindata
 $(GO_BINDATA):
 	curl --location --output $(GO_BINDATA) https://github.com/kevinburke/go-bindata/releases/download/v3.21.0/go-bindata-$(OSNAME)-amd64 \
 		&& chmod +x $(GO_BINDATA)
-		
+
 update-templates: $(GO_BINDATA)
 	@echo updating charts
 	-hack/run_update_templates.sh
@@ -201,10 +201,10 @@ RELEASE_SCRIPTS := ./build/package/release.sh
 
 release-binary: release-operator release-adapter
 	${RELEASE_SCRIPTS} -b
-	
+
 release-source:
 	${RELEASE_SCRIPTS} -s
-	
+
 release-sign:
 	${RELEASE_SCRIPTS} -k bin
 	${RELEASE_SCRIPTS} -k src

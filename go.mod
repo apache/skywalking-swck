@@ -21,6 +21,7 @@ require (
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/metrics v0.20.1
 	sigs.k8s.io/controller-runtime v0.7.0
+	software.sslmate.com/src/go-pkcs12 v0.0.0-20210415151418-c5206de65a78
 )
 
 replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1

@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	controllers "github.com/apache/skywalking-swck/controllers/operator"
 	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
 	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	// +kubebuilder:scaffold:imports
@@ -73,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.OAPServerReconciler{
+	if err = (&operatorcontroller.OAPServerReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("OAPServer"),
 		Scheme:   mgr.GetScheme(),
@@ -82,7 +81,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
 	}
-	if err = (&controllers.UIReconciler{
+	if err = (&operatorcontroller.UIReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("UI"),
 		Scheme:   mgr.GetScheme(),
@@ -112,6 +111,21 @@ func main() {
 	}
 	if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+		os.Exit(1)
+	}
+
+	if err = (&operatorcontroller.StorageReconciler{
+		Client:     mgr.GetClient(),
+		Log:        ctrl.Log.WithName("controllers").WithName("Storage"),
+		Scheme:     mgr.GetScheme(),
+		FileRepo:   repo.NewRepo("storage"),
+		RestConfig: mgr.GetConfig(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Storage")
+		os.Exit(1)
+	}
+	if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "storage")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

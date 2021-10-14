@@ -231,3 +231,4 @@ The following components are provided under a BSD license. See project link for 
 The text of each license is also included at licenses/LICENSE-[project].txt.
 
 	json-patch v4.5.0 https://github.com/evanphx/json-patch BSD 3-Clause
+    software.sslmate.com/src/go-pkcs12 v0.0.0 https://github.com/SSLMate/go-pkcs12

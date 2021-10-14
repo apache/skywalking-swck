@@ -25,6 +25,7 @@ metadata:
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}
     operator.skywalking.apache.org/application: oapserver
     operator.skywalking.apache.org/component: deployment
+
 spec:
   replicas: {{ .Spec.Instances }}
   minReadySeconds: 5
@@ -44,63 +45,73 @@ spec:
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app: oap
-                  operator.skywalking.apache.org/oap-server-name: {{ .Name }}
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: oap
+                    operator.skywalking.apache.org/oap-server-name: {{ .Name }}
       containers:
-      - name: oap
-        image: {{ .Spec.Image }}
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 11800
-          name: grpc
-        - containerPort: 12800
-          name: rest
-        - containerPort: 1234
-          name: http-monitoring
-        livenessProbe:
-          initialDelaySeconds: 10
-          timeoutSeconds: 10
-          periodSeconds: 30
-          failureThreshold: 10
-          successThreshold: 1
-          exec:
-            command:
-              - /skywalking/bin/swctl
-              - ch
-        readinessProbe:
-          initialDelaySeconds: 10
-          timeoutSeconds: 10
-          periodSeconds: 30
-          failureThreshold: 10
-          successThreshold: 1
-          exec:
-            command:
-              - /skywalking/bin/swctl
-              - ch
-        env:
-        - name: JAVA_OPTS
-          value: -Xmx2048M
-        - name: SW_CLUSTER
-          value: kubernetes
-        - name: SW_CLUSTER_K8S_NAMESPACE
-          value: "{{ .Namespace }}"
-        - name: SW_CLUSTER_K8S_LABEL
-          value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
-        - name: SKYWALKING_COLLECTOR_UID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.uid
-        - name: SW_TELEMETRY
-          value: prometheus
-        - name: SW_HEALTH_CHECKER
-          value: default
-        {{range .Spec.Config}}
-        - name: {{ .Name }}
-          value: {{ .Value }}
-        {{end}}
-
+        - name: oap
+          image: {{ .Spec.Image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 11800
+              name: grpc
+            - containerPort: 12800
+              name: rest
+            - containerPort: 1234
+              name: http-monitoring
+          livenessProbe:
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 30
+            failureThreshold: 10
+            successThreshold: 1
+            exec:
+              command:
+                - /skywalking/bin/swctl
+                - ch
+          readinessProbe:
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 30
+            failureThreshold: 10
+            successThreshold: 1
+            exec:
+              command:
+                - /skywalking/bin/swctl
+                - ch
+          {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
+          volumeMounts:
+            - name: cert
+              mountPath: /skywalking/p12
+          {{end}}
+          env:
+            - name: JAVA_OPTS
+              value: -Xmx2048M
+            - name: SW_CLUSTER
+              value: kubernetes
+            - name: SW_CLUSTER_K8S_NAMESPACE
+              value: "{{ .Namespace }}"
+            - name: SW_CLUSTER_K8S_LABEL
+              value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
+            - name: SKYWALKING_COLLECTOR_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: SW_TELEMETRY
+              value: prometheus
+            - name: SW_HEALTH_CHECKER
+              value: default
+          {{range .Spec.Config}}
+          - name: {{ .Name }}
+            value: {{ .Value }}
+          {{end}}
+      {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
+      volumes:
+        - name: cert
+          secret:
+            secretName:  "skywalking-storage"
+      {{end}}

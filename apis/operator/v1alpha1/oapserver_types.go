@@ -38,6 +38,9 @@ type OAPServerSpec struct {
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`
+	// StorageConfig relevant settings
+	// +kubebuilder:validation:Optional
+	StorageConfig RelevantStorage `json:"storage,omitempty"`
 }
 
 // OAPServerStatus defines the observed state of OAPServer
@@ -51,6 +54,14 @@ type OAPServerStatus struct {
 	// Represents the latest available observations of the underlying deployment's current state.
 	// +kubebuilder:validation:Optional
 	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
+}
+
+type RelevantStorage struct {
+	// Name relevant settings
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
+	// Storage relevant settings
+	Storage Storage `json:"injectstorage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
