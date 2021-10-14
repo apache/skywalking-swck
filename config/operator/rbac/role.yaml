@@ -46,6 +46,17 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - pods
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   - services
   verbs:
@@ -117,6 +128,27 @@ rules:
   resources:
   - fetchers/status
   verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - javaagents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - javaagents/status
+  verbs:
+  - delete
   - get
   - patch
   - update

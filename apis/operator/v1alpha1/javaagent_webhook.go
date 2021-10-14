@@ -18,63 +18,79 @@
 package v1alpha1
 
 import (
-	"context"
-	"net/http"
+	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/apache/skywalking-swck/pkg/operator/injector"
 )
 
 // log is for logging in this package.
-var javaagentlog = logf.Log.WithName("javaagent")
+var javaagentlog = logf.Log.WithName("javaagent-resource")
+
+func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(r).
+		Complete()
+}
 
 // nolint: lll
-// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
+// +kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,verbs=create;update,versions=v1alpha1,name=mjavaagent.kb.io
 
-// Javaagent injects java agent into Pods
-type Javaagent struct {
-	Client  client.Client
-	decoder *admission.Decoder
+var _ webhook.Defaulter = &JavaAgent{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *JavaAgent) Default() {
+	javaagentlog.Info("default", "name", r.Name)
+
+	config := r.Spec.AgentConfiguration
+	if config == nil {
+		return
+	}
+
+	service := injector.GetServiceName(&config)
+	backend := injector.GetBackendService(&config)
+
+	if r.Spec.ServiceName == "" && service != "" {
+		r.Spec.ServiceName = service
+	}
+	if r.Spec.BackendService == "" && backend != "" {
+		r.Spec.BackendService = backend
+	}
 }
 
-// Handle will process every coming pod under the
-// specified namespace which labeled "swck-injection=enabled"
-func (r *Javaagent) Handle(ctx context.Context, req admission.Request) admission.Response {
-	pod := &corev1.Pod{}
+// nolint: lll
+// +kubebuilder:webhook:verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,versions=v1alpha1,name=vjavaagent.kb.io
 
-	err := r.decoder.Decode(req, pod)
-	if err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
+var _ webhook.Validator = &JavaAgent{}
 
-	// set Annotations to avoid repeated judgments
-	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
-	}
-	// initialize all annotation types that can be overridden
-	anno, err := injector.NewAnnotations()
-	if err != nil {
-		javaagentlog.Error(err, "get NewAnnotations error")
-	}
-	// initialize Annotations to store the overlaied value
-	ao := injector.NewAnnotationOverlay()
-	// initialize SidecarInjectField and get injected strategy from annotations
-	s := injector.NewSidecarInjectField()
-	// initialize InjectProcess as a call chain
-	ip := injector.NewInjectProcess(ctx, s, anno, ao, pod, req, javaagentlog, r.Client)
-	// do real injection
-	return ip.Run()
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateCreate() error {
+	javaagentlog.Info("validate create", "name", r.Name)
+	return r.validate()
 }
 
-// Javaagent implements admission.DecoderInjector.
-// A decoder will be automatically injected.
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateUpdate(old runtime.Object) error {
+	javaagentlog.Info("validate update", "name", r.Name)
+	return r.validate()
+}
 
-// InjectDecoder injects the decoder.
-func (r *Javaagent) InjectDecoder(d *admission.Decoder) error {
-	r.decoder = d
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateDelete() error {
+	javaagentlog.Info("validate delete", "name", r.Name)
+	return nil
+}
+
+func (r *JavaAgent) validate() error {
+	if r.Spec.ServiceName == "" {
+		return fmt.Errorf("service name is absent")
+	}
+	if r.Spec.BackendService == "" {
+		return fmt.Errorf("backend service is absent")
+	}
 	return nil
 }

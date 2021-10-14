@@ -32,4 +32,7 @@ resources:
 - group: operator
   kind: Storage
   version: v1alpha1
+- group: operator
+  kind: JavaAgent
+  version: v1alpha1
 version: "2"

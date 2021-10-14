@@ -15,12 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This kustomization.yaml is not intended to be run by itself,
-# since it depends on service name and namespace that are out of this kustomize package.
-# It should be run by config/default
-resources:
-- bases/operator.skywalking.apache.org_oapservers.yaml
-- bases/operator.skywalking.apache.org_uis.yaml
-- bases/operator.skywalking.apache.org_fetchers.yaml
-- bases/operator.skywalking.apache.org_javaagents.yaml
-# +kubebuilder:scaffold:crdkustomizeresource
+# permissions for end users to view javaagents.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: javaagent-viewer-role
+rules:
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - javaagents
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - javaagents/status
+  verbs:
+  - get
+

@@ -19,7 +19,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	core "k8s.io/api/core/v1"
@@ -48,12 +47,12 @@ type ConfigMapReconciler struct {
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("configmap", req.NamespacedName)
 	log.Info("=====================reconcile started================================")
-	errCol := new(kubernetes.ErrorCollector)
 
 	configmap := &core.ConfigMap{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: injector.DefaultConfigmapNamespace, Name: injector.DefaultConfigmapName}, configmap)
 	if err != nil && !apierrors.IsNotFound(err) {
-		errCol.Collect(fmt.Errorf("failed to get configmap: %w", err))
+		log.Error(err, "failed to get configmap")
+		return ctrl.Result{}, err
 	}
 	// if change the default configmap, we need to validate the value
 	// if validate false , we will delete the configmap and recreate a default configmap
