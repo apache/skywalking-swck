@@ -228,7 +228,11 @@ func (r *JavaAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			// avoid calling Reconcile when the pod's workload is deleted
 			UpdateFunc: func(e event.UpdateEvent) bool {
-				return e.ObjectNew.GetDeletionTimestamp() == nil
+				annotations := e.ObjectNew.GetAnnotations()
+				if annotations != nil && strings.ToLower(annotations[injector.SidecarInjectSucceedAnno]) == "true" {
+					return e.ObjectNew.GetDeletionTimestamp() == nil
+				}
+				return false
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				return false
