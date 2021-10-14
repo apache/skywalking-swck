@@ -128,13 +128,35 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "storage")
 		os.Exit(1)
 	}
+	if err = (&operatorcontroller.ConfigMapReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("ConfigMap"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("injector"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
+		os.Exit(1)
+	}
+
+	if err = (&operatorcontroller.JavaAgentReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("JavaAgent"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
+		os.Exit(1)
+	}
+	if err = (&operatorv1alpha1.JavaAgent{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "JavaAgent")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
-	// register a webhook to enable the agent injector，
+	// register a webhook to enable the java agent injector
 	setupLog.Info("registering /mutate-v1-pod webhook")
 	mgr.GetWebhookServer().Register("/mutate-v1-pod",
 		&webhook.Admission{
-			Handler: &operatorv1alpha1.Javaagent{Client: mgr.GetClient()}})
+			Handler: &operatorv1alpha1.JavaagentInjector{Client: mgr.GetClient()}})
 	setupLog.Info("/mutate-v1-pod webhook is registered")
 
 	setupLog.Info("starting manager")

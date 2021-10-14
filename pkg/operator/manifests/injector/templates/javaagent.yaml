@@ -15,12 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This kustomization.yaml is not intended to be run by itself,
-# since it depends on service name and namespace that are out of this kustomize package.
-# It should be run by config/default
-resources:
-- bases/operator.skywalking.apache.org_oapservers.yaml
-- bases/operator.skywalking.apache.org_uis.yaml
-- bases/operator.skywalking.apache.org_fetchers.yaml
-- bases/operator.skywalking.apache.org_javaagents.yaml
-# +kubebuilder:scaffold:crdkustomizeresource
+{{- $configuration := config }}
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: JavaAgent
+metadata:
+  name: {{SelectorName}}-javaagent
+  namespace: {{Namespace}}
+  ownerReferences:
+  - apiVersion: {{ownerReference.APIVersion}}
+    blockOwnerDeletion: {{ownerReference.BlockOwnerDeletion}}
+    controller: {{ownerReference.Controller}}
+    kind: {{ownerReference.Kind}}
+    name: {{ownerReference.Name}}
+    uid: {{ownerReference.UID}}
+spec:
+  podSelector: {{PodSelector}}
+  serviceName: {{ServiceName}}
+  backendService: {{BackendService}}
+  agentConfiguration: 
+  {{ range $key, $value := $configuration }}
+    {{$key}}: {{$value}}
+  {{- end -}}

@@ -109,3 +109,39 @@ func ValidateConfigmap(configmap *corev1.ConfigMap) (bool, error) {
 	}
 	return true, nil
 }
+
+// GetConfigmapConfiguration will get the value of agent.config
+func GetConfigmapConfiguration(configmap *corev1.ConfigMap) (map[string]string, error) {
+	data := configmap.Data
+	configuration := make(map[string]string)
+
+	v, ok := data[DefaultConfigmapKey]
+	if !ok {
+		return configuration, fmt.Errorf("DefaultConfigmapKey %s not exist", DefaultConfigmapKey)
+	}
+
+	str := strings.Split(v, "\n")
+	for i := range str {
+		if index := strings.Index(str[i], "="); index != -1 {
+
+			// set option and value
+			option := strings.Trim(str[i][:index], " ")
+			value := strings.Trim(str[i][index+1:], " ")
+
+			// if option has environment variable like SW_AGENT_NAME
+			if strings.Contains(str[i], ":") {
+				valueStart := strings.Index(str[i], ":")
+				valueEnd := strings.Index(str[i], "}")
+				if valueStart == -1 || valueEnd == -1 || valueStart >= valueEnd {
+					continue
+				}
+				value = strings.Trim(str[i][valueStart+1:valueEnd], " ")
+			}
+			if len(value) == 0 {
+				continue
+			}
+			configuration[option] = strings.Join([]string{"\"", "\""}, value)
+		}
+	}
+	return configuration, nil
+}

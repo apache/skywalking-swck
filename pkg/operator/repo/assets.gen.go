@@ -23,6 +23,7 @@
 // fetcher/templates/service_account.yaml (1.088kB)
 // injector/templates/annotations.yaml (3.355kB)
 // injector/templates/configmap.yaml (1.2kB)
+// injector/templates/javaagent.yaml (1.462kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
 // oapserver/templates/cluster_role_binding.yaml (1.207kB)
 // oapserver/templates/deployment.yaml (3.933kB)
@@ -559,6 +560,60 @@ func injectorTemplatesConfigmapYaml() (*asset, error) {
 
 	info := bindataFileInfo{name: "injector/templates/configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc6, 0xee, 0xc8, 0x3f, 0x93, 0x98, 0x46, 0x72, 0x7e, 0x19, 0xa, 0x17, 0xc3, 0x8a, 0x76, 0x3f, 0xf5, 0x5f, 0x15, 0x53, 0x27, 0x92, 0xdc, 0xcc, 0x6c, 0x99, 0x70, 0x38, 0x7c, 0x75, 0x4e, 0x25}}
+	return a, nil
+}
+
+var _injectorTemplatesJavaagentYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- $configuration := config }}
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: JavaAgent
+metadata:
+  name: {{SelectorName}}-javaagent
+  namespace: {{Namespace}}
+  ownerReferences:
+  - apiVersion: {{ownerReference.APIVersion}}
+    blockOwnerDeletion: {{ownerReference.BlockOwnerDeletion}}
+    controller: {{ownerReference.Controller}}
+    kind: {{ownerReference.Kind}}
+    name: {{ownerReference.Name}}
+    uid: {{ownerReference.UID}}
+spec:
+  podSelector: {{PodSelector}}
+  serviceName: {{ServiceName}}
+  backendService: {{BackendService}}
+  agentConfiguration: 
+  {{ range $key, $value := $configuration }}
+    {{$key}}: {{$value}}
+  {{- end -}}`)
+
+func injectorTemplatesJavaagentYamlBytes() ([]byte, error) {
+	return _injectorTemplatesJavaagentYaml, nil
+}
+
+func injectorTemplatesJavaagentYaml() (*asset, error) {
+	bytes, err := injectorTemplatesJavaagentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "injector/templates/javaagent.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x97, 0x6d, 0x88, 0xd3, 0x8d, 0xaa, 0x80, 0x98, 0xd0, 0x29, 0x76, 0x5e, 0x57, 0x90, 0xdf, 0x8a, 0x29, 0xb5, 0x7d, 0x71, 0x5e, 0xc2, 0xb4, 0xcb, 0xfa, 0x46, 0x29, 0x3c, 0x71, 0xd2, 0x74, 0x32}}
 	return a, nil
 }
 
@@ -1583,6 +1638,7 @@ var _bindata = map[string]func() (*asset, error){
 	"fetcher/templates/service_account.yaml":                fetcherTemplatesService_accountYaml,
 	"injector/templates/annotations.yaml":                   injectorTemplatesAnnotationsYaml,
 	"injector/templates/configmap.yaml":                     injectorTemplatesConfigmapYaml,
+	"injector/templates/javaagent.yaml":                     injectorTemplatesJavaagentYaml,
 	"oapserver/templates/cluster_role.yaml":                 oapserverTemplatesCluster_roleYaml,
 	"oapserver/templates/cluster_role_binding.yaml":         oapserverTemplatesCluster_role_bindingYaml,
 	"oapserver/templates/deployment.yaml":                   oapserverTemplatesDeploymentYaml,
@@ -1655,6 +1711,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"templates": &bintree{nil, map[string]*bintree{
 			"annotations.yaml": &bintree{injectorTemplatesAnnotationsYaml, map[string]*bintree{}},
 			"configmap.yaml":   &bintree{injectorTemplatesConfigmapYaml, map[string]*bintree{}},
+			"javaagent.yaml":   &bintree{injectorTemplatesJavaagentYaml, map[string]*bintree{}},
 		}},
 	}},
 	"oapserver": &bintree{nil, map[string]*bintree{

@@ -175,6 +175,7 @@ type PodInject struct {
 // PodInject will inject all fields to the pod
 func (pi *PodInject) execute(ipd *InjectProcessData) admission.Response {
 	ipd.injectFileds.Inject(ipd.pod)
+	ipd.injectFileds.injectSucceedAnnotation(&ipd.pod.Annotations)
 	log.Info("inject successfully!")
 	return PatchReq(ipd.pod, ipd.req)
 }
