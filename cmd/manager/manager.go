@@ -104,6 +104,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&operatorcontroller.StorageReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Storage"),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("storage"),
+		Recorder: mgr.GetEventRecorderFor("storage-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Storage")
+		os.Exit(1)
+	}
+
 	if err = (&operatorcontroller.ConfigMapReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("ConfigMap"),
@@ -137,6 +148,11 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
 			os.Exit(1)
 		}
+		if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "storage")
+			os.Exit(1)
+		}
+		// register a webhook to enable the agent injector，
 		if err = (&operatorv1alpha1.JavaAgent{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "JavaAgent")
 			os.Exit(1)

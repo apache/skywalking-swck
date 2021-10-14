@@ -100,6 +100,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-storage
+  failurePolicy: Fail
+  name: mstorage.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - storages
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-skywalking-apache-org-v1alpha1-ui
   failurePolicy: Fail
   name: mui.kb.io
@@ -175,6 +193,24 @@ webhooks:
     - UPDATE
     resources:
     - oapservers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-storage
+  failurePolicy: Fail
+  name: vstorage.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - storages
 - clientConfig:
     caBundle: Cg==
     service:

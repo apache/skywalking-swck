@@ -14,25 +14,27 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-domain: skywalking.apache.org
-multigroup: true
-repo: github.com/apache/skywalking-swck
-resources:
-- group: operator
-  kind: OAPServer
-  version: v1alpha1
-- group: operator
-  kind: UI
-  version: v1alpha1
-- group: operator
-  kind: Fetcher
-  version: v1alpha1
-- group: operator
-  kind: Storage
-  version: v1alpha1
-- group: operator
-  kind: JavaAgent
-  version: v1alpha1
-version: "2"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: {{ .Namespace }}
+data:
+  elasticsearch.yml: |
+      network.host: 0.0.0.0
+      {{ if .Spec.Security.User.SecretName }}
+      xpack.security.enabled: true
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.keystore.path: storage.p12
+      xpack.security.transport.ssl.truststore.path: storage.p12
+      {{end}}
+      {{ if .Spec.Security.TLS }}
+      xpack.security.http.ssl.enabled: true
+      xpack.security.http.ssl.verification_mode: certificate
+      xpack.security.http.ssl.keystore.path: storage.p12
+      xpack.security.http.ssl.truststore.path: storage.p12
+      {{end}}
+
+

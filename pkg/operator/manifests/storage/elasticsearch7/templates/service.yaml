@@ -14,25 +14,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-domain: skywalking.apache.org
-multigroup: true
-repo: github.com/apache/skywalking-swck
-resources:
-- group: operator
-  kind: OAPServer
-  version: v1alpha1
-- group: operator
-  kind: UI
-  version: v1alpha1
-- group: operator
-  kind: Fetcher
-  version: v1alpha1
-- group: operator
-  kind: Storage
-  version: v1alpha1
-- group: operator
-  kind: JavaAgent
-  version: v1alpha1
-version: "2"
+kind: Service
+apiVersion: v1
+metadata:
+  name:  {{ .Spec.ServiceName }}
+  namespace: {{ .Namespace }}
+  labels:
+    app: es
+    operator.skywalking.apache.org/es-name: {{ .Name }}
+    operator.skywalking.apache.org/application: elasticsearch
+    operator.skywalking.apache.org/component: service
+spec:
+  clusterIP: None
+  selector:
+    app: es
+    operator.skywalking.apache.org/es-name: {{ .Name }}
+  ports:
+    - name: rest
+      port: 9200
+    - name: inter-node
+      port: 9300
+
