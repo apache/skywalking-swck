@@ -8,7 +8,7 @@ When the pod is injected, the pod will be labeled with `sidecar.skywalking.apach
 
 | Field Name         | Description                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| podSelector        | We hope users can use [workload](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) to create pods, the podSelector is the selector label of workload. |
+| podSelector        | We hope users can use [workloads](https://kubernetes.io/docs/concepts/workloads/) to create pods, the podSelector is the selector label of workload. |
 | serviceName        | serviceName is an important attribute that needs to be printed. |
 | backendService     | backendService is an important attribute that needs to be printed. |
 | agentConfiguration | agentConfiguration contains serviceName、backendService and covered agent configuration, other default configurations will not be displayed, please see [agent.config](https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/configurations/#table-of-agent-configuration-properties) for details. |
