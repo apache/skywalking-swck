@@ -168,6 +168,12 @@ func (r *JavaAgentReconciler) updateStatus(ctx context.Context, log logr.Logger,
 		errCol.Collect(fmt.Errorf("failed to get javaagent: %w", err))
 	}
 
+	// avoid printing error info when the javaagent is creating
+	if javaagent.Name == "" {
+		log.Info("javaagent is creating...", "name", selectorname+"-javaagent")
+		return errCol.Error()
+	}
+
 	// return all pods in the request namespace with the podselector
 	podList := &core.PodList{}
 	label := strings.Split(podselector, "=")

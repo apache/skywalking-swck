@@ -138,7 +138,7 @@ The optional plugin configuration is the annotation as below.
 
 | Annotation key                   | Description                                                  | Annotation value |
 | -------------------------------- | ------------------------------------------------------------ | ---------------- |
-| `optional.skywalking.apache.org` | Select the optional plugin which needs to be moved to the directory(/plugins). Users can select several optional plugins by separating from `|`, such as `trace|webflux|cloud-gateway-2.1.x`. | not set          |
+| `optional.skywalking.apache.org` | Select the optional plugin which needs to be moved to the directory(/plugins). Users can select several optional plugins by separating from `｜`, such as `trace｜webflux｜cloud-gateway-2.1.x`. | not set          |
 
 #### 5. optional reporter plugin configuration
 
@@ -146,7 +146,7 @@ The optional reporter plugin configuration is the annotation as below.
 
 | Annotation key                            | Description                                                  | Annotation value |
 | ----------------------------------------- | ------------------------------------------------------------ | ---------------- |
-| `optional-reporter.skywalking.apache.org` | Select the optional reporter plugin which needs to be moved to the directory(/plugins). Users can select several optional reporter plugins by separating from `|`, such as `kafka`. | not set          |
+| `optional-reporter.skywalking.apache.org` | Select the optional reporter plugin which needs to be moved to the directory(/plugins). Users can select several optional reporter plugins by separating from `｜`, such as `kafka`. | not set          |
 
 ## Configure sidecar
 
