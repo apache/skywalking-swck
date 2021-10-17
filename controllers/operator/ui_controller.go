@@ -48,6 +48,7 @@ type UIReconciler struct {
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=uis/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("ui", req.NamespacedName)
