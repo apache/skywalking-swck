@@ -171,7 +171,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		return
 	}
 	existSecret, err := clientset.CoreV1().Secrets(s.Namespace).Get(ctx, "skywalking-storage", metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		log.Info("fail get skywalking-storage secret")
 		return
 	}
@@ -236,7 +236,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		},
 	}
 	err = clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(ctx, "storage-csr", metav1.DeleteOptions{})
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		log.Info("fail delete csr")
 		return
 	}
@@ -280,7 +280,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		return
 	}
 	err = clientset.CoreV1().Secrets(s.Namespace).Delete(ctx, "skywalking-storage", metav1.DeleteOptions{})
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		log.Info("fail delete secret skywalking-storage")
 		return
 	}
