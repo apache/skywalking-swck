@@ -167,6 +167,7 @@ check: generate operator-manifests update-templates license
 	@if [ ! -z "`git status -s`" ]; then \
 		echo "Following files are not consistent with CI:"; \
 		git status -s; \
+		cat /tmp/artifacts/check.diff; \
 		exit 1; \
 	fi
 
