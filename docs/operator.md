@@ -1,5 +1,6 @@
-# Guides of Operator Deployment
-## Use kustomize to customise your deployment
+# Operator Usage Guide
+## Guides of Operator Deployment
+### Use kustomize to customise your deployment
 
 1. Clone the source code:
 
@@ -22,7 +23,7 @@ make operator-deploy
 make operator-install
 ```
 
-## Test your deployment
+### Test your deployment
 
 1. Deploy a sample OAP server, this will create an OAP server in the default namespace:
 
@@ -42,7 +43,7 @@ kubectl get oapserver
 kubectl get ui
 ```
 
-## Troubleshooting
+### Troubleshooting
 
 If you encounter any issue, you can check the log of the controller by pulling it from Kubernetes:
 
@@ -54,29 +55,53 @@ kubectl --namespace skywalking-swck-system get pods
 kubectl --namespace skywalking-swck-system logs -f [name_of_the_controller_pod]
 ```
 
-## Storage Operator Introduction
-
-The Storage Operator can manage and monitor storage pods(ES, MySQL, and etc.).
-We provide external and internal configuration methods to deploy Storage.
-When you deployment the Storage,you also need to specify the Storage Name in the OAP server configuration。
-
-### Storage Configuration
-
-| Field Name         | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| type               | specify the database type(elasticsearch7,mysql,and etc.).|
-| connectType        | specify how to connect to storage(use external or internal).|
-| address     | specify connection address of database(when you use an external configuration method,you need to set).|
-| version            | specify the version of storage.|      
-| image              | specify the docker image name of database.|
-| instances          | specify the number of storage instance.|
-| security           | set oapserver and storage secure connection configuration.|  
-| security.user.secretName  | enable the user authentication of the storage connection,you need to configure the user name and password in the secret,and specify the secret name here.if you specify the secret name as default,this will use the default username(elastic) and password(changeme).| 
-| security.tls       | enable the tls authentication of the storage connection,you can set true or false to indicate whether the authentication is open.|
-
 ## Custom manifests templates
 
 If you want to custom the manifests templates to generate dedicated Kubernetes resources,
 please edit YAMLs in `pkg/operator/manifests`.
 After saving your changes, issue `make update-templates` to transfer them to binary assets.
 The last step is to rebuild `operator` by `make operator-docker-build`.
+
+
+## Custom Resource Define(CRD)
+
+The custom resources that the operator introduced are:
+
+### JavaAgent
+
+The `JavaAgent` custom resource definition (CRD) declaratively defines a view to tracing the injection result.  
+The [java-agent-injector](java-agent-injector.md) creat JavaAgents once it injects agents into some workloads.
+Refer to [Java Agent](./javaagent.md) for more details.
+
+### OAP
+
+The `OAP` custom resource definition (CRD) declaratively defines a desired OAP setup to run in a Kubernetes cluster.
+It provides options to configure environment variables and how to connect a `Storage`.
+
+### UI
+
+The `UI` custom resource definition (CRD) declaratively defines a desired UI setup to run in a Kubernetes cluster.
+It provides options for how to connect an `OAP`.
+
+### Storage
+
+The `Storage` custom resource definition (CRD) declaratively defines a desired storage setup to run in a Kubernetes cluster.
+The `Storage` could be managed instances onboarded by the operator or an external service. The `OAP` has options to select
+which `Storage` it would connect.
+
+> Caveat: `Stroage` only supports the `Elasticsearch`.
+
+### Fetcher
+
+The `Fetcher` custom resource definition (CRD) declaratively defines a desired Fetcher setup to run in a Kubernetes cluster.
+It provides options to configure OpenTelemetry collector, which fetches metrics to the deployed `OAP`.
+
+
+## Examples of the Operator
+
+There are some instant examples to represent the functions or features of the Operator.
+
+- [Deploy OAP server and UI with default settings](./examples/default-backend.md)
+- [Fetch metrics from the Istio control plane(istiod)](./examples/istio-controlplane.md)
+- [Inject the java agent to pods](./examples/java-agent-injector-usage.md)
+- [Deploy a storage](./examples/storage.md)

@@ -8,7 +8,7 @@ Release Notes.
 
 #### Features
 - Add Java agent injector.
-- Add the storage module of the operator.
+- Add JavaAgent and Storage CRDs of the operator.
 
 ### Vulnerabilities
 
@@ -18,6 +18,7 @@ Release Notes.
 #### Chores
 - Bump up GO to 1.17.
 - Bump up k8s api to 0.20.11.
+- Polish documents.
 
 0.3.0
 ------------------
