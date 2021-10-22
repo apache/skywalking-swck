@@ -42,10 +42,8 @@ catalog:
           path: "/examples/istio-controlplane"
   - name: "Contributing Guides"
     catalog:
-      - name: "Contribute"
-        path: "https://github.com/apache/skywalking/tree/master/docs/en/guides"
-      - name: "Become A Committer"
-        path: "https://github.com/apache/skywalking/tree/master/docs/en/guides/asf/committer"
+      - name: "Website"
+        path: "https://skywalking.apache.org/"
       - name: "Release Guide"
         path: "/release"
   - name: "Changelog"
