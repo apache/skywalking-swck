@@ -11,13 +11,22 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 # Features
 
+ 1. Java Agent Injector: Inject the java agent into the application pod natively.
  1. Operator: Provision and maintain SkyWalking backend components.
  1. Custom Metrics Adapter: Provides custom metrics come from SkyWalking OAP cluster for autoscaling by Kubernetes HPA
- 1. Java Agent Injector: Inject the java agent into the application pod natively.
 
 # Quick Start
 
  * Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download latest release manifest. 
+
+## Java Agent Injector
+
+* Inject the java agent into the application pod.
+* Use the default agent configuration.
+* Use annotations to overlay sidecar configuration and agent configuration.
+* Get the final injected agent's configuration.
+
+For more details, please read [Java agent injector](docs/java-agent-injector.md)
 
 ## Operator
 
@@ -30,14 +39,6 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 For more details, please refer to [deploy operator](docs/operator.md)
 
-### Examples of the Operator
-
-There are some instant examples to represent the functions or features of the Operator.
-
- - [Deploy OAP server and UI with default settings](./docs/examples/default-backend.md)
- - [Fetch metrics from the Istio control plane(istiod)](./docs/examples/istio-controlplane.md)
- - [Inject the java agent into the application pod](./docs/examples/java-agent-injector-usage.md)
-
 ## Custom Metrics Adapter
   
  * Deploy OAP server by referring to Operator Quick Start.
@@ -48,15 +49,6 @@ There are some instant examples to represent the functions or features of the Op
  ```
 
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
-
-## Java Agent Injector
-
-* Inject the java agent into the application pod.
-* Use the default agent configuration.
-* Use annotations to overlay sidecar configuration and agent configuration.
-* Get the final injected agent's configuration.
-
-For more details, please read [Java agent injector](docs/java-agent-injector.md)
 
 # Contributing
 For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md)
