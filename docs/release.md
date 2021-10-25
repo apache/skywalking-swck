@@ -19,7 +19,7 @@ This documentation guides the release manager to release the SkyWalking Cloud on
 ```shell
 export VERSION=<the version to release>
 git clone git@github.com:apache/skywalking-swck && cd skywalking-swck
-git tag -a "$VERSION" -m "Release Apache SkyWalking Cloud on Kubernetes $VERSION"
+git tag -a "v$VERSION" -m "Release Apache SkyWalking Cloud on Kubernetes $VERSION"
 git push --tags
 make clean && make release
 ```

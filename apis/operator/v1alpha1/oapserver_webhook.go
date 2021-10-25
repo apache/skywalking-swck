@@ -48,19 +48,7 @@ func (r *OAPServer) Default() {
 
 	image := r.Spec.Image
 	if image == "" {
-		v := r.Spec.Version
-		vTmpl := "apache/skywalking-oap-server:%s-%s"
-		vES := "es6"
-		for _, e := range r.Spec.Config {
-			if e.Name != "SW_STORAGE" {
-				continue
-			}
-			if e.Value == "elasticsearch7" {
-				vES = "es7"
-			}
-		}
-		image = fmt.Sprintf(vTmpl, v, vES)
-		r.Spec.Image = image
+		r.Spec.Image = fmt.Sprintf("apache/skywalking-oap-server:%s", r.Spec.Version)
 	}
 	for _, envVar := range r.Spec.Config {
 		if envVar.Name == "SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS" &&

@@ -193,10 +193,10 @@ update-templates: $(GO_BINDATA)
 	-hack/build-header.sh pkg/operator/repo/assets.gen.go
 
 release-operator: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/manager-linux-amd64 cmd/manager/manager.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o build/bin/manager-linux-amd64 cmd/manager/manager.go
 
 release-adapter: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o build/bin/adapter-linux-amd64 cmd/adapter/adapter.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o build/bin/adapter-linux-amd64 cmd/adapter/adapter.go
 
 RELEASE_SCRIPTS := ./build/package/release.sh
 

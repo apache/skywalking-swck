@@ -19,6 +19,7 @@ Release Notes.
 - Bump up GO to 1.17.
 - Bump up k8s api to 0.20.11.
 - Polish documents.
+- Bump up SkyWalking OAP to 8.8.1.
 
 0.3.0
 ------------------

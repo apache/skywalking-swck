@@ -21,10 +21,15 @@ SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyW
 
 ## Java Agent Injector
 
+The java agent injector share the same binary with the operator. Follow the installation procedure of the operator
+to onboard the injector.
+
+The injector can:
+
 * Inject the java agent into the application pod.
-* Use the default agent configuration.
-* Use annotations to overlay sidecar configuration and agent configuration.
-* Get the final injected agent's configuration.
+* Leverage a global configuration to simplify the agent and injector setup.
+* Use the annotation to customize specific workloads.
+* Sync injecting status to `JavaAgent` CR for monitoring purpose.
 
 For more details, please read [Java agent injector](docs/java-agent-injector.md)
 
