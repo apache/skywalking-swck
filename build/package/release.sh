@@ -22,6 +22,7 @@ BUILDDIR=${SCRIPTDIR}/..
 ROOTDIR=${BUILDDIR}/..
 
 RELEASE_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+RELEASE_VERSION=${RELEASE_TAG#"v"}
 
 binary(){
     bindir=${BUILDDIR}/release/binary
@@ -30,8 +31,12 @@ binary(){
     # Copy relevant files
     cp -Rfv ${BUILDDIR}/bin ${bindir}
     cp -Rfv ${ROOTDIR}/CHANGES.md ${bindir}
-    cp -Rfv ${ROOTDIR}/README.md ${bindir}
+    cp -Rfv ${ROOTDIR}/docs/binary-readme.md ${bindir}/README.md
     cp -Rfv ${ROOTDIR}/dist/* ${bindir}
+    # Docker
+    cp -Rfv ${ROOTDIR}/build/images/Dockerfile.release-bin ${bindir}/Dockerfile
+    echo -e "build:" > ${bindir}/Makefile
+    echo -e "\tdocker build . -t apache/skywalking-swck:${RELEASE_TAG}" >> ${bindir}/Makefile
     # Generates CRDs and deployment manifests
     pushd ${ROOTDIR}/config/operator/manager
     kustomize edit set image controller=apache/skywalking-swck:${RELEASE_TAG}
@@ -42,13 +47,13 @@ binary(){
     popd
     kustomize build config/adapter > ${bindir}/config/adapter-bundle.yaml
     # Package
-    tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_TAG}-bin.tgz -C ${bindir} .
+    tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-bin.tgz -C ${bindir} .
     rm -rf ${bindir}
 }
 
 source(){
     # Package
-    rm -rf ${BUILDDIR}/release/skywalking-swck-${RELEASE_TAG}-src.tgz
+    rm -rf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-src.tgz
     pushd ${ROOTDIR}
     tar \
         --exclude=".DS_Store" \
@@ -61,7 +66,7 @@ source(){
         --exclude="build/release"  \
         --exclude="*.test"  \
         --exclude="*.out"  \
-        -czf ./build/release/skywalking-swck-${RELEASE_TAG}-src.tgz \
+        -czf ./build/release/skywalking-swck-${RELEASE_VERSION}-src.tgz \
         .
     popd
 }
@@ -69,8 +74,8 @@ source(){
 sign(){
     type=$1
     pushd ${BUILDDIR}/release/
-    gpg --batch --yes --armor --detach-sig skywalking-swck-${RELEASE_TAG}-${type}.tgz
-	shasum -a 512 skywalking-swck-${RELEASE_TAG}-${type}.tgz > skywalking-swck-${RELEASE_TAG}-${type}.tgz.sha512
+    gpg --batch --yes --armor --detach-sig skywalking-swck-${RELEASE_VERSION}-${type}.tgz
+	shasum -a 512 skywalking-swck-${RELEASE_VERSION}-${type}.tgz > skywalking-swck-${RELEASE_VERSION}-${type}.tgz.sha512
 	popd
 }
 
@@ -116,4 +121,4 @@ ret=0
 parseCmdLine "$@"
 ret=$?
 [ $ret -ne 0 ] && exit $ret
-echo "Done release [$RELEASE_TAG] (exit $ret)"
+echo "Done release [RELEASE_VERSION] (exit $ret)"

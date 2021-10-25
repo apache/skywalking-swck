@@ -20,7 +20,7 @@ kind: OAPServer
 metadata:
   name: minimal
 spec:
-  version: 8.3.0
+  version: 8.8.1
   instances: 1
   
 ---
@@ -29,6 +29,6 @@ kind: UI
 metadata:
   name: minimal
 spec:
-  version: 8.3.0
+  version: 8.8.1
   instances: 1
  
