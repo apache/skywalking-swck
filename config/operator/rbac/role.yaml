@@ -64,6 +64,20 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - secrets
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   - services
   verbs:
@@ -89,7 +103,7 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - statefulset
+  - statefulsets
   verbs:
   - create
   - delete
@@ -98,6 +112,22 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests/approval
+  verbs:
+  - update
 - apiGroups:
   - coordination.k8s.io
   resources:

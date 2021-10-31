@@ -68,7 +68,7 @@ type ServiceTemplate struct {
 	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty"`
 }
 
-// Service Type string describes ingress methods for a service
+// ServiceType string describes ingress methods for a service
 type ServiceType string
 
 const (

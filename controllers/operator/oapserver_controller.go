@@ -129,6 +129,9 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 
 //InjectStorage Inject Storage
 func (r *OAPServerReconciler) InjectStorage(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) {
+	if oapServer.Spec.StorageConfig.Name == "" {
+		return
+	}
 	storage := &operatorv1alpha1.Storage{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Spec.StorageConfig.Name}, storage)
 	if err == nil {
@@ -145,7 +148,7 @@ func (r *OAPServerReconciler) ConfigStorage(ctx context.Context, log logr.Logger
 	SwEsUser := ""
 	SwEsPassword := ""
 	SwStorageEsSslJksPath := ""
-	SwStorageEsSslJksPass := ""
+	SwStorageEsSslJksPass := "skywalking"
 	SwStorageEsClusterNodes := ""
 	o.Spec.StorageConfig.Storage = *s
 	if user.SecretName != "" {

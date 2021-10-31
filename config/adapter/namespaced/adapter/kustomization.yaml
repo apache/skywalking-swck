@@ -22,4 +22,4 @@ kind: Kustomization
 images:
 - name: metrics-adapter
   newName: apache/skywalking-swck
-  newTag: 0.3.0
+  newTag: v0.4.0

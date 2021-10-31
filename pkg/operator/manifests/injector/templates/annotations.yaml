@@ -92,5 +92,5 @@ annotations:
 
   - name: agent.skywalking.apache.org/collector.backend_service
     defaultValue: 127.0.0.1:11800
-    validateFunc: ValidateIpandPort
+    validateFunc: ValidateBackendServices
     envName: SW_AGENT_COLLECTOR_BACKEND_SERVICES

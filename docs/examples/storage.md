@@ -15,7 +15,7 @@ kind: Storage
 metadata:
   name: sample
 spec:
-  type: elasticsearch7
+  type: elasticsearch
   connectType: internal
   version: 7.5.1
   instances: 3
@@ -32,7 +32,7 @@ kind: Storage
 metadata:
   name: sample
 spec:
-  type: elasticsearch7
+  type: elasticsearch
   connectType: external
   address: "https://elasticsearch"
   security:
@@ -55,7 +55,7 @@ $ kubectl apply -f sample.yaml
 ```shell
 $ kubectl get storage
 NAME     INSTANCES      TYPE             VERSION   CONNECTTYPE
-sample   3              elasticsearch7   7.5.1     internal
+sample   3              elasticsearch   7.5.1     internal
 ```
 
 * If you deploy the storage with the external type:
@@ -63,7 +63,7 @@ sample   3              elasticsearch7   7.5.1     internal
 ```shell
 $ kubectl get storage
 NAME     INSTANCES      TYPE             VERSION   CONNECTTYPE
-sample                  elasticsearch7   7.5.1     external
+sample                  elasticsearch   7.5.1     external
 ```
 
 3. Check the Statefulset in Kubernetes:
@@ -71,7 +71,7 @@ sample                  elasticsearch7   7.5.1     external
 ```shell
 $ kubectl get statefulset   
 NAME                    READY   AGE
-sample-elasticsearch7   3/3     7s
+sample-elasticsearch   3/3     7s
 ```
 
 ## Specify Storage Name in OAP server
