@@ -106,8 +106,8 @@ spec:
             - name: SW_HEALTH_CHECKER
               value: default
           {{range .Spec.Config}}
-          - name: {{ .Name }}
-            value: {{ .Value }}
+            - name: {{ .Name }}
+              value: {{ .Value }}
           {{end}}
       {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
       volumes:

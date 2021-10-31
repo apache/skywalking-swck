@@ -27,6 +27,8 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -60,10 +62,10 @@ type StorageReconciler struct {
 
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=storages,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=storages/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=apps,resources=statefulset,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services;serviceaccounts;secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=certificates.k8s.io,resources=certificatesigningrequests,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=certificates.k8s.io,resources=certificatesigningrequests/approval,verbs=update
 
 func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("Storage", req.NamespacedName)
@@ -91,6 +93,7 @@ func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		CR:       &storage,
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("Storage"),
 		Recorder: r.Recorder,
+		TmplFunc: tmplFunc(),
 	}
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
 		return ctrl.Result{}, err
@@ -101,6 +104,17 @@ func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
+}
+
+func tmplFunc() map[string]interface{} {
+	return map[string]interface{}{"getProtocol": getProtocol}
+}
+
+func getProtocol(tls bool) string {
+	if tls {
+		return "https"
+	}
+	return "http"
 }
 
 func (r *StorageReconciler) checkState(ctx context.Context, log logr.Logger, storage *operatorv1alpha1.Storage) error {
@@ -158,11 +172,22 @@ func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, 
 	if s.Spec.ResourceCnfig.Limit == "" && s.Spec.ResourceCnfig.Requests == "" {
 		s.Spec.ResourceCnfig.Limit, s.Spec.ResourceCnfig.Requests = "1000m", "100m"
 	}
-	clusterInitialMasterNodes := s.Name + "-elasticsearch7-0" + "," + s.Name + "-elasticsearch7-1"
-	esJavaOptsValue := "-Xms512m -Xmx512m"
+
+	setDefaultJavaOpts := true
+	for _, envVar := range s.Spec.Config {
+		if envVar.Name == "ES_JAVA_OPTS" {
+			setDefaultJavaOpts = false
+		}
+	}
+	if setDefaultJavaOpts {
+		s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ES_JAVA_OPTS", Value: "-Xms1g -Xmx1g"})
+	}
 	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "discovery.seed_hosts", Value: s.Spec.ServiceName})
-	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "cluster.initial_master_nodes", Value: clusterInitialMasterNodes})
-	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ES_JAVA_OPTS", Value: esJavaOptsValue})
+	clusterInitialMasterNodes := make([]string, s.Spec.Instances)
+	for i := 0; i < int(s.Spec.Instances); i++ {
+		clusterInitialMasterNodes[i] = s.Name + "-elasticsearch-" + strconv.Itoa(i)
+	}
+	s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "cluster.initial_master_nodes", Value: strings.Join(clusterInitialMasterNodes, ",")})
 }
 
 func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *operatorv1alpha1.Storage) {
@@ -219,7 +244,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		log.Info("fail encode CERTIFICATE REQUEST")
 		return
 	}
-	singername := "kubernetes.io/kube-apiserver-client"
+	singername := "kubernetes.io/kubelet-serving"
 	request := certv1beta1.CertificateSigningRequest{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CertificateSigningRequest",
@@ -273,7 +298,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		log.Info("fail parse certificate")
 		return
 	}
-	p12, err := pkcs12.Encode(rand.Reader, key, cert, nil, "")
+	p12, err := pkcs12.Encode(rand.Reader, key, cert, nil, "skywalking")
 
 	if err != nil {
 		log.Info("fail encode pkcs12")

@@ -18,7 +18,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Name }}-elasticsearch7
+  name: {{ .Name }}-elasticsearch
   namespace: {{ .Namespace }}
   labels:
     app: es
@@ -32,6 +32,9 @@ spec:
     matchLabels:
       app: es
       operator.skywalking.apache.org/es-name: {{ .Name }}
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -40,7 +43,7 @@ spec:
         operator.skywalking.apache.org/application: elasticsearch
         operator.skywalking.apache.org/component: statefulset
     spec:
-      serviceAccountName: {{ .Name }}-elasticsearch7
+      serviceAccountName: {{ .Name }}-elasticsearch
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -51,6 +54,14 @@ spec:
                     values:
                       - "es"
                 topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: configure-sysctl
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          image: "{{ .Spec.Image }}"
+          imagePullPolicy: IfNotPresent
+          command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
       containers:
         - name: elasticsearch
           image: {{ .Spec.Image }}
@@ -62,10 +73,10 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9200
-              name: rest
+              name: http
               protocol: TCP
             - containerPort: 9300
-              name: inter-node
+              name: transport
               protocol: TCP
           volumeMounts:
             - name: config
@@ -89,10 +100,61 @@ spec:
             - name: {{ .Name }}
               value: {{ .Value }}
             {{end}}
-          livenessProbe:
-            httpGet:
-              path: /_cluster/health
-              port: http
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  #!/usr/bin/env bash -e
+                  # Exit if ELASTIC_PASSWORD in unset
+                  if [ -z "${ELASTIC_PASSWORD}" ]; then
+                    echo "ELASTIC_PASSWORD variable is missing, exiting"
+                    exit 1
+                  fi
+                  # If the node is starting up wait for the cluster to be ready (request params: "wait_for_status=green&timeout=1s" )
+                  # Once it has started only check that the node itself is responding
+                  START_FILE=/tmp/.es_start_file
+                  http () {
+                    local path="${1}"
+                    local args="${2}"
+                    set -- -XGET -s
+                    if [ "$args" != "" ]; then
+                      set -- "$@" $args
+                    fi
+                    set -- "$@" -u "elastic:${ELASTIC_PASSWORD}"
+                    curl --output /dev/null -k "$@" "{{ getProtocol .Spec.Security.TLS }}://127.0.0.1:9200${path}"
+                  }
+                  if [ -f "${START_FILE}" ]; then
+                    echo 'Elasticsearch is already running, lets check the node is healthy'
+                    HTTP_CODE=$(http "/" "-w %{http_code}")
+                    RC=$?
+                    if [[ ${RC} -ne 0 ]]; then
+                      echo "curl --output /dev/null -k -XGET -s -w '%{http_code}' \${BASIC_AUTH} {{ getProtocol .Spec.Security.TLS }}://127.0.0.1:9200/ failed with RC ${RC}"
+                      exit ${RC}
+                    fi
+                    # ready if HTTP code 200
+                    if [[ ${HTTP_CODE} == "200" ]]; then
+                      exit 0
+                    else
+                      echo "curl --output /dev/null -k -XGET -s -w '%{http_code}' \${BASIC_AUTH} {{ getProtocol .Spec.Security.TLS }}://127.0.0.1:9200/ failed with HTTP code ${HTTP_CODE}"
+                      exit 1
+                    fi
+                  else
+                    echo 'Waiting for elasticsearch cluster to become ready (request params: "wait_for_status=green&timeout=1s" )'
+                    if http "/_cluster/health?wait_for_status=green&timeout=1s" "--fail" ; then
+                      touch ${START_FILE}
+                      exit 0
+                    else
+                      echo 'Cluster is not yet ready (request params: "wait_for_status=green&timeout=1s" )'
+                      exit 1
+                    fi
+                  fi
+            failureThreshold: 10
+            initialDelaySeconds: 10
+            periodSeconds: 12
+            successThreshold: 1
+            timeoutSeconds: 12
       volumes:
         - name: config
           configMap:

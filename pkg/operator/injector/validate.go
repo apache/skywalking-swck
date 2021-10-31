@@ -19,6 +19,7 @@ package injector
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -32,7 +33,8 @@ var (
 	//AnnotationValidateFuncs define all validate functions
 	AnnotationValidateFuncs = []AnnotationValidateFunc{
 		ValidateServiceName,
-		ValidateIpandPort,
+		ValidateBackendServices,
+		ValidateIPv4OrHostname,
 	}
 )
 
@@ -61,20 +63,54 @@ func ValidateServiceName(annotation, value string) error {
 	return nil
 }
 
-//ValidateIpandPort validates an annotation's value is valid ip and port
-func ValidateIpandPort(annotation, value string) error {
-	match, err := regexp.MatchString(`(^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
-		`(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
-		`(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.`+
-		`(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|`+
-		`localhost)\:`+
-		`([0-9]|[1-9]\d{1,3}|[1-5]\d{4}|6[0-5]{2}[0-3][0-5])$`, value)
+//ValidateBackendServices validates an annotation's value is valid backend services
+func ValidateBackendServices(annotation, value string) error {
+	services := []string{value}
+	if strings.Contains(value, ",") {
+		services = strings.Split(value, ",")
+	}
+	allEmpty := true
+	for _, service := range services {
+		service = strings.TrimSpace(service)
+		if service == "" {
+			continue
+		}
+		allEmpty = false
+		err := ValidateIPv4OrHostname(annotation, service)
+		if err != nil {
+			return err
+		}
+	}
+	if allEmpty {
+		return fmt.Errorf("%s error:every service is nil", annotation)
+	}
+	return nil
+}
 
+//ValidateIPv4OrHostname validates an annotation's value is valid ipv4 or hostname
+func ValidateIPv4OrHostname(annotation, service string) error {
+	service = strings.TrimSpace(service)
+	colonIndex := strings.LastIndex(service, ":")
+	host := service
+	if colonIndex != -1 {
+		host = service[:colonIndex]
+	}
+	if host == "" {
+		return fmt.Errorf("%s error:the service name is nil", annotation)
+	}
+	ip := net.ParseIP(host)
+	if ip != nil && ip.To4() != nil {
+		return nil
+	}
+
+	match, err := regexp.MatchString(`^([a-zA-Z0-9][a-zA-Z0-9_-]{0,62})(\.[a-zA-Z0-9_][a-zA-Z0-9_-]{0,62})*?$`,
+		host)
 	if err != nil {
 		return fmt.Errorf("%s error:%s", annotation, err.Error())
 	}
 	if !match {
-		return fmt.Errorf("%s error:not a valid ip and port", annotation)
+		return fmt.Errorf("%s=%s error:not a valid ipv4 or hostname", annotation, host)
 	}
+
 	return nil
 }

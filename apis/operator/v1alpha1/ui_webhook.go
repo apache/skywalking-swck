@@ -50,7 +50,7 @@ func (r *UI) Default() {
 
 	r.Spec.Service.Template.Default()
 	if r.Spec.OAPServerAddress == "" {
-		r.Spec.OAPServerAddress = fmt.Sprintf("%s-oap.%s:12800", r.Name, r.Namespace)
+		r.Spec.OAPServerAddress = fmt.Sprintf("http://%s-oap.%s:12800", r.Name, r.Namespace)
 	}
 }
 

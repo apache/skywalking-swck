@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: demo1
-        image: dashanji/swck-spring-demo:v0.0.3
+        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
         args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
    
@@ -55,7 +55,7 @@ spec:
     env:
     - name: AGENT_OPTS
       value: -javaagent:/sky/agent/skywalking-agent.jar
-    image: dashanji/swck-spring-demo:v0.0.3
+    image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo1
     - mountPath: /sky/agent
       name: sky-agent
@@ -170,7 +170,7 @@ spec:
     spec:
       containers:
       - name: demo2
-        image: dashanji/swck-spring-demo:v0.0.3
+        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
         args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
 ```
@@ -190,7 +190,7 @@ spec:
     env:
     - name: AGENT_OPTS
       value: -javaagent:/skytest/agent/skywalking-agent.jar
-    image: dashanji/swck-spring-demo:v0.0.3
+    image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo2
     - mountPath: /skytest/agent
       name: sky-agent
@@ -311,7 +311,7 @@ spec:
     spec:
       containers:
       - name: demo3
-        image: dashanji/swck-spring-demo:v0.0.3
+        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
         args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
 ```
@@ -334,7 +334,7 @@ spec:
     env:
     - name: AGENT_OPTS
       value: -javaagent:/sky/agent/skywalking-agent.jar=agent.ignore_suffix='jpg,.jpeg',agent.class_cache_mode=MEMORY,agent.sample_n_per_3_secs=6,agent.service_name=app,plugin.mount='plugins,activations',plugin.influxdb.trace_influxql=false,plugin.mongodb.trace_param=true
-    image: dashanji/swck-spring-demo:v0.0.3
+    image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo3
     - mountPath: /sky/agent
       name: sky-agent

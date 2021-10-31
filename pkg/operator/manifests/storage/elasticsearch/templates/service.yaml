@@ -30,9 +30,10 @@ spec:
   selector:
     app: es
     operator.skywalking.apache.org/es-name: {{ .Name }}
+  publishNotReadyAddresses: true
   ports:
-    - name: rest
+    - name: http
       port: 9200
-    - name: inter-node
+    - name: transport
       port: 9300
 

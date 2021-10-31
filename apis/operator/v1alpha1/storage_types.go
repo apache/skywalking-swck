@@ -86,7 +86,7 @@ type StorageStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
-// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type",description="The type of strorage"
+// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type",description="The type of storage"
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version"
 // +kubebuilder:printcolumn:name="ConnectType",type="string",JSONPath=".spec.connectType",description="the way to connect storage"
 

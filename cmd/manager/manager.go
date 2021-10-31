@@ -105,11 +105,11 @@ func main() {
 	}
 
 	if err = (&operatorcontroller.StorageReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Storage"),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("storage"),
-		Recorder: mgr.GetEventRecorderFor("storage-controller"),
+		Client:     mgr.GetClient(),
+		Log:        ctrl.Log.WithName("controllers").WithName("Storage"),
+		Scheme:     mgr.GetScheme(),
+		FileRepo:   repo.NewRepo("storage"),
+		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
 		os.Exit(1)

@@ -79,11 +79,11 @@ func (r *Storage) ValidateDelete() error {
 
 func (r *Storage) valid() error {
 	var allErrs field.ErrorList
-	if r.Spec.Type != "elasticsearch7" {
+	if r.Spec.Type != "elasticsearch" {
 		storagelog.Info("Invalid Storage Type")
 		err := field.Invalid(field.NewPath("spec").Child("type"),
 			r.Spec.Type,
-			"d. must be elasticsearch or elasticsearch7")
+			"d. must be elasticsearch")
 		allErrs = append(allErrs, err)
 	}
 	if r.Spec.ConnectType != "internal" && r.Spec.ConnectType != "external" {

@@ -78,13 +78,13 @@ func (a *Application) Apply(ctx context.Context, manifest string, log logr.Logge
 		return false, err
 	}
 	proto := &unstructured.Unstructured{}
-	err = LoadTemplate(string(manifests), a.CR, a.TmplFunc, proto)
+	yaml, err := LoadTemplate(string(manifests), a.CR, a.TmplFunc, proto)
 	if err == ErrNothingLoaded {
 		log.Info("nothing is loaded")
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("failed to load %s template: %w", manifest, err)
+		return false, fmt.Errorf("failed to load %s template: %w yaml: %v", manifest, err, string(yaml))
 	}
 	return a.apply(ctx, proto, log, needCompose)
 }
