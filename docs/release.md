@@ -206,11 +206,11 @@ Vote result should follow these:
 
     Vote Thread: $VOTE_THREAD_PERMALINK
 
-    Download Links: http://skywalking.apache.org/downloads/
+    Download Links: https://skywalking.apache.org/downloads/
 
     Release Notes : https://github.com/apache/skywalking-swck/blob/$VERSION/CHANGES.md
 
-    Website: http://skywalking.apache.org/
+    Website: https://skywalking.apache.org/
 
     SkyWalking Could on Kubernetes Resources:
     - Issue: https://github.com/apache/skywalking/issues

@@ -7,9 +7,9 @@ contributing.
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the Apache
-software Foundation's [Code of Conduct](http://www.apache.org/foundation/policies/conduct.html).
+software Foundation's [Code of Conduct](https://www.apache.org/foundation/policies/conduct.html).
 By participating, you are expected to adhere to this code. If you are aware of unacceptable behavior, please visit the
-[Reporting Guidelines page](http://www.apache.org/foundation/policies/conduct.html#reporting-guidelines)
+[Reporting Guidelines page](https://www.apache.org/foundation/policies/conduct.html#reporting-guidelines)
 and follow the instructions there.
 
 ## How to contribute?
@@ -36,7 +36,7 @@ Once we've discussed your changes and you've got your code ready, make sure that
 * Update the README.md with details of changes to the interface.
 * Includes tests for new functionality.
 * References the original issue in description, e.g. "Resolves #123".
-* Has a [good commit message](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+* Has a [good commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
 
 ## Compiling and building
 Clone the source code and simply run `make` in the source directory,
