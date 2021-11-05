@@ -3,7 +3,7 @@ Apache SkyWalking Cloud on Kubernetes
 
 ![](https://github.com/apache/skywalking-swck/workflows/Build/badge.svg?branch=master)
 
-<img src="http://skywalking.apache.org/assets/logo.svg" alt="Sky Walking logo" height="90px" align="right" />
+<img src="https://skywalking.apache.org/assets/logo.svg" alt="Sky Walking logo" height="90px" align="right" />
 
 A bridge project between [Apache SkyWalking](https://github.com/apache/skywalking) and Kubernetes.
 
