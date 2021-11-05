@@ -184,6 +184,8 @@ Vote result should follow these:
     # enter your apache password
     # ....
     ```
+ 
+1. Remove last released tar balls from `https://dist.apache.org/repos/dist/release/skywalking`
 
 1. Refer to the previous [PR](https://github.com/apache/skywalking-website/pull/118), update news and links on the website. There are seven files need to modify.
 
