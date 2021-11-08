@@ -15,17 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: manager-role
-rules:
-  - apiGroups:
-      - certificates.k8s.io
+- op: add
+  path: /rules/0
+  value:
+    apiGroups:
+    - certificates.k8s.io
     resources:
-      - signers
+    - signers
     resourceNames:
-      - kubernetes.io/*
+    - kubernetes.io/*
     verbs:
-      - approve
+    - approve
+        
