@@ -1,0 +1,108 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file is used to show how to write configuration files and can be used to test.
+# kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
+setup:
+  env: kind
+  file: kind.yaml
+  steps:
+    - name: install cert-manager
+      command: |
+        # kind k8s cluster is in $TMPDIR
+        cp $TMPDIR/e2e-k8s.config ~/.kube/config
+        kubectl create -f test/e2e/cert-manager.yaml
+      wait:
+        - namespace: cert-manager
+          resource: pod
+          for: condition=Ready
+    - name: install operator
+      command: |
+        export OPERATOR_IMG=controller:v0.4
+        make operator-docker-build   
+        kind load docker-image controller:v0.4
+        make operator-install
+        make operator-deploy
+      wait:
+        - namespace: skywalking-swck-system
+          resource: pod
+          for: condition=Ready
+    - name: wait webhook installing
+      command: |
+        sleep 30
+    - name: setup oapserver and ui
+      command: |
+        kubectl create -f config/operator/samples/default.yaml
+      wait:
+        - namespace: default
+          resource: OAPServer/default
+          for: condition=Available
+        - namespace: default
+          resource: UI/default
+          for: condition=Available
+    - name: setup java agent demo
+      command: |
+        kubectl label namespace default swck-injection=enabled
+        sed 's/oapserver-clusterip/'$(kubectl get svc default-oap -o go-template --template='{{.spec.clusterIP}}')'/' test/e2e/demo.yaml | kubectl create -f -
+      wait:
+        - namespace: default
+          resource: deployment/demo
+          for: condition=Available 
+  kind:
+    import-images:
+      - quay.io/jetstack/cert-manager-cainjector:v1.3.1
+      - quay.io/jetstack/cert-manager-controller:v1.3.1
+      - quay.io/jetstack/cert-manager-webhook:v1.3.1
+      - docker.io/kubesphere/kube-rbac-proxy:v0.4.1
+      - docker.io/apache/skywalking-oap-server:8.8.1
+      - docker.io/apache/skywalking-ui:8.8.1
+      - ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+      - docker.io/apache/skywalking-java-agent:8.7.0-jdk8
+    expose-ports:
+      - namespace: default
+        resource: service/demo 
+        port: 8085
+      - namespace: default
+        resource: service/default-oap
+        port: 12800
+  timeout: 20m
+
+cleanup:
+  # always never success failure
+  on: always
+
+trigger:
+  action: http
+  interval: 30s
+  times: 5
+  url: http://${service_demo_host}:${service_demo_8085}/hello
+  method: GET
+
+verify:
+  # verify with retry strategy
+  retry:
+    # max retry count
+    count: 10
+    # the interval between two attempts, e.g. 10s, 1m.
+    interval: 10s
+  cases:
+    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql service ls
+      expected: verify/service.yaml
+    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
+      expected: verify/metrics.yaml
+    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+      expected: verify/endpoint.yaml
+    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name {GET}/hello --service-name Your_ApplicationName | yq e 'to_entries' -
+      expected: verify/metrics.yaml

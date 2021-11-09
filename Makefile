@@ -50,6 +50,13 @@ clean:
 test: generate operator-manifests
 	go test ./... -coverprofile cover.out
 
+# Run e2e-test
+e2e-test:
+	@echo "Prepare e2e..."
+	-hack/prepare-e2e.sh
+	@echo "Run e2e..."
+	e2e run -c test/e2e/e2e.yaml
+
 # Build manager binary
 operator: generate
 	go build -o bin/manager cmd/manager/manager.go

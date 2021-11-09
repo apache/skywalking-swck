@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        swck-java-agent-injected: "true"
+        app: demo
+      annotations:
+        strategy.skywalking.apache.org/agent.Overlay: "true"
+        agent.skywalking.apache.org/collector.backend_service: "oapserver-clusterip:11800"
+    spec:
+      containers:
+      - name: demo1
+        imagePullPolicy: IfNotPresent
+        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+        command: ["java"]
+        args: ["$(AGENT_OPTS)","-jar","/app.jar"]
+        ports:
+          - containerPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+spec:
+  type: ClusterIP
+  ports:
+  - name: 8085-tcp
+    port: 8085
+    protocol: TCP
+    targetPort: 8085
+  selector:
+    app: demo
