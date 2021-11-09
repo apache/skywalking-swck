@@ -23,7 +23,7 @@ setup:
       command: |
         # kind k8s cluster is in $TMPDIR
         cp $TMPDIR/e2e-k8s.config ~/.kube/config
-        kubectl create -f test/e2e/cert-manager.yaml
+        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
       wait:
         - namespace: cert-manager
           resource: pod
