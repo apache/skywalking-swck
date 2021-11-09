@@ -52,7 +52,7 @@ test: generate operator-manifests
 
 # Run e2e-test
 e2e-test:
-	@echo "Prepare e2e..."
+	@echo "Prepare e2e.yaml..."
 	-hack/prepare-e2e.sh
 	@echo "Run e2e..."
 	e2e run -c test/e2e/e2e.yaml

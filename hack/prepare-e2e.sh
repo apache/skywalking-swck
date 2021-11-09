@@ -24,30 +24,6 @@ INSTALL_DIR=/usr/local/bin
 IMAGE_FILE=test/e2e/e2e.yaml
 
 prepare_ok=true
-# install e2e
-function install_e2e()
-{
-    if ! command -v e2e &> /dev/null; then
-      echo "please refer https://github.com/apache/skywalking-infra-e2e/blob/main/docs/en/contribution/Compiling-Guidance.md to install e2e!"
-      $prepare_ok=false
-    fi
-}
-# install docker
-function install_docker()
-{
-    if ! command -v docker &> /dev/null; then
-      echo "please refer https://docs.docker.com/get-docker/ to install docker!"
-      $prepare_ok=false
-    fi 
-}
-# install kind
-function install_kind()
-{
-    if ! command -v kind &> /dev/null; then
-      echo "please refer https://kind.sigs.k8s.io/docs/user/quick-start to install kind!"
-      $prepare_ok=false
-    fi
-}
 # install kubectl
 function install_kubectl()
 {
