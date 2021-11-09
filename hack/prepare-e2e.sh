@@ -67,8 +67,6 @@ function install_images()
 function install_all()
 {
     echo "check e2e dependencies..."
-    install_e2e
-    install_kind
     install_kubectl
     install_swctl
     install_yq
