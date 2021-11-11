@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 #
@@ -28,16 +27,24 @@ prepare_ok=true
 function install_kubectl()
 {
     if ! command -v kubectl &> /dev/null; then
-      echo "please refer https://kubernetes.io/docs/tasks/tools/#install-kubectl to install kubectl!"
-      $prepare_ok=false
+      curl -LO https://dl.k8s.io/release/v1.19.1/bin/${OS}/${ARCH}/kubectl && chmod +x ./kubectl && mv ./kubectl ${INSTALL_DIR}
+      if [ $? -ne 0 ]; then
+        echo "install kubectl error, please check"
+        $prepare_ok=false
+      fi
     fi
 }
 # install swctl
 function install_swctl()
 {
     if ! command -v swctl &> /dev/null; then
-      echo "please refer https://github.com/apache/skywalking-cli to install swctl!"
-      $prepare_ok=false
+      wget https://github.com/apache/skywalking-cli/archive/0.9.0.tar.gz -O - |\
+      tar xz && cd skywalking-cli-0.9.0 && make ${OS} && mv bin/swctl-*-${OS}-amd64 ${INSTALL_DIR}/swctl \
+      && cd .. && rm -r skywalking-cli-0.9.0
+      if [ $? -ne 0 ]; then
+        echo "install swctl error, please check"
+        $prepare_ok=false
+      fi
     fi
 }
 # install yq

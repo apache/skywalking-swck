@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: demo
-  namespace: default
+  namespace: skywalking-system
 spec:
   selector:
     matchLabels:
@@ -29,7 +29,7 @@ spec:
         app: demo
       annotations:
         strategy.skywalking.apache.org/agent.Overlay: "true"
-        agent.skywalking.apache.org/collector.backend_service: "oapserver-clusterip:11800"
+        agent.skywalking.apache.org/collector.backend_service: "skywalking-system-oap.skywalking-system:11800"
     spec:
       containers:
       - name: demo1
@@ -44,6 +44,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: demo
+  namespace: skywalking-system
 spec:
   type: ClusterIP
   ports:

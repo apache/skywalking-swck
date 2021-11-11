@@ -20,6 +20,7 @@ setup:
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
+        mkdir -p ~/.kube
         cp $TMPDIR/e2e-k8s.config ~/.kube/config
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
       wait:
@@ -39,23 +40,25 @@ setup:
           for: condition=Ready
     - name: wait webhook installing
       command: |
-        sleep 30
+        bash hack/wait-webhook.sh
     - name: setup oapserver and ui
       command: |
-        kubectl create -f config/operator/samples/default.yaml
+        kubectl create namespace skywalking-system
+        kubectl apply -f test/e2e/skywalking-components.yaml
       wait:
-        - namespace: default
-          resource: OAPServer/default
+        - namespace: skywalking-system
+          resource: OAPServer/skywalking-system
           for: condition=Available
-        - namespace: default
-          resource: UI/default
+        - namespace: skywalking-system
+          resource: UI/skywalking-system
           for: condition=Available
     - name: setup java agent demo
       command: |
-        kubectl label namespace default swck-injection=enabled
-        sed 's/oapserver-clusterip/'$(kubectl get svc default-oap -o go-template --template='{{.spec.clusterIP}}')'/' test/e2e/demo.yaml | kubectl create -f -
+        kubectl label namespace skywalking-system swck-injection=enabled
+        # sed 's/oapserver-clusterip/'$(kubectl get svc skywalking-system-oap -n skywalking-system -o go-template --template='{{.spec.clusterIP}}')'/' test/e2e/demo.yaml | kubectl create -f -
+        kubectl apply -f test/e2e/demo.yaml
       wait:
-        - namespace: default
+        - namespace: skywalking-system
           resource: deployment/demo
           for: condition=Available 
   kind:
@@ -69,12 +72,15 @@ setup:
       - ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
       - docker.io/apache/skywalking-java-agent:8.7.0-jdk8
     expose-ports:
-      - namespace: default
+      - namespace: skywalking-system
         resource: service/demo 
         port: 8085
-      - namespace: default
-        resource: service/default-oap
+      - namespace: skywalking-system
+        resource: service/skywalking-system-oap
         port: 12800
+      - namespace: skywalking-system
+        resource: service/skywalking-system-ui
+        port: 80
   timeout: 20m
 
 cleanup:
@@ -96,11 +102,17 @@ verify:
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
   cases:
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql service ls
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
       expected: verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: verify/metrics.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
       expected: verify/endpoint.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name {GET}/hello --service-name Your_ApplicationName | yq e 'to_entries' -
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name {GET}/hello --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: verify/metrics.yaml
+    - query: 'curl -s \
+            --request POST \
+            --header "Content-Type: application/json;charset=UTF-8" \
+            --data ''{"query":"query queryEndpoints($serviceId: ID!, $keyword: String!) {\n    getEndpoints: searchEndpoint(serviceId: $serviceId, keyword: $keyword, limit: 100) {\n      key: id\n      label: name\n    }\n}","variables":{serviceId: "WW91cl9BcHBsaWNhdGlvbk5hbWU=.1", keyword: ""}}'' \
+            http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80} 2>&1 | yq e ".data.getEndpoints" -P -'
+      expected: verify/curl.yaml
