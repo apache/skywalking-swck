@@ -38,7 +38,7 @@ spec:
   version: 8.8.1
   instances: 1
   image: apache/skywalking-ui:8.8.1
-  OAPServerAddress: http://default-oap:12800
+  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:
       type: ClusterIP

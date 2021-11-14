@@ -82,7 +82,7 @@ jobs:
         run: make test
   e2e-tests:
     name: e2e tests(oap+ui+agent)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v2

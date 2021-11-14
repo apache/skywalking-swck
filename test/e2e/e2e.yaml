@@ -55,7 +55,6 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        # sed 's/oapserver-clusterip/'$(kubectl get svc skywalking-system-oap -n skywalking-system -o go-template --template='{{.spec.clusterIP}}')'/' test/e2e/demo.yaml | kubectl create -f -
         kubectl apply -f test/e2e/demo.yaml
       wait:
         - namespace: skywalking-system
