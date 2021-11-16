@@ -21,7 +21,7 @@
 // fetcher/templates/configmap.yaml (3.082kB)
 // fetcher/templates/deployment.yaml (2.084kB)
 // fetcher/templates/service_account.yaml (1.088kB)
-// injector/templates/annotations.yaml (3.361kB)
+// injector/templates/annotations.yaml (3.362kB)
 // injector/templates/configmap.yaml (1.2kB)
 // injector/templates/javaagent.yaml (1.462kB)
 // oapserver/templates/cluster_role.yaml (1.241kB)
@@ -435,7 +435,7 @@ annotations:
     envName: nil
 
   - name: sidecar.skywalking.apache.org/initcontainer.Image
-    defaultValue: apache/skywalking-java-agent:8.7.0-jdk8
+    defaultValue: apache/skywalking-java-agent:8.8.0-java8
     validateFunc: nil
     envName: nil
 
@@ -511,7 +511,7 @@ func injectorTemplatesAnnotationsYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "injector/templates/annotations.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x29, 0x36, 0xc1, 0x23, 0x27, 0xb2, 0x7a, 0x2, 0xed, 0x56, 0x6f, 0x83, 0x49, 0x8, 0x1c, 0x78, 0xf7, 0xfa, 0x7b, 0xe3, 0xa3, 0xc2, 0x7a, 0xb0, 0x5b, 0x5b, 0xd0, 0x7c, 0xb5, 0xe3, 0x1e, 0x85}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xd2, 0x9a, 0xe0, 0xe4, 0x15, 0x93, 0xed, 0xf7, 0xf7, 0x7b, 0xff, 0x1a, 0x27, 0x8f, 0x85, 0x54, 0xa1, 0x2d, 0x26, 0x53, 0x89, 0x7b, 0x7d, 0xf4, 0x6c, 0x32, 0xfe, 0xc, 0xbd, 0x76, 0x36, 0x59}}
 	return a, nil
 }
 

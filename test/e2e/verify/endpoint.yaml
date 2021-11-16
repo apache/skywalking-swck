@@ -14,6 +14,6 @@
 # limitations under the License.
 
 {{- contains .}}
-- id: {{ b64enc "Your_ApplicationName" }}.1_{{ b64enc "{GET}/hello" }}
-  name: '{GET}/hello'
+- id: {{ b64enc "Your_ApplicationName" }}.1_{{ b64enc "GET:/hello" }}
+  name: 'GET:/hello'
 {{- end}}

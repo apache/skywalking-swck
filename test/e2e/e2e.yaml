@@ -20,8 +20,7 @@ setup:
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
-        mkdir -p ~/.kube
-        cp $TMPDIR/e2e-k8s.config ~/.kube/config
+        export KUBECONFIG=$TMPDIR/e2e-k8s.config
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
       wait:
         - namespace: cert-manager
@@ -29,9 +28,9 @@ setup:
           for: condition=Ready
     - name: install operator
       command: |
-        export OPERATOR_IMG=controller:v0.4
+        export OPERATOR_IMG=controller
         make operator-docker-build   
-        kind load docker-image controller:v0.4
+        kind load docker-image controller
         make operator-install
         make operator-deploy
       wait:
@@ -69,7 +68,7 @@ setup:
       - docker.io/apache/skywalking-oap-server:8.8.1
       - docker.io/apache/skywalking-ui:8.8.1
       - ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
-      - docker.io/apache/skywalking-java-agent:8.7.0-jdk8
+      - docker.io/apache/skywalking-java-agent:8.8.0-java8
     expose-ports:
       - namespace: skywalking-system
         resource: service/demo 
@@ -101,17 +100,17 @@ verify:
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
   cases:
+    # test oapserver
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
       expected: verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: verify/metrics.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
       expected: verify/endpoint.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name {GET}/hello --service-name Your_ApplicationName | yq e 'to_entries' -
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: verify/metrics.yaml
-    - query: 'curl -s \
-            --request POST \
-            --header "Content-Type: application/json;charset=UTF-8" \
-            --data ''{"query":"query queryEndpoints($serviceId: ID!, $keyword: String!) {\n    getEndpoints: searchEndpoint(serviceId: $serviceId, keyword: $keyword, limit: 100) {\n      key: id\n      label: name\n    }\n}","variables":{serviceId: "WW91cl9BcHBsaWNhdGlvbk5hbWU=.1", keyword: ""}}'' \
-            http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80} 2>&1 | yq e ".data.getEndpoints" -P -'
-      expected: verify/curl.yaml
+    # test ui
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
+      expected: verify/service.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+      expected: verify/endpoint.yaml

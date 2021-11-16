@@ -96,7 +96,7 @@ jobs:
       - name: Prepare E2E
         run: make prepare-e2e-test
       - name: Run E2E Test
-        uses: apache/skywalking-infra-e2e@main      # always prefer to use a revision instead of `main`.
+        uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205      # always prefer to use a revision instead of `main`.
         with:
           e2e-file: test/e2e/e2e.yaml               # need to run E2E file path
   checks:
