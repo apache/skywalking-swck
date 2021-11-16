@@ -80,9 +80,26 @@ jobs:
         run: ./hack/install-kubebuilder.sh
       - name: tests
         run: make test
+  e2e-tests:
+    name: e2e tests(oap+ui+agent)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Update dependencies
+        run: GOPROXY=https://proxy.golang.org go mod download
+      - name: Run E2E Test
+        uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205      # always prefer to use a revision instead of `main`.
+        with:
+          e2e-file: test/e2e/e2e.yaml               # need to run E2E file path
   checks:
     name: build
     runs-on: ubuntu-20.04
-    needs: [check, build, unit-tests]
+    needs: [check, build, unit-tests, e2e-tests]
     steps:
       - run: echo 'success'

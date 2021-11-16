@@ -15,43 +15,33 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: v1
-kind: Namespace
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: OAPServer
 metadata:
-  labels:
-    control-plane: controller-manager
-  name: system
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: controller-manager
-  namespace: system
-  labels:
-    control-plane: controller-manager
+  name: skywalking-system
+  namespace: skywalking-system
 spec:
-  selector:
-    matchLabels:
-      control-plane: controller-manager
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        control-plane: controller-manager
-    spec:
-      containers:
-      - command:
-        - /manager
-        args:
-        - --enable-leader-election
-        image: controller:latest
-        imagePullPolicy: IfNotPresent
-        name: manager
-        resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
-      terminationGracePeriodSeconds: 10
+  version: 8.8.1
+  instances: 1
+  image: apache/skywalking-oap-server:8.8.1
+  service:
+    template:
+      type: ClusterIP
+  
+---
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: UI 
+metadata:
+  name: skywalking-system
+  namespace: skywalking-system
+spec:
+  version: 8.8.1
+  instances: 1
+  image: apache/skywalking-ui:8.8.1
+  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
+  service:
+    template:
+      type: ClusterIP
+    ingress:
+      host: demo.ui.skywalking
+    
