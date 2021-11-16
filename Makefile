@@ -57,11 +57,6 @@ e2e-test:
 	@echo "Run e2e..."
 	e2e run -c test/e2e/e2e.yaml
 
-# Prepare e2e.yaml for the github workflow
-prepare-e2e-test:
-	@echo "Prepare e2e.yaml..."
-	-hack/prepare-e2e.sh
-	
 # Build manager binary
 operator: generate
 	go build -o bin/manager cmd/manager/manager.go

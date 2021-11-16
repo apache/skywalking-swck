@@ -17,6 +17,8 @@ setup:
   env: kind
   file: kind.yaml
   steps:
+    - name: prepare e2e
+      command: bash prepare-e2e.sh
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
