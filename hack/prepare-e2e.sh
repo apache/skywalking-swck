@@ -20,7 +20,6 @@ OS=$(go env GOOS)
 ARCH=$(go env GOHOSTARCH)
 
 INSTALL_DIR=/usr/local/bin
-IMAGE_FILE=test/e2e/e2e.yaml
 
 prepare_ok=true
 # install kubectl
@@ -61,23 +60,12 @@ function install_yq()
     fi
 }
 
-# prepare images, please make sure you can pull these images
-function install_images()
-{
-    yq e '.setup.kind.import-images' $IMAGE_FILE | awk -F ' ' '{print $2}' | xargs -I {} docker pull {}
-    if [ $? -ne 0 ]; then
-      echo "install images error, please check"
-      $prepare_ok=false
-    fi
-}
-
 function install_all()
 {
     echo "check e2e dependencies..."
     install_kubectl
     install_swctl
     install_yq
-    install_images
     if [ "$prepare_ok" = false ]; then
         echo "check e2e dependencies failed"
         exit
