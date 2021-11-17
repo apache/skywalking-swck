@@ -37,7 +37,7 @@ func (r *Storage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // nolint: lll
-// +kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-storage,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,verbs=create;update,versions=v1alpha1,name=mstorage.kb.io
+// +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-storage,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,verbs=create;update,versions=v1alpha1,name=mstorage.kb.io
 
 var _ webhook.Defaulter = &Storage{}
 
@@ -55,7 +55,7 @@ func (r *Storage) Default() {
 }
 
 // nolint: lll
-// +kubebuilder:webhook:verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-storage,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,versions=v1alpha1,name=vstorage.kb.io
+// +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-storage,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,versions=v1alpha1,name=vstorage.kb.io
 
 var _ webhook.Validator = &Storage{}
 

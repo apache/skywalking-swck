@@ -36,7 +36,7 @@ func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // nolint: lll
-// +kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-ui,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,verbs=create;update,versions=v1alpha1,name=mui.kb.io
+// +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-ui,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,verbs=create;update,versions=v1alpha1,name=mui.kb.io
 
 var _ webhook.Defaulter = &UI{}
 
@@ -55,7 +55,7 @@ func (r *UI) Default() {
 }
 
 // nolint: lll
-// +kubebuilder:webhook:verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-ui,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,versions=v1alpha1,name=vui.kb.io
+// +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-ui,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,versions=v1alpha1,name=vui.kb.io
 
 var _ webhook.Validator = &UI{}
 

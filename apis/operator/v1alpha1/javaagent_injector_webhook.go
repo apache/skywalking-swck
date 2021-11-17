@@ -33,7 +33,7 @@ import (
 var javaagentInjectorLog = logf.Log.WithName("javaagent_injector")
 
 // nolint: lll
-// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
+// +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
 
 // Javaagent injects java agent into Pods
 type JavaagentInjector struct {
