@@ -125,7 +125,14 @@ func (r *StorageReconciler) checkState(ctx context.Context, log logr.Logger, sto
 	if err := r.Client.Get(ctx, object, &statefulset); err != nil && !apierrors.IsNotFound(err) {
 		errCol.Collect(fmt.Errorf("failed to get statefulset: %w", err))
 	} else {
-		overlay.Conditions = statefulset.Status.Conditions
+		if statefulset.Status.ReadyReplicas == statefulset.Status.Replicas {
+			overlay.Conditions = append(overlay.Conditions, apps.StatefulSetCondition{
+				Type:               "Ready",
+				Status:             "True",
+				LastTransitionTime: metav1.NewTime(time.Now()),
+				Reason:             "statefulset " + object.Name + " is ready",
+			})
+		}
 	}
 
 	if apiequal.Semantic.DeepDerivative(overlay, storage.Status) {
@@ -244,7 +251,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		log.Info("fail encode CERTIFICATE REQUEST")
 		return
 	}
-	singername := "kubernetes.io/kubelet-serving"
+	singername := "kubernetes.io/legacy-unknown"
 	request := certv1beta1.CertificateSigningRequest{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CertificateSigningRequest",
