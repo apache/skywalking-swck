@@ -15,7 +15,7 @@
 
 setup:
   env: kind
-  file: kind.yaml
+  file: ../kind.yaml
   steps:
     - name: prepare e2e.yaml
       command: bash hack/prepare-e2e.sh
@@ -56,7 +56,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        kubectl apply -f test/e2e/demo.yaml
+        sed 's/oap-service/skywalking-system-oap.skywalking-system/' test/e2e/demo.yaml | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
@@ -95,15 +95,15 @@ verify:
   cases:
     # test oapserver
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
-      expected: verify/service.yaml
+      expected: ../verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: verify/metrics.yaml
+      expected: ../verify/metrics.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: verify/endpoint.yaml
+      expected: ../verify/endpoint.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: verify/metrics.yaml
+      expected: ../verify/metrics.yaml
     # test ui
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
-      expected: verify/service.yaml
+      expected: ../verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: verify/endpoint.yaml
+      expected: ../verify/endpoint.yaml
