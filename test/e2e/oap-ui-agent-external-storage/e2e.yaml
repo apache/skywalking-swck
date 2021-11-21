@@ -48,6 +48,7 @@ setup:
       wait:
         - namespace: default
           resource: pod
+          label-selector: k8s-app=es
           for: condition=Ready
     - name: setup storage(use the external type)
       command: |
