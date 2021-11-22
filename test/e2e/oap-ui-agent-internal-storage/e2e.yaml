@@ -103,20 +103,9 @@ verify:
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
   cases:
-    # test oapserver
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql service ls
-      expected: ../verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: ../verify/metrics.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: ../verify/endpoint.yaml
-    - query: swctl --display yaml --base-url=http://${service_default_oap_host}:${service_default_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: ../verify/metrics.yaml
-    # test ui
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
-      expected: ../verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: ../verify/endpoint.yaml
+    - includes:
+        - ../oapserver-cases.yaml
+        - ../ui-cases.yaml
     # confirm whether the data are stored in the es
     - query: 'curl -u "elastic:changeme" -k "https://${service_skywalking_storage_host}:${service_skywalking_storage_9200}/_cat/indices?v" 2>&1 | grep sw_metrics | cut -d " " -f 5 | sed ''/^$/d'' | yq e ''{"indices": .}'' - | yq e ''to_entries'' -'
       expected: ../verify/indices.yaml

@@ -102,8 +102,5 @@ verify:
       expected: ../verify/endpoint.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: ../verify/metrics.yaml
-    # test ui
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
-      expected: ../verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: ../verify/endpoint.yaml
+    - includes:
+        - ../ui-cases.yaml

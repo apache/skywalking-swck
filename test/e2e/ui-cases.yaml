@@ -13,40 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: es
-  labels:
-    k8s-app: es
-spec:
-  replicas: 1
-  serviceName: es
-  selector:
-    matchLabels:
-      k8s-app: es
-  template:
-    metadata:
-      labels:
-        k8s-app: es
-    spec:
-      containers:
-      - name: es
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
-        env:
-        - name: discovery.type
-          value: single-node
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: es-out
-  labels:
-    k8s-app: es
-spec:
-  selector:
-    k8s-app: es
-  ports:
-  - name: out
-    port: 9200
-    protocol: TCP
+cases:
+  # test ui
+  - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
+    expected: verify/service.yaml
+  - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+    expected: verify/endpoint.yaml
