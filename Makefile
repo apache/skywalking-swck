@@ -52,8 +52,12 @@ test: generate operator-manifests
 
 # Run e2e-test
 e2e-test:
-	@echo "Run e2e..."
-	e2e run -c test/e2e/e2e.yaml
+	@echo "Run oap+ui+agent e2e..."
+	e2e run -c test/e2e/oap-ui-agent/e2e.yaml
+	@echo "Run oap+ui+agent+storage(internal) e2e..."
+	e2e run -c test/e2e/oap-ui-agent-internal-storage/e2e.yaml
+	@echo "Run oap+ui+agent+storage(external) e2e..."
+	e2e run -c test/e2e/oap-ui-agent-external-storage/e2e.yaml
 
 # Build manager binary
 operator: generate

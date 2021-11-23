@@ -15,7 +15,7 @@
 
 setup:
   env: kind
-  file: kind.yaml
+  file: ../kind.yaml
   steps:
     - name: prepare e2e.yaml
       command: bash hack/prepare-e2e.sh
@@ -42,13 +42,20 @@ setup:
     - name: wait webhook installing
       command: |
         bash hack/wait-webhook.sh
+    - name: setup storage(use the internal type)
+      command: |
+        kubectl apply -f test/e2e/internal-storage.yaml
+      wait:
+        - namespace: default
+          resource: Storage/sample
+          for: condition=Ready
     - name: setup oapserver and ui
       command: |
         kubectl create namespace skywalking-system
-        kubectl apply -f test/e2e/skywalking-components.yaml
+        kubectl apply -f test/e2e/skywalking-components-with-storage.yaml
       wait:
-        - namespace: skywalking-system
-          resource: OAPServer/skywalking-system
+        - namespace: default
+          resource: OAPServer/default
           for: condition=Available
         - namespace: skywalking-system
           resource: UI/skywalking-system
@@ -56,7 +63,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        kubectl apply -f test/e2e/demo.yaml
+        sed 's/oap-service/default-oap.default/' test/e2e/demo.yaml | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
@@ -66,12 +73,15 @@ setup:
       - namespace: skywalking-system
         resource: service/demo 
         port: 8085
-      - namespace: skywalking-system
-        resource: service/skywalking-system-oap
+      - namespace: default
+        resource: service/default-oap
         port: 12800
       - namespace: skywalking-system
         resource: service/skywalking-system-ui
         port: 80
+      - namespace: default
+        resource: service/skywalking-storage
+        port: 9200
   timeout: 20m
 
 cleanup:
@@ -93,17 +103,9 @@ verify:
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
   cases:
-    # test oapserver
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
-      expected: verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: verify/metrics.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: verify/endpoint.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: verify/metrics.yaml
-    # test ui
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
-      expected: verify/service.yaml
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-      expected: verify/endpoint.yaml
+    - includes:
+        - ../oapserver-cases.yaml
+        - ../ui-cases.yaml
+    # confirm whether the data are stored in the es
+    - query: 'curl -u "elastic:changeme" -k "https://${service_skywalking_storage_host}:${service_skywalking_storage_9200}/_cat/indices?v" 2>&1 | grep sw_metrics | cut -d " " -f 5 | sed ''/^$/d'' | yq e ''{"indices": .}'' - | yq e ''to_entries'' -'
+      expected: ../verify/indices.yaml
