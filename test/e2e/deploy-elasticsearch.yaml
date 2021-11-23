@@ -14,43 +14,39 @@
 # limitations under the License.
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: demo
-  namespace: skywalking-system
+  name: es
+  labels:
+    k8s-app: es
 spec:
+  replicas: 1
+  serviceName: es
   selector:
     matchLabels:
-      app: demo
+      k8s-app: es
   template:
     metadata:
       labels:
-        swck-java-agent-injected: "true"
-        app: demo
-      annotations:
-        strategy.skywalking.apache.org/agent.Overlay: "true"
-        agent.skywalking.apache.org/collector.backend_service: "oap-service:11800"
+        k8s-app: es
     spec:
       containers:
-      - name: demo1
-        imagePullPolicy: IfNotPresent
-        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
-        command: ["java"]
-        args: ["$(AGENT_OPTS)","-jar","/app.jar"]
-        ports:
-          - containerPort: 8085
+      - name: es
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+        env:
+        - name: discovery.type
+          value: single-node
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo
-  namespace: skywalking-system
+  name: es-out
+  labels:
+    k8s-app: es
 spec:
-  type: ClusterIP
-  ports:
-  - name: 8085-tcp
-    port: 8085
-    protocol: TCP
-    targetPort: 8085
   selector:
-    app: demo
+    k8s-app: es
+  ports:
+  - name: out
+    port: 9200
+    protocol: TCP
