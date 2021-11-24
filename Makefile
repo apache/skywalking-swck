@@ -58,6 +58,8 @@ e2e-test:
 	e2e run -c test/e2e/oap-ui-agent-internal-storage/e2e.yaml
 	@echo "Run oap+ui+agent+storage(external) e2e..."
 	e2e run -c test/e2e/oap-ui-agent-external-storage/e2e.yaml
+	@echo "Run oap+agent+adapter+hpa e2e..."
+	e2e run -c test/e2e/oap-agent-adapter-hpa/e2e.yaml
 
 # Build manager binary
 operator: generate
