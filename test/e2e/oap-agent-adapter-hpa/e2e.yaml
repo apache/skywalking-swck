@@ -100,7 +100,7 @@ verify:
     interval: 10s
   cases:
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: ../verify/metrics.yaml
+      expected: ../verify/hpa-metrics.yaml
     # the trigger will do 30 times, as the hpa's value is set as 5, so the deployment's replicas will be 3(maxReplicas).
     - query: 'kubectl get deployment demo -n skywalking-system -o jsonpath=''{.status.replicas}'' | yq e ''{"replicas": .}'' - | yq e ''to_entries'' -'
       expected: ../verify/replicas.yaml
