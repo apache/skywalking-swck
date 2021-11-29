@@ -39,6 +39,13 @@ spec:
         args: ["$(AGENT_OPTS)","-jar","/app.jar"]
         ports:
           - containerPort: 8085
+        readinessProbe:
+          httpGet:
+            path: /hello
+            port: 8085
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          failureThreshold: 10
 ---
 apiVersion: v1
 kind: Service

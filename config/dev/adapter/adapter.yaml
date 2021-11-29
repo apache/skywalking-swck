@@ -39,5 +39,5 @@ spec:
             - --secure-port=6443
             - --logtostderr=true
             - --v=10
-            - --oap-addr=http://host.docker.internal:12800/graphql
+            - --oap-addr=http://skywalking-system-oap.skywalking-system:12800/graphql  #the address is used for testing, please use your oap address
 
