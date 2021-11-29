@@ -13,7 +13,7 @@ git clone git@github.com:apache/skywalking-swck.git
 ```
 
 2. Edit file `config/adapter/adapter/kustomization.yaml` file to change your preferences. If you prefer to your private 
- docker image, a quick path to override `ADAPTER_IMG` environment variable : `export ADAPTER_IMG=<private registry>/adapter:<tag>`
+ docker image, a quick path to override `ADAPTER_IMG` environment variable : `export ADAPTER_IMG=<private registry>/metrics-adapter:<tag>`
 
 3. Use `make` to generate the final manifests and deploy:
 
@@ -43,7 +43,7 @@ External metrics allow you to autoscale your cluster based on any metric availab
   external:
     metric:
       name: <metric_name>
-      metricSelector:
+      selector:
         matchLabels:
           <label_key>: <label_value>
           ...
@@ -87,7 +87,7 @@ your HorizontalPodAutoscaler manifest to specify that you need less than 80ms of
   external:
     metric:
       name: skywalking.apache.org|service_percentile
-      metricSelector:
+      selector:
         matchLabels:
            service: front_gateway
             # The index of [P50, P75, P90, P95, P99]. 2 is the index of P90(90%)
@@ -104,7 +104,7 @@ If the service is `v1|productpage|bookinfo|demo|-`:
   external:
     metric:
       name: skywalking.apache.org|service_cpm
-      metricSelector:
+      selector:
         matchLabels:
           "service.str.0":  "v1"
           "service.byte.1": "7c"

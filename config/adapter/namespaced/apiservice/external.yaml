@@ -22,6 +22,7 @@ metadata:
 spec:
   service:
     name: apiserver
+    namespace: skywalking-custom-metrics-system
   group: external.metrics.k8s.io
   version: v1beta1
   insecureSkipTLSVerify: true
