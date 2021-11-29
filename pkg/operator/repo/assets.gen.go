@@ -35,7 +35,7 @@
 // storage/elasticsearch/templates/service_account.yaml (1.095kB)
 // storage/elasticsearch/templates/statefulset.yaml (6.624kB)
 // ui/templates/deployment.yaml (2.604kB)
-// ui/templates/ingress.yaml (1.668kB)
+// ui/templates/ingress.yaml (1.716kB)
 // ui/templates/service.yaml (1.681kB)
 
 package repo
@@ -1493,7 +1493,7 @@ var _uiTemplatesIngressYaml = []byte(`# Licensed to Apache Software Foundation (
  
 {{- $ingress := .Spec.Service.Ingress }}
 {{ if $ingress.Host }}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Name }}-ui
@@ -1512,10 +1512,13 @@ spec:
     - host: {{ $ingress.Host }}
       http:
         paths:
-          - path: /*
-            backend:
-              serviceName: {{ .Name }}-ui
-              servicePort: 80
+        - backend:
+            service:
+              name: {{ .Name }}-ui
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
   {{- if $ingress.IngressClassName }}
   ingressClassName: {{ $ingress.IngressClassName }}
   {{end}}
@@ -1537,7 +1540,7 @@ func uiTemplatesIngressYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "ui/templates/ingress.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc9, 0xd6, 0x97, 0xa8, 0x94, 0x74, 0x9b, 0x91, 0x91, 0xba, 0x4a, 0xe8, 0xe9, 0x7a, 0xdf, 0x86, 0x15, 0xec, 0x29, 0x6a, 0x30, 0xce, 0x38, 0x87, 0x98, 0x15, 0xaf, 0x36, 0xb0, 0x10, 0xc9, 0x44}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa7, 0x22, 0xaf, 0xa7, 0x77, 0x36, 0x3a, 0x57, 0x1c, 0x52, 0x67, 0x42, 0xa0, 0x4a, 0xcf, 0xf7, 0xe9, 0x91, 0x75, 0x45, 0xdf, 0xdc, 0xa3, 0x68, 0x5c, 0x79, 0xc0, 0xbe, 0xf8, 0xb1, 0x61, 0x5e}}
 	return a, nil
 }
 

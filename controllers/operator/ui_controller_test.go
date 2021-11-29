@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -169,7 +169,7 @@ func TestUIIngressOnReconciliation(t *testing.T) {
 		assert.NotEmpty(t, list.Items)
 	}
 	{
-		list := &networkingv1beta1.IngressList{}
+		list := &networkingv1.IngressList{}
 		err = k8sClient.List(context.Background(), list, opts...)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, list.Items)

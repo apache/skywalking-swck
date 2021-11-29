@@ -24,7 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -128,6 +128,6 @@ func (r *UIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&uiv1alpha1.UI{}).
 		Owns(&apps.Deployment{}).
 		Owns(&core.Service{}).
-		Owns(&networkingv1beta1.Ingress{}).
+		Owns(&networkingv1.Ingress{}).
 		Complete(r)
 }
