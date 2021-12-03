@@ -14,7 +14,7 @@ istiod.
 
 ## Deploy Fetcher, OAP server and UI with default settings
 
-Clone this repo, then change current directory to [samples](../../config/operator/samples).
+Clone this repo, then change current directory to [samples](../../config//samples).
 
 Issue the below command to deploy an OAP server and UI.
 

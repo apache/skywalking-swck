@@ -33,7 +33,7 @@ setup:
         export OPERATOR_IMG=controller
         make operator-docker-build   
         kind load docker-image controller
-        make operator-install
+        make install
         make operator-deploy
       wait:
         - namespace: skywalking-swck-system

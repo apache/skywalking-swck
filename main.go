@@ -22,15 +22,21 @@ import (
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
-	"github.com/apache/skywalking-swck/pkg/operator/repo"
-	// +kubebuilder:scaffold:imports
+	operatorcontrollers "github.com/apache/skywalking-swck/controllers/operator"
+	"github.com/apache/skywalking-swck/pkg/operator/injector"
+	//+kubebuilder:scaffold:imports
 )
 
 var (
@@ -39,57 +45,77 @@ var (
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	_ = operatorv1alpha1.AddToScheme(scheme)
-	// +kubebuilder:scaffold:scheme
+	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	var dev bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
+	var probeAddr string
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&dev, "dev", false, "Enable development mode")
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(func(o *zap.Options) {
-		o.Development = dev
-	}))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "v1alpha1.swck",
-		Port:               9443,
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "v1alpha1.swck.skywalking.apache.org",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&operatorcontroller.OAPServerReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("OAPServer"),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("oapserver"),
+	if err = (&operatorcontrollers.OAPServerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
 	}
-	if err = (&operatorcontroller.UIReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("UI"),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("ui"),
+	if err = (&operatorcontrollers.UIReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
 		os.Exit(1)
 	}
+	if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+		os.Exit(1)
+	}
+	if err = (&operatorcontrollers.StorageReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Storage")
+		os.Exit(1)
+	}
+	if err = (&operatorcontrollers.JavaAgentReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
+		os.Exit(1)
+	}
+
+	//+kubebuilder:scaffold:builder
+
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServer")
@@ -99,65 +125,37 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "UI")
 			os.Exit(1)
 		}
+		if err = (&operatorcontrollers.FetcherReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Storage")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.JavaAgent{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "JavaAgent")
+			os.Exit(1)
+		}
+		// register a webhook to enable the java agent injector
+		setupLog.Info("registering /mutate-v1-pod webhook")
+		mgr.GetWebhookServer().Register("/mutate-v1-pod",
+			&webhook.Admission{
+				Handler: &injector.JavaagentInjector{Client: mgr.GetClient()}})
+		setupLog.Info("/mutate-v1-pod webhook is registered")
 	}
 
-	if err = (&operatorcontroller.FetcherReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Fetcher"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
-	if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
-	if err = (&operatorcontroller.StorageReconciler{
-		Client:     mgr.GetClient(),
-		Log:        ctrl.Log.WithName("controllers").WithName("Storage"),
-		Scheme:     mgr.GetScheme(),
-		FileRepo:   repo.NewRepo("storage"),
-		RestConfig: mgr.GetConfig(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Storage")
-		os.Exit(1)
-	}
-	if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "storage")
-		os.Exit(1)
-	}
-	if err = (&operatorcontroller.ConfigMapReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("ConfigMap"),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("injector"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
-		os.Exit(1)
-	}
-
-	if err = (&operatorcontroller.JavaAgentReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("JavaAgent"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
-		os.Exit(1)
-	}
-	if err = (&operatorv1alpha1.JavaAgent{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "JavaAgent")
-		os.Exit(1)
-	}
-	// +kubebuilder:scaffold:builder
-
-	// register a webhook to enable the java agent injector
-	setupLog.Info("registering /mutate-v1-pod webhook")
-	mgr.GetWebhookServer().Register("/mutate-v1-pod",
-		&webhook.Admission{
-			Handler: &operatorv1alpha1.JavaagentInjector{Client: mgr.GetClient()}})
-	setupLog.Info("/mutate-v1-pod webhook is registered")
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

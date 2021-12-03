@@ -60,7 +60,7 @@ jobs:
       - name: Update dependencies 
         run: GOPROXY=https://proxy.golang.org go mod download
       - name: Build
-        run: make
+        run: make build
       - name: Build docker image
         run: make docker-build
   unit-tests:

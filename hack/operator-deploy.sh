@@ -26,7 +26,7 @@ ROOTDIR="${SCRIPTPATH}/.."
 
 main() {
     [[ $1 -eq 0 ]] && frag="apply" || frag="delete --ignore-not-found=true"
-    cp -Rvf "${ROOTDIR}"/config/operator/* "${OUT_DIR}"/.
+    cp -Rvf "${ROOTDIR}"/config/* "${OUT_DIR}"/.
     cd "${OUT_DIR}"/manager && kustomize edit set image controller=${OPERATOR_IMG}
     kustomize build "${OUT_DIR}"/default | kubectl ${frag} -f -
 }

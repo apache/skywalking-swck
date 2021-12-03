@@ -39,7 +39,7 @@ The java agent injector and operator share a same binary. To onboard them, you s
 * Apply the manifests for the Controller and CRDs in `config`:
 
  ```
- kubectl apply -f config/operator-bundle.yaml
+ kubectl apply -f config/-bundle.yaml
  ```
 
 ## Onboard Custom Metrics Adapter

@@ -35,12 +35,10 @@ type FetcherSpec struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
-// Service Type string describes ingress methods for a service
+// FetcherType Type string describes ingress methods for a service
 type FetcherType string
 
 const (
-	// ServiceTypeClusterIP means a service will only be accessible inside the
-	// cluster, via the cluster IP.
 	FetcherTypePrometheus = "prometheus"
 )
 
@@ -68,7 +66,7 @@ var (
 	FetcherConditionTypeRead FetcherConditionType = "Ready"
 )
 
-// DeploymentCondition describes the state of a deployment at a certain point.
+// FetcherCondition describes the state of a deployment at a certain point.
 type FetcherCondition struct {
 	// Type of deployment condition.
 	Type FetcherConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`

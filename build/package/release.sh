@@ -38,10 +38,10 @@ binary(){
     echo -e "build:" > ${bindir}/Makefile
     echo -e "\tdocker build . -t apache/skywalking-swck:${RELEASE_TAG}" >> ${bindir}/Makefile
     # Generates CRDs and deployment manifests
-    pushd ${ROOTDIR}/config/operator/manager
+    pushd ${ROOTDIR}/config//manager
     kustomize edit set image controller=apache/skywalking-swck:${RELEASE_TAG}
     popd
-    kustomize build config/operator/default > ${bindir}/config/operator-bundle.yaml
+    kustomize build config//default > ${bindir}/config/-bundle.yaml
     pushd ${ROOTDIR}/config/adapter/namespaced/adapter
     kustomize edit set image metrics-adapter=apache/skywalking-swck:${RELEASE_TAG}
     popd

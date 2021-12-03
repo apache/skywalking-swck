@@ -25,7 +25,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY cmd/manager/manager.go main.go
+COPY main.go main.go
 COPY apis/operator apis/operator
 COPY controllers/operator controllers/operator
 COPY pkg/ pkg/

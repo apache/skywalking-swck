@@ -1,24 +1,25 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 #
 
 # Image URL to use all building/pushing image targets
 OPERATOR_IMG ?= controller:latest
-ADAPTER_IMG ?= metrics-adapter:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= crd
+# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
+ENVTEST_K8S_VERSION = 1.22
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -27,200 +28,89 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-ARCH := $(shell uname)
-OSNAME := $(if $(findstring Darwin,$(ARCH)),darwin,linux)
-GOBINDATA_VERSION := v3.21.0
+# Setting SHELL to bash allows bash commands to be executed by recipes.
+# This is a requirement for 'setup-envtest.sh' in the test target.
+# Options are set to exit when a recipe line exits non-zero or a piped command fails.
+SHELL = /usr/bin/env bash -o pipefail
+.SHELLFLAGS = -ec
 
-# import local settings
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
+include common.mk
+
+.PHONY: all
+all: build docker-build
+
+##@ General
+
+# The help target prints out all targets with their descriptions organized
+# beneath their categories. The categories are represented by '##@' and the
+# target descriptions by '##'. The awk commands is responsible for reading the
+# entire set of makefiles included in this invocation, looking for lines of the
+# file as xyz: ## something, and then pretty-format the target and help. Then,
+# if there's a line with ##@ something, that gets pretty-printed as a category.
+# More info on the usage of ANSI control characters for terminal formatting:
+# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
+# More info on the awk command:
+# http://linuxcommand.org/lc3_adv_awk.php
+
+.PHONY: help
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+##@ Development
+
+.PHONY: manifests
+manifests: controller-gen licenseeye ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases \
+	  && $(LICENSEEYE) -c .manifests.licenserc.yaml header fix
+    		
+.PHONY: generate
+generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
+.PHONY: test
+test: manifests generate format envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+
+##@ Build
+
+.PHONY: build
+build: operator-build ## Build binary.
+
+.PHONY: docker-build
+docker-build: operator-docker-build ## Build binary.
+
+.PHONY: operator-build
+operator-build: generate ## Build manager binary.
+	go build -o bin/manager main.go
+
+.PHONY: operator-docker-build
+operator-docker-build: ## Build docker image with the manager.
+	docker build . -f build/images/Dockerfile.operator -t ${OPERATOR_IMG}
+
+.PHONY: operator-docker-push
+operator-docker-push: ## Push docker image with the manager.
+	docker push ${OPERATOR_IMG}
+
+##@ Deployment
+
+ifndef ignore-not-found
+  ignore-not-found = false
 endif
 
-all: operator adapter
+.PHONY: install
+install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
-clean:
-	rm -rf bin/
-	rm -rf build/bin
-	rm -rf build/release
-	rm -rf *.out
-	rm -rf *.test
+.PHONY: uninstall
+uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-# Run tests
-test: generate operator-manifests
-	go test ./... -coverprofile cover.out
-
-# Run e2e-test
-e2e-test:
-	@echo "Run oap+ui+agent e2e..."
-	e2e run -c test/e2e/oap-ui-agent/e2e.yaml
-	@echo "Run oap+ui+agent+storage(internal) e2e..."
-	e2e run -c test/e2e/oap-ui-agent-internal-storage/e2e.yaml
-	@echo "Run oap+ui+agent+storage(external) e2e..."
-	e2e run -c test/e2e/oap-ui-agent-external-storage/e2e.yaml
-	@echo "Run oap+agent+adapter+hpa e2e..."
-	e2e run -c test/e2e/oap-agent-adapter-hpa/e2e.yaml
-
-# Build manager binary
-operator: generate
-	go build -o bin/manager cmd/manager/manager.go
-
-# Install dev CRDs into a cluster
-operator-dev-install: operator-manifests operator-dev-uninstall
-	kustomize build config/dev/operator/crd | kubectl apply -f -
-
-# Uninstall dev CRDs from a cluster
-operator-dev-uninstall: operator-manifests operator-undeploy
-
-# Install CRDs into a cluster
-operator-install: operator-manifests
-	kustomize build config/operator/crd | kubectl apply -f -
-
-# Uninstall CRDs from a cluster
-operator-uninstall: operator-manifests
-	kustomize build config/operator/crd | kubectl delete --ignore-not-found=true -f -
-
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-operator-deploy: operator-manifests
+.PHONY: operator-deploy
+operator-deploy: manifests kustomize ## Deploy operator controller to the K8s cluster specified in ~/.kube/config.
 	@echo "Deploy operator"
 	-hack/operator-deploy.sh d
 
-# Undeploy controller in the configured Kubernetes cluster in ~/.kube/config
-operator-undeploy: operator-manifests
+.PHONY: operator-undeploy
+operator-undeploy: manifests ## Undeploy operator controller from the K8s cluster specified in ~/.kube/config.
 	@echo "Undeploy operator"
 	-hack/operator-deploy.sh u
-
-# Generate manifests e.g. CRD, RBAC etc.
-operator-manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./apis/..." output:crd:artifacts:config=config/operator/crd/bases \
-		output:webhook:artifacts:config=config/operator/webhook \
-		&& $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./apis/..." output:crd:artifacts:config=config/dev/operator/crd/bases \
-		&& $(CONTROLLER_GEN) rbac:roleName=manager-role paths="./controllers/..."  output:rbac:dir=config/operator/rbac \
-		&& go run github.com/apache/skywalking-swck/cmd/build license insert config
- 
-# Build adapter binary
-adapter:
-	go build -o bin/adapter cmd/adapter/adapter.go
-
-# Deploy adapter in the configured Kubernetes cluster in ~/.kube/config
-adapter-deploy:
-	kind load docker-image ${ADAPTER_IMG}
-	kustomize build config/dev/adapter | kubectl apply -f -
-
-# Generate code
-generate: controller-gen
-	#$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./apis/..."
-	$(MAKE) format
-
-GO_LICENSER := $(GOBIN)/go-licenser
-$(GO_LICENSER):
-	GO111MODULE=off go get -u github.com/elastic/go-licenser
-license: $(GO_LICENSER)
-	$(GO_LICENSER) -d -licensor='Apache Software Foundation (ASF)' -exclude=apis/operator/v1alpha1/zz_generated* .
-	go run github.com/apache/skywalking-swck/cmd/build license check config
-	go run github.com/apache/skywalking-swck/cmd/build license check pkg/operator/manifests
-
-.PHONY: license
-
-# Build the docker image
-operator-docker-build:
-	docker build . -f build/images/Dockerfile.operator -t ${OPERATOR_IMG}
-
-# Push the docker image
-operator-docker-push:
-	docker push ${OPERATOR_IMG}
-
-# Build the docker image
-adapter-docker-build:
-	docker build . -f build/images/Dockerfile.adapter -t ${ADAPTER_IMG}
-
-# Push the docker image
-adapter-docker-push:
-	docker push ${ADAPTER_IMG}
-
-docker-build: operator-docker-build adapter-docker-build
-
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
-
-GOIMPORTS := $(GOBIN)/goimports
-$(GOIMPORTS):
-	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-# The goimports tool does not arrange imports in 3 blocks if there are already more than three blocks.
-# To avoid that, before running it, we collapse all imports in one block, then run the formatter.
-format: $(GOIMPORTS) ## Format all Go code
-	@for f in `find . -name '*.go'`; do \
-	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' $$f > /tmp/fmt; \
-	    mv /tmp/fmt $$f; \
-	done
-	$(GOIMPORTS) -w -local github.com/apache/skywalking-swck .
-
-## Check that the status is consistent with CI.
-check: generate operator-manifests update-templates license
-	$(MAKE) format
-	mkdir -p /tmp/artifacts
-	git diff >/tmp/artifacts/check.diff 2>&1
-	@go mod tidy &> /dev/null
-	@if [ ! -z "`git status -s`" ]; then \
-		echo "Following files are not consistent with CI:"; \
-		git status -s; \
-		cat /tmp/artifacts/check.diff; \
-		exit 1; \
-	fi
-
-## Code quality and integrity
-
-LINTER := $(GOBIN)/golangci-lint
-$(LINTER):
-	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | BINDIR=$(GOBIN) sh -s v1.33.0
-	
-lint: $(LINTER)
-	$(LINTER) run --config ./golangci.yml
-
-.PHONY: lint
-
-GO_BINDATA := $(GOBIN)/go-bindata
-$(GO_BINDATA):
-	curl --location --output $(GO_BINDATA) https://github.com/kevinburke/go-bindata/releases/download/v3.21.0/go-bindata-$(OSNAME)-amd64 \
-		&& chmod +x $(GO_BINDATA)
-
-update-templates: $(GO_BINDATA)
-	@echo updating charts
-	-hack/run_update_templates.sh
-	-hack/build-header.sh pkg/operator/repo/assets.gen.go
-
-release-operator: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o build/bin/manager-linux-amd64 cmd/manager/manager.go
-
-release-adapter: generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o build/bin/adapter-linux-amd64 cmd/adapter/adapter.go
-
-RELEASE_SCRIPTS := ./build/package/release.sh
-
-release-binary: release-operator release-adapter
-	${RELEASE_SCRIPTS} -b
-
-release-source:
-	${RELEASE_SCRIPTS} -s
-
-release-sign:
-	${RELEASE_SCRIPTS} -k bin
-	${RELEASE_SCRIPTS} -k src
-
-release: release-binary release-source release-sign
-
-.PHONY: release-manager release-binary release-source release
