@@ -52,7 +52,7 @@ lint: $(LINTER) ## Lint codes
 
 .PHONY: lint
 
-GO_BINDATA := $(GOBIN)/go-bindata
+GO_BINDATA := $(shell pwd)/bin/go-bindata
 $(GO_BINDATA):
 	curl --location --output $(GO_BINDATA) https://github.com/kevinburke/go-bindata/releases/download/v3.21.0/go-bindata-$(OSNAME)-amd64 \
 		&& chmod +x $(GO_BINDATA)
