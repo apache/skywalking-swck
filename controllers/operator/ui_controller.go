@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	uiv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/pkg/kubernetes"
@@ -39,7 +40,6 @@ import (
 // UIReconciler reconciles a UI object
 type UIReconciler struct {
 	client.Client
-	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
 	Recorder record.EventRecorder
@@ -51,7 +51,7 @@ type UIReconciler struct {
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("ui", req.NamespacedName)
+	log := runtimelog.FromContext(ctx)
 	log.Info("=====================reconcile started================================")
 
 	ui := uiv1alpha1.UI{}

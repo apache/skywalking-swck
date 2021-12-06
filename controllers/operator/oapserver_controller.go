@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/pkg/kubernetes"
@@ -43,7 +44,6 @@ var schedDuration, _ = time.ParseDuration("1m")
 // OAPServerReconciler reconciles a OAPServer object
 type OAPServerReconciler struct {
 	client.Client
-	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
 	Recorder record.EventRecorder
@@ -60,7 +60,7 @@ type OAPServerReconciler struct {
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("oapserver", req.NamespacedName)
+	log := runtimelog.FromContext(ctx)
 	log.Info("=====================reconcile started================================")
 
 	oapServer := operatorv1alpha1.OAPServer{}

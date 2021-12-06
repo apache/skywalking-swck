@@ -21,7 +21,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/pkg/kubernetes"
@@ -37,7 +37,6 @@ import (
 // FetcherReconciler reconciles a Fetcher object
 type FetcherReconciler struct {
 	client.Client
-	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
 	Recorder record.EventRecorder
@@ -48,7 +47,7 @@ type FetcherReconciler struct {
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=fetchers/status,verbs=get;update;patch
 
 func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("fetcher", req.NamespacedName)
+	log := runtimelog.FromContext(ctx)
 	log.Info("=====================reconcile started================================")
 
 	fetcher := &operatorv1alpha1.Fetcher{}
@@ -78,6 +77,7 @@ func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv1alpha1.Fetcher, status core.ConditionStatus, msg string) error {
+	log := runtimelog.FromContext(ctx)
 	if fetcher.Status.Replicas == 0 {
 		fetcher.Status.Replicas = 1
 	}
@@ -105,7 +105,7 @@ func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv
 		return nil
 	}
 	if err := r.Status().Update(ctx, fetcher); err != nil {
-		r.Log.Error(err, "failed to update status")
+		log.Error(err, "failed to update status")
 		return err
 	}
 	return nil

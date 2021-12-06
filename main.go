@@ -34,8 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	operatorcontrollers "github.com/apache/skywalking-swck/controllers/operator"
+	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
 	"github.com/apache/skywalking-swck/pkg/operator/injector"
+	"github.com/apache/skywalking-swck/pkg/operator/repo"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -52,14 +53,11 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+	var configFile string
+	flag.StringVar(&configFile, "config", "",
+		"The controller will load its initial configuration from this file. "+
+			"Omit this flag to use the default configuration values. "+
+			"Command-line flags override configuration from this file.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -68,47 +66,68 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "v1alpha1.swck.skywalking.apache.org",
-	})
+	var err error
+	options := ctrl.Options{Scheme: scheme}
+	if configFile != "" {
+		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile))
+		if err != nil {
+			setupLog.Error(err, "unable to load the config file")
+			os.Exit(1)
+		}
+	}
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&operatorcontrollers.OAPServerReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&operatorcontroller.OAPServerReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("oapserver"),
+		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
 	}
-	if err = (&operatorcontrollers.UIReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&operatorcontroller.UIReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("ui"),
+		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
 		os.Exit(1)
 	}
-	if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
+	if err = (&operatorcontroller.FetcherReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("fetcher"),
+		Recorder: mgr.GetEventRecorderFor("fetcher-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
 		os.Exit(1)
 	}
-	if err = (&operatorcontrollers.StorageReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&operatorcontroller.StorageReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		FileRepo:   repo.NewRepo("storage"),
+		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
 		os.Exit(1)
 	}
-	if err = (&operatorcontrollers.JavaAgentReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&operatorcontroller.ConfigMapReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("injector"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
+		os.Exit(1)
+	}
+	if err = (&operatorcontroller.JavaAgentReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("injector"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
 		os.Exit(1)
@@ -125,11 +144,8 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "UI")
 			os.Exit(1)
 		}
-		if err = (&operatorcontrollers.FetcherReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
+		if err = (&operatorv1alpha1.Fetcher{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Fetcher")
 			os.Exit(1)
 		}
 		if err = (&operatorv1alpha1.Storage{}).SetupWebhookWithManager(mgr); err != nil {

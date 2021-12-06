@@ -32,6 +32,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
@@ -42,7 +43,6 @@ import (
 // JavaAgentReconciler reconciles a JavaAgent object
 type JavaAgentReconciler struct {
 	client.Client
-	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	FileRepo kubernetes.Repo
 }
@@ -53,7 +53,7 @@ type JavaAgentReconciler struct {
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch
 
 func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("javaagent", req.NamespacedName)
+	log := runtimelog.FromContext(ctx)
 	log.Info("=====================javaagent started================================")
 
 	pod := &core.Pod{}

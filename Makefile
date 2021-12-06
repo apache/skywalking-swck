@@ -71,6 +71,16 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 test: manifests generate format envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
+##@ End to End Test
+
+.PHONY:e2e-test
+e2e-test: e2e-oap-ui-agent ## Run End to End tests.
+
+.PHONY:e2e-oap-ui-agrent
+e2e-oap-ui-agrent: e2e ## Run oap+ui+agent test
+	@echo "Run oap+ui+agent e2e..."
+	$(E2E) run -c test/e2e/oap-ui-agent/e2e.yaml
+
 ##@ Build
 
 .PHONY: build
