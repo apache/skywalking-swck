@@ -22,7 +22,7 @@ set -ex
 OUT_DIR=$(mktemp -d -t operator-deploy.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOTDIR="${SCRIPTPATH}/.."
+ROOTDIR="${SCRIPTPATH}/../operator"
 
 main() {
     [[ $1 -eq 0 ]] && frag="apply" || frag="delete --ignore-not-found=true"
