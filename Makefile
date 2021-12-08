@@ -74,12 +74,18 @@ test: manifests generate format envtest ## Run tests.
 ##@ End to End Test
 
 .PHONY:e2e-test
-e2e-test: e2e-oap-ui-agent ## Run End to End tests.
+e2e-test: e2e-oap-ui-agent e2e-oap-ui-agent-storage-internal## Run End to End tests.
 
-.PHONY:e2e-oap-ui-agrent
-e2e-oap-ui-agrent: e2e ## Run oap+ui+agent test
+.PHONY:e2e-oap-ui-agent
+e2e-oap-ui-agent: e2e ## Run oap+ui+agent test
 	@echo "Run oap+ui+agent e2e..."
 	$(E2E) run -c test/e2e/oap-ui-agent/e2e.yaml
+
+.PHONY:e2e-oap-ui-agent-storage-internal
+e2e-oap-ui-agent-internal-storage: e2e ## Run oap+ui+agent test
+	@echo "Run oap+ui+agent e2e..."
+	$(E2E) run -c test/e2e/oap-ui-agent-internal-storage/e2e.yaml 
+
 
 ##@ Build
 

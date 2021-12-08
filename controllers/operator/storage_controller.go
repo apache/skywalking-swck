@@ -214,7 +214,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 			return
 		}
 		if time.Until(verifyCert.NotAfter).Hours() < 24 {
-			log.Info("storage cert will expire,the storage cert will re-generate!")
+			log.Info("storage cert will expire,the storage cert will re-generate")
 		} else {
 			return
 		}
@@ -285,7 +285,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 	csr.Status.Conditions = append(csr.Status.Conditions, condition)
 	updateapproval, err := clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
-		log.Info("fail update approval:", updateapproval)
+		log.Info("fail update approval", "result", updateapproval, "err", err)
 		return
 	}
 	for {
@@ -335,7 +335,7 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		log.Info("fail create secret skywalking-storage")
 		return
 	}
-	log.Info("success create secret skywalking-storage", storageTLSSecret.Name)
+	log.Info("success create secret skywalking-storage", "secret-name", storageTLSSecret.Name)
 }
 
 func (r *StorageReconciler) SetupWithManager(mgr ctrl.Manager) error {
