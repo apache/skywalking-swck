@@ -14,13 +14,13 @@ git clone git@github.com:apache/skywalking-swck.git
 3. Use `make` to generate the final manifests and deploy:
 
 ```sh
-make operator-deploy
+make -C operator deploy
 ```
 
 4. Deploy the CRDs:
 
 ```sh
-make install
+make -C operator install
 ```
 
 ### Test your deployment

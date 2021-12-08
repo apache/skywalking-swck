@@ -86,6 +86,7 @@ github.com/apache/skywalking-cli v0.0.0-20201125155244-ffee47d2e83d/go.mod h1:kU
 github.com/apache/skywalking-cli v0.0.0-20210209032327-04a0ce08990f h1:DknnvUn5ZR1hRtS42stGr3O6REwBFh6iyotoCJ2jFZ8=
 github.com/apache/skywalking-cli v0.0.0-20210209032327-04a0ce08990f/go.mod h1:EMKZ5MAEnCrNTPxqWu3s1QgnoUDQEO0oS+ohNB09JE8=
 github.com/apache/skywalking-cli/gen-codes/skywalking/network v0.0.0-20210209032327-04a0ce08990f/go.mod h1:kacAwfQjKgotVA/J4v4LZLo682UCOb1AktGep9oDDxw=
+github.com/apache/skywalking-swck v0.2.0 h1:/D4EZQxHWc4CEvCr0YuYMxrzz/Qmmh7+LRYk6cyEbzA=
 github.com/apache/skywalking-swck v0.2.0/go.mod h1:kU75U5Tb3aEi1Vk1KX7hzyh8Hv7sUMNx0Djq5PLEPWI=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=

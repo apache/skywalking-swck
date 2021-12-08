@@ -19,13 +19,14 @@
 
 set -ue
 
-GOBINDATA="${LOCAL_GOBINDATA-go-bindata}"
 
 OUT_DIR=$(mktemp -d -t swck-templates.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOTDIR="${SCRIPTPATH}/.."
 
+GOBINDATA="${SCRIPTPATH}"/../bin/go-bindata
+
+ROOTDIR="${SCRIPTPATH}/../operator"
 OPERATOR_DIR="${ROOTDIR}"/pkg/operator
 INSTALLER_DIR="${OPERATOR_DIR}"/manifests
 GEN_PATH="${OPERATOR_DIR}"/repo/assets.gen.go
@@ -47,3 +48,5 @@ set -e
 "${GOBINDATA}" --nocompress --nometadata --pkg repo -o "${GEN_PATH}" ./...
 
 rm -Rf "${OUT_DIR}"
+
+bash ${SCRIPTPATH}/build-header.sh "${OPERATOR_DIR}"/pkg/operator/repo/assets.gen.go

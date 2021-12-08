@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	"github.com/apache/skywalking-swck/pkg/kubernetes"
+	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
+	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
 )
 
 var schedDuration, _ = time.ParseDuration("1m")

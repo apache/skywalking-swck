@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/apache/skywalking-swck/pkg/kubernetes"
+	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
 )
 
 var _ kubernetes.Repo = &AssetsRepo{}

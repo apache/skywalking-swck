@@ -23,7 +23,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/apache/skywalking-swck/pkg/operator/repo"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/repo"
 )
 
 // Annotation defines configuration that user can overlay, including

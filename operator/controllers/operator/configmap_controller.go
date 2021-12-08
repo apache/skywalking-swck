@@ -29,8 +29,8 @@ import (
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/apache/skywalking-swck/pkg/kubernetes"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
+	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 )
 
 // ConfigMapReconciler reconciles a ConfigMap object

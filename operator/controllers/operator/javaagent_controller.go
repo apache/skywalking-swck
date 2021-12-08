@@ -35,9 +35,9 @@ import (
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	"github.com/apache/skywalking-swck/pkg/kubernetes"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
+	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
+	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 )
 
 // JavaAgentReconciler reconciles a JavaAgent object

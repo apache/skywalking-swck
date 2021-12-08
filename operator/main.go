@@ -33,10 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/apache/skywalking-swck/apis/operator/v1alpha1"
-	operatorcontroller "github.com/apache/skywalking-swck/controllers/operator"
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
-	"github.com/apache/skywalking-swck/pkg/operator/repo"
+	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
+	operatorcontroller "github.com/apache/skywalking-swck/operator/controllers/operator"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/repo"
 	//+kubebuilder:scaffold:imports
 )
 

@@ -42,7 +42,7 @@ var (
 func FindValidateFunc(funcName string) AnnotationValidateFunc {
 	for _, f := range AnnotationValidateFuncs {
 		// extract the function name into a string , it will be like following
-		// github.com/apache/skywalking-swck/pkg/operator/injector.ValidateBool
+		// github.com/apache/skywalking-swck/operator/pkg/operator/injector.ValidateBool
 		fname := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 		// get real validate function name in injector
 		index := strings.LastIndex(fname, ".")

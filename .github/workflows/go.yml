@@ -40,8 +40,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update dependencies
         run: GOPROXY=https://proxy.golang.org go mod download
-      - name: Lint
-        run: make lint
       - name: Check
         run: make check
   build:

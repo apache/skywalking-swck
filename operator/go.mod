@@ -1,4 +1,4 @@
-module github.com/apache/skywalking-swck
+module github.com/apache/skywalking-swck/operator
 
 go 1.17
 

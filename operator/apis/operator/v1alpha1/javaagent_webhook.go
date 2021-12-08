@@ -25,7 +25,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/apache/skywalking-swck/pkg/operator/injector"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 )
 
 // log is for logging in this package.
