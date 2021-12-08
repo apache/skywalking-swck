@@ -18,7 +18,7 @@ git clone git@github.com:apache/skywalking-swck.git
 3. Use `make` to generate the final manifests and deploy:
 
 ```sh
-make adapter-deploy
+make -C adapter deploy
 ```
 
 ## Configuration

@@ -29,14 +29,17 @@ all: build docker-build
 .PHONY: build
 build: ## Build the binary
 	$(MAKE) -C operator build
+	$(MAKE) -C adapter build
 
 .PHONY: docker-build
 docker-build: ## Build docker images
 	$(MAKE) -C operator docker-build
+	$(MAKE) -C adapter docker-build
 
 .PHONY: test
 test: ## Run unit test cases
 	$(MAKE) -C operator test
+	$(MAKE) -C adapter test
 
 ##@ End to End Test
 
@@ -53,6 +56,11 @@ e2e-oap-ui-agent-internal-storage: e2e ## Run oap+ui+agent test
 	@echo "Run oap+ui+agent e2e..."
 	$(E2E) run -c test/e2e/oap-ui-agent-internal-storage/e2e.yaml 
 
+.PHONY:e2e-oap-agent-adapter-hpa
+e2e-oap-agent-adapter-hpa: e2e ## Run oap+agent+adapter HPA test
+	@echo "Run HPA e2e..."
+	$(E2E) run -c test/e2e/oap-agent-adapter-hpa/e2e.yaml 
+
 E2E = $(tool_bin)/cmd
 .PHONY: e2e
 e2e: ## Download e2e-setup locally if necessary.
@@ -65,4 +73,7 @@ check: ## Check that the status
 	$(MAKE) -C operator generate
 	$(MAKE) -C operator lint
 	$(MAKE) -C operator check
+	$(MAKE) -C adapter format
+	$(MAKE) -C adapter lint
+	$(MAKE) -C adapter check
 	$(MAKE) license-check

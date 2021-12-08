@@ -60,7 +60,7 @@ kubectl --namespace skywalking-swck-system logs -f [name_of_the_controller_pod]
 If you want to custom the manifests templates to generate dedicated Kubernetes resources,
 please edit YAMLs in `pkg/operator/manifests`.
 After saving your changes, issue `make update-templates` to transfer them to binary assets.
-The last step is to rebuild `operator` by `make operator-docker-build`.
+The last step is to rebuild `operator` by `make -C operator docker-build`.
 
 
 ## Custom Resource Define(CRD)

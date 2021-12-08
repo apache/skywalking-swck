@@ -72,7 +72,7 @@ build: generate ## Build manager binary.
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	docker build . -f $(root_dir)/build/images/Dockerfile.operator -t ${OPERATOR_IMG}
+	docker build . -t ${OPERATOR_IMG}
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
