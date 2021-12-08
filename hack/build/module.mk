@@ -46,18 +46,14 @@ check: ## Check that the status
 		exit 1; \
 	fi
 
-LINTER := $(tool_bin)/golangci-lint
-$(LINTER):
-	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | BINDIR=$(tool_bin) sh -s v1.43.0
-	
 .PHONY: lint
-lint: $(LINTER) ## Lint codes
-	$(LINTER) run --config $(root_dir)/golangci.yml 
+lint: golangci-lint ## Lint codes
+	$(GOLANGCILINT) run --config $(root_dir)/golangci.yml 
 
 CONTROLLER_GEN = $(tool_bin)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
 
 KUSTOMIZE = $(tool_bin)/kustomize
 .PHONY: kustomize
@@ -67,10 +63,15 @@ kustomize: ## Download kustomize locally if necessary.
 ENVTEST = $(tool_bin)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 	
 
 GOIMPORTS = $(tool_bin)/goimports
 .PHONY: goimports
 goimports: ## Download goimports locally if necessary.
-	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports)
+	$(call go-install-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@latest)
+
+GOLANGCILINT= $(tool_bin)/golangci-lint
+.PHONY: golangci-lint
+golangci-lint: ## Download golangci-lint locally if necessary.
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0)

@@ -39,7 +39,7 @@ help: ## Display this help.
 LICENSEEYE = $(tool_bin)/license-eye
 .PHONY: licenseeye
 licenseeye: ## Download skywalking-eye locally if necessary.
-	$(call go-get-tool,$(LICENSEEYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.2.0)
+	$(call go-install-tool,$(LICENSEEYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.2.0)
 
 .PHONY: license-check
 license-check: licenseeye ## Check license header
@@ -59,5 +59,14 @@ go mod init tmp ;\
 echo "Downloading $(2)" ;\
 GOBIN=$(tool_bin) go get $(2) ;\
 rm -rf $$TMP_DIR ;\
+}
+endef
+
+# go-install-tool will 'go install' any package $2 and install it to $1.
+define go-install-tool
+@[ -f $(1) ] || { \
+set -e ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(tool_bin) go install $(2) ;\
 }
 endef
