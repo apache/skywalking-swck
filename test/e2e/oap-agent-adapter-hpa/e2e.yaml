@@ -31,10 +31,10 @@ setup:
     - name: install operator
       command: |
         export OPERATOR_IMG=controller
-        make operator-docker-build   
+        make -C operator docker-build   
         kind load docker-image controller
-        make operator-install
-        make operator-deploy
+        make -C operator install
+        make -C operator deploy
       wait:
         - namespace: skywalking-swck-system
           resource: pod
@@ -45,8 +45,9 @@ setup:
     - name: install metrics-adapter
       command: |
         export ADAPTER_IMG=metrics-adapter
-        make adapter-docker-build  
-        make adapter-deploy
+        make -C adapter docker-build
+        kind load docker-image metrics-adapter
+        make -C adapter deploy
       wait:
         - namespace: skywalking-custom-metrics-system
           resource: pod

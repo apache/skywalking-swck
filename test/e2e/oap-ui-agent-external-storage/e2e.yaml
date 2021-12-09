@@ -31,10 +31,10 @@ setup:
     - name: install operator
       command: |
         export OPERATOR_IMG=controller
-        make operator-docker-build   
+        make -C operator docker-build   
         kind load docker-image controller
-        make operator-install
-        make operator-deploy
+        make -C operator install
+        make -C operator deploy
       wait:
         - namespace: skywalking-swck-system
           resource: pod

@@ -22,11 +22,11 @@ set -ex
 OUT_DIR=$(mktemp -d -t operator-deploy.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOTDIR="${SCRIPTPATH}/.."
+ROOTDIR="${SCRIPTPATH}/../operator"
 
 main() {
     [[ $1 -eq 0 ]] && frag="apply" || frag="delete --ignore-not-found=true"
-    cp -Rvf "${ROOTDIR}"/config/operator/* "${OUT_DIR}"/.
+    cp -Rvf "${ROOTDIR}"/config/* "${OUT_DIR}"/.
     cd "${OUT_DIR}"/manager && kustomize edit set image controller=${OPERATOR_IMG}
     kustomize build "${OUT_DIR}"/default | kubectl ${frag} -f -
 }

@@ -1,7 +1,7 @@
 # Custom metrics Adapter
 
 This adapter contains an implementation of [external metrics](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/instrumentation/external-metrics-api.md)
- API. It is therefore suitable for use with the autoscaling/v2 Horizontal Pod Autoscaler in Kubernetes 1.6+.
+ API. It is therefore suitable for use with the autoscaling/v2 Horizontal Pod Autoscaler in Kubernetes 1.9+.
  
 
 ## Use kustomize to customise your deployment
@@ -12,13 +12,13 @@ This adapter contains an implementation of [external metrics](https://github.com
 git clone git@github.com:apache/skywalking-swck.git
 ```
 
-2. Edit file `config/adapter/adapter/kustomization.yaml` file to change your preferences. If you prefer to your private 
+2. Edit file `adapter/config/adapter/kustomization.yaml` file to change your preferences. If you prefer to your private 
  docker image, a quick path to override `ADAPTER_IMG` environment variable : `export ADAPTER_IMG=<private registry>/metrics-adapter:<tag>`
 
 3. Use `make` to generate the final manifests and deploy:
 
 ```sh
-make adapter-deploy
+make -C adapter deploy
 ```
 
 ## Configuration

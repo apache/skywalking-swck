@@ -1,0 +1,73 @@
+domain: skywalking.apache.org
+layout:
+- go.kubebuilder.io/v3
+multigroup: true
+projectName: skywalking-swck
+repo: github.com/apache/skywalking-swck
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: OAPServer
+  path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: UI
+  path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: Fetcher
+  path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: Storage
+  path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: JavaAgent
+  path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+version: "3"
