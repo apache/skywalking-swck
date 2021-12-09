@@ -67,7 +67,7 @@ spec:
     - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
     command:
     - sh
-    image: apache/skywalking-java-agent:8.7.0-jdk8
+    image: apache/skywalking-java-agent:8.8.0-java8
     name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent
@@ -349,7 +349,7 @@ spec:
       -i cp {} /sky/agent/plugins/
     command:
     - sh
-    image: apache/skywalking-java-agent:8.7.0-jdk8
+    image: apache/skywalking-java-agent:8.8.0-java8
     name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent

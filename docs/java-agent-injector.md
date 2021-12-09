@@ -98,7 +98,7 @@ initContainers:
     - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
     command:
     - sh
-    image: apache/skywalking-java-agent:8.7.0-jdk8
+    image: apache/skywalking-java-agent:8.8.0-java8
     name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent
@@ -155,7 +155,7 @@ The injector can recognize the following annotations to configure the sidecar:
 | Annotation key                                               | Description                                                  | Annotation Default value                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | `sidecar.skywalking.apache.org/initcontainer.Name`           | The name of the injected java agent container.               | `inject-skywalking-agent`                                    |
-| `sidecar.skywalking.apache.org/initcontainer.Image`          | The container image of the injected java agent container.    | `apache/skywalking-java-agent:8.7.0-jdk8`                    |
+| `sidecar.skywalking.apache.org/initcontainer.Image`          | The container image of the injected java agent container.    | `apache/skywalking-java-agent:8.8.0-java8`                    |
 | `sidecar.skywalking.apache.org/initcontainer.Command`        | The command of the injected java agent container.            | `sh`                                                         |
 | `sidecar.skywalking.apache.org/initcontainer.args.Option`    | The args option of the injected java agent container.       | `-c`                                                         |
 | `sidecar.skywalking.apache.org/initcontainer.args.Command`   | The args command of  the injected java agent container.      | `mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent` |
