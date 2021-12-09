@@ -38,14 +38,14 @@ binary(){
     echo -e "build:" > ${bindir}/Makefile
     echo -e "\tdocker build . -t apache/skywalking-swck:${RELEASE_TAG}" >> ${bindir}/Makefile
     # Generates CRDs and deployment manifests
-    pushd ${ROOTDIR}/config//manager
+    pushd ${ROOTDIR}/operator/config/manager
     kustomize edit set image controller=apache/skywalking-swck:${RELEASE_TAG}
     popd
-    kustomize build config//default > ${bindir}/config/-bundle.yaml
-    pushd ${ROOTDIR}/config/adapter/namespaced/adapter
+    kustomize build operator/config/default > ${bindir}/config/operator-bundle.yaml
+    pushd ${ROOTDIR}/adapter/config/namespaced/adapter
     kustomize edit set image metrics-adapter=apache/skywalking-swck:${RELEASE_TAG}
     popd
-    kustomize build config/adapter > ${bindir}/config/adapter-bundle.yaml
+    kustomize build adapter/config > ${bindir}/config/adapter-bundle.yaml
     # Package
     tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-bin.tgz -C ${bindir} .
     rm -rf ${bindir}
@@ -63,6 +63,8 @@ source(){
         --exclude=".asf.yaml" \
         --exclude=".idea" \
         --exclude="bin"  \
+        --exclude="operator/bin"  \
+        --exclude="adapter/bin"  \
         --exclude="build/release"  \
         --exclude="*.test"  \
         --exclude="*.out"  \

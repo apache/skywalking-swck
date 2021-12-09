@@ -101,3 +101,9 @@ deploy: manifests kustomize ## Deploy operator controller to the K8s cluster spe
 undeploy: manifests ## Undeploy operator controller from the K8s cluster specified in ~/.kube/config.
 	@echo "Undeploy operator"
 	-$(root_dir)/hack/operator-deploy.sh u
+
+##@ Release
+
+.PHONY: release-build
+release-build: generate ## Build binary for release
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/manager-linux-amd64

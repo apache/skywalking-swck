@@ -41,6 +41,16 @@ test: ## Run unit test cases
 	$(MAKE) -C operator test
 	$(MAKE) -C adapter test
 
+.PHONY: clean
+clean: ## Clean project
+	rm -rf bin/
+	rm -rf operator/bin/
+	rm -rf adapter/bin/
+	rm -rf build/bin
+	rm -rf build/release
+	rm -rf *.out
+	rm -rf *.test
+
 ##@ End to End Test
 
 .PHONY:e2e-test
@@ -77,3 +87,22 @@ check: ## Check that the status
 	$(MAKE) -C adapter lint
 	$(MAKE) -C adapter check
 	$(MAKE) license-check
+
+
+##@ release
+
+RELEASE_SCRIPTS := ./build/package/release.sh
+
+release-binary: ## Package binary archive
+	$(MAKE) -C operator release-build
+	$(MAKE) -C adapter release-build
+	${RELEASE_SCRIPTS} -b
+
+release-source: ## Package source archive
+	${RELEASE_SCRIPTS} -s
+
+release-sign: ## Sign artifacts
+	${RELEASE_SCRIPTS} -k bin
+	${RELEASE_SCRIPTS} -k src
+
+release: release-binary release-source release-sign ## Generate release package

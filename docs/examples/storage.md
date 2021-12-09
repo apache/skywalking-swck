@@ -76,7 +76,7 @@ sample-elasticsearch   3/3     7s
 
 ## Specify Storage Name in OAP server
 
-Here we modify the [default OAP server configuration file](../../config//samples/default.yaml),the new yaml file as follows:
+Here we modify the [default OAP server configuration file](../../operator/config/samples/default.yaml),the new yaml file as follows:
 
 ```yaml
 apiVersion: operator.skywalking.apache.org/v1alpha1

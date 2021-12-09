@@ -57,3 +57,8 @@ docker-push: ## Push docker image with the adapter.
 .PHONY: deploy
 deploy: kustomize ## Deploy ADAPTER controller to the K8s cluster specified in ~/.kube/config.
 	kustomize build config/ | kubectl apply -f -
+
+.PHONY: release-build
+release-build: ## Build binary for release
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/adapter-linux-amd64
+	

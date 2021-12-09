@@ -9,7 +9,7 @@ Follow [Operator installation instrument](../../README.md#operator) to install t
 
 ## Deploy OAP server and UI with default setting
 
-Clone this repo, then change current directory to [samples](../../config//samples).
+Clone this repo, then change current directory to [samples](../../operator/config/samples).
 
 Issue the below command to deploy an OAP server and UI.
 
