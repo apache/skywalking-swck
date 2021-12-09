@@ -39,9 +39,6 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
-    - name: wait webhook installing
-      command: |
-        bash hack/wait-webhook.sh
     - name: install metrics-adapter
       command: |
         export ADAPTER_IMG=metrics-adapter

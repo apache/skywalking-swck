@@ -39,9 +39,6 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
-    - name: wait webhook installing
-      command: |
-        bash hack/wait-webhook.sh
     - name: setup storage(use the internal type)
       command: |
         kubectl apply -f test/e2e/internal-storage.yaml
