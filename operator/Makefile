@@ -30,6 +30,9 @@ SHELL = /usr/bin/env bash -o pipefail
 ARCH := $(shell uname)
 OSNAME := $(if $(findstring Darwin,$(ARCH)),darwin,linux)
 
+module_path  := $(abspath $(lastword $(MAKEFILE_LIST)))
+module_dir   := $(dir $(module_path))
+
 include ../hack/build/module.mk
 
 .PHONY: all

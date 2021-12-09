@@ -75,3 +75,8 @@ GOLANGCILINT= $(tool_bin)/golangci-lint
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
 	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0)
+	
+
+.PHONY: dependency-check
+dependency-check: licenseeye ## Check dependencies
+	$(LICENSEEYE) -c $(module_dir)/.dep.licenserc.yaml dep check

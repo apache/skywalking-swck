@@ -27,6 +27,9 @@ ENVTEST_K8S_VERSION = 1.22
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+module_path  := $(abspath $(lastword $(MAKEFILE_LIST)))
+module_dir   := $(dir $(module_path))
+
 include ../hack/build/module.mk
 
 .PHONY: all
