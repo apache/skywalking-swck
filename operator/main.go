@@ -162,15 +162,22 @@ func main() {
 			&webhook.Admission{
 				Handler: &injector.JavaagentInjector{Client: mgr.GetClient()}})
 		setupLog.Info("/mutate-v1-pod webhook is registered")
-	}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		if err := mgr.AddHealthzCheck("healthz", mgr.GetWebhookServer().StartedChecker()); err != nil {
+			setupLog.Error(err, "unable to set up health check for webhook")
+			os.Exit(1)
+		}
+		if err := mgr.AddReadyzCheck("readyz", mgr.GetWebhookServer().StartedChecker()); err != nil {
+			setupLog.Error(err, "unable to set up ready check for webhook")
+			os.Exit(1)
+		}
+	} else {
+		if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+			setupLog.Error(err, "unable to set up ready check")
+		}
+		if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+			setupLog.Error(err, "unable to set up ready check")
+		}
 	}
 
 	setupLog.Info("starting manager")

@@ -35,7 +35,7 @@ For more details, please read [Java agent injector](docs/java-agent-injector.md)
 
 ## Operator
 
- * To install the operator in an existing cluster, make sure you have [`cert-manager` installed](https://cert-manager.io/docs/installation/)
+ * To install the operator in an existing cluster, make sure you have  [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
  * Apply the manifests for the Controller and CRDs in release/config:
  
  ```

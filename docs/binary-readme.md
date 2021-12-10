@@ -35,7 +35,7 @@ To onboard operator or adapter, you should push the image to a registry where th
 
 The java agent injector and operator share a same binary. To onboard them, you should follow:
 
-* To install the java agent injector and operator in an existing cluster, make sure you have [`cert-manager` installed](https://cert-manager.io/docs/installation/)
+* To install the java agent injector and operator in an existing cluster, make sure you have  [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
 * Apply the manifests for the Controller and CRDs in `config`:
 
  ```

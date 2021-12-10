@@ -57,13 +57,15 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// if validate false , we will delete the configmap and recreate a default configmap
 	if !apierrors.IsNotFound(err) {
 		ok, errinfo := injector.ValidateConfigmap(configmap)
-		if !ok {
-			log.Error(errinfo, "the default configmap validate false")
-			if deleteErr := r.Client.Delete(ctx, configmap); deleteErr != nil {
-				log.Error(deleteErr, "failed to delete the configmap that validate false")
-			}
+		if ok {
+			return ctrl.Result{}, nil
 		}
-		log.Info("delete the configmap that validate false")
+		log.Error(errinfo, "the default configmap validate false")
+		if deleteErr := r.Client.Delete(ctx, configmap); deleteErr != nil {
+			log.Error(deleteErr, "failed to delete the configmap that validate false")
+			return ctrl.Result{}, deleteErr
+		}
+		log.Info("deleted the configmap that validate false")
 	}
 	app := kubernetes.Application{
 		Client:   r.Client,
