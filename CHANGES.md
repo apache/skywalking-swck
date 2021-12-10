@@ -12,6 +12,7 @@ Release Notes.
 
 - Fix operator role patch issues
 - Fix invalid CSR signername
+- Fix bug in the configmap controller
 
 #### Chores
 - Bump up KubeBuilder to V3
