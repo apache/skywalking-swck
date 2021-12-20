@@ -49,9 +49,9 @@ RUN set -eux; \
     rm -rf /tmp/*
 
 FROM gcr.io/distroless/static:nonroot
-WORKDIR /tmp
-COPY --from=builder --chown=nonroot:nonroot /swck/bin/manager-linux-amd64 /manager
-COPY --from=builder --chown=nonroot:nonroot /swck/bin/adapter-linux-amd64 /adapter
-USER nonroot:nonroot
+WORKDIR /
+COPY --from=builder --chown=65532:65532 /swck/bin/manager-linux-amd64 /manager
+COPY --from=builder --chown=65532:65532 /swck/bin/adapter-linux-amd64 /adapter
+USER 65532:65532
 
 ENTRYPOINT ["/manager"]
