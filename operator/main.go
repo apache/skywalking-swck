@@ -35,6 +35,7 @@ import (
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	operatorcontroller "github.com/apache/skywalking-swck/operator/controllers/operator"
+	operatorcontrollers "github.com/apache/skywalking-swck/operator/controllers/operator"
 	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 	"github.com/apache/skywalking-swck/operator/pkg/operator/repo"
 	//+kubebuilder:scaffold:imports
@@ -133,6 +134,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&operatorcontrollers.SatelliteReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: repo.NewRepo("satellite"),
+		Recorder: mgr.GetEventRecorderFor("satellite-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Satellite")
+		os.Exit(1)
+	}
+	if err = (&operatorv1alpha1.Satellite{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Satellite")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {

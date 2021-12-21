@@ -108,6 +108,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-satellite
+  failurePolicy: Fail
+  name: msatellite.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - satellites
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-skywalking-apache-org-v1alpha1-storage
   failurePolicy: Fail
   name: mstorage.kb.io
@@ -209,6 +229,26 @@ webhooks:
     - UPDATE
     resources:
     - oapservers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-satellite
+  failurePolicy: Fail
+  name: vsatellite.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - satellites
   sideEffects: None
 - admissionReviewVersions:
   - v1

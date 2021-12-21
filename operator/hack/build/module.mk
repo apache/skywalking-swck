@@ -1,0 +1,82 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+mk_path  := $(abspath $(lastword $(MAKEFILE_LIST)))
+mk_dir   := $(dir $(mk_path))
+root_dir := $(mk_dir)../..
+tool_bin := $(root_dir)/bin
+
+include $(root_dir)/hack/build/base.mk
+
+##@ Code quality and integrity
+
+# The goimports tool does not arrange imports in 3 blocks if there are already more than three blocks.
+# To avoid that, before running it, we collapse all imports in one block, then run the formatter.
+format: goimports ## Format all Go code
+	@for f in `find . -name '*.go'`; do \
+	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' $$f > /tmp/fmt; \
+	    mv /tmp/fmt $$f; \
+	done
+	$(GOIMPORTS) -w -local github.com/apache/skywalking-swck/operator .
+
+## Check that the status is consistent with CI.
+check: ## Check that the status
+	mkdir -p /tmp/artifacts
+	git diff >/tmp/artifacts/check.diff 2>&1
+	@go mod tidy &> /dev/null
+	@if [ ! -z "`git status -s`" ]; then \
+		echo "Following files are not consistent with CI:"; \
+		git status -s; \
+		cat /tmp/artifacts/check.diff; \
+		exit 1; \
+	fi
+
+.PHONY: lint
+lint: golangci-lint ## Lint codes
+	$(GOLANGCILINT) run --config $(root_dir)/golangci.yml 
+
+CONTROLLER_GEN = $(tool_bin)/controller-gen
+.PHONY: controller-gen
+controller-gen: ## Download controller-gen locally if necessary.
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+
+KUSTOMIZE = $(tool_bin)/kustomize
+.PHONY: kustomize
+kustomize: ## Download kustomize locally if necessary.
+	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.4.1)
+
+ENVTEST = $(tool_bin)/setup-envtest
+.PHONY: envtest
+envtest: ## Download envtest-setup locally if necessary.
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	
+
+GOIMPORTS = $(tool_bin)/goimports
+.PHONY: goimports
+goimports: ## Download goimports locally if necessary.
+	$(call go-install-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@latest)
+
+GOLANGCILINT= $(tool_bin)/golangci-lint
+.PHONY: golangci-lint
+golangci-lint: ## Download golangci-lint locally if necessary.
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0)
+	
+
+.PHONY: dependency-check
+dependency-check: licenseeye ## Check dependencies
+	$(LICENSEEYE) -c $(module_dir)/.dep.licenserc.yaml dep check

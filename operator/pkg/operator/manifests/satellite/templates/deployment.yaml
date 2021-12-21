@@ -1,0 +1,83 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-satellite
+  namespace: {{ .Namespace }}
+  labels:
+    app: satellite
+    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: deployment
+
+spec:
+  replicas: {{ .Spec.Instances }}
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: satellite
+      operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: satellite
+        operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+        operator.skywalking.apache.org/application: satellite
+        operator.skywalking.apache.org/component: pod
+    spec:
+      serviceAccountName: {{ .Name }}-satellite
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: satellite
+                    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+      containers:
+        - name: satellite
+          image: {{ .Spec.Image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 11800
+              name: grpc
+            - containerPort: 1234
+              name: http-monitoring
+          readinessProbe:
+            tcpSocket:
+              port: 11800
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          env:
+            - name: SATELLITE_GRPC_CLIENT_FINDER
+              value: kubernetes
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_NAMESPACE
+              value: "{{ .Namespace }}"
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_KIND
+              value: pod
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_SELECTOR_LABEL
+              value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_EXTRA_PORT
+              value: "11800"
+            {{range .Spec.Config}}
+            - name: {{ .Name }}
+              value: {{ .Value }}
+            {{end}}
