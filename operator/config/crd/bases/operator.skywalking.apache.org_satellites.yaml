@@ -46,7 +46,7 @@ spec:
       jsonPath: .status.availableReplicas
       name: Running
       type: string
-    - description: The address of OAP server
+    - description: The address of Satellite server
       jsonPath: .status.address
       name: Address
       type: string
@@ -74,6 +74,9 @@ spec:
           spec:
             description: SatelliteSpec defines the desired state of Satellite
             properties:
+              OAPServerName:
+                description: Backend OAP server name
+                type: string
               config:
                 description: Config holds the Satellite server configuration.
                 items:

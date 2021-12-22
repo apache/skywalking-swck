@@ -7,6 +7,7 @@ Release Notes.
 
 #### Features
 - Add E2E test cases to verify OAPServer, UI, Java agent and Storage components.
+- Add the Satellite component.
 
 ### Bugs
 

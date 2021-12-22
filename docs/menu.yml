@@ -40,6 +40,8 @@ catalog:
         path: "/examples/storage"
       - name: "Fetch metrics"
         path: "/examples/istio-controlplane"
+      - name: "Install Satellite"
+        path: "/examples/satellite"
   - name: "Contributing Guides"
     catalog:
       - name: "Contribute"

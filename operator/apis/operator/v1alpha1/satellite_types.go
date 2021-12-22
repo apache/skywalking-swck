@@ -38,6 +38,9 @@ type SatelliteSpec struct {
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`
+	// Backend OAP server name
+	// +kubebuilder:validation:Optional
+	OAPServerName string `json:"OAPServerName,omitempty"`
 }
 
 // SatelliteStatus defines the observed state of Satellite
@@ -58,7 +61,7 @@ type SatelliteStatus struct {
 //+kubebuilder:printcolumn:name="Version",type="string",priority=1,JSONPath=".spec.version",description="The version"
 //+kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
 //+kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.availableReplicas",description="The number of running"
-//+kubebuilder:printcolumn:name="Address",type="string",JSONPath=".status.address",description="The address of OAP server"
+//+kubebuilder:printcolumn:name="Address",type="string",JSONPath=".status.address",description="The address of Satellite server"
 //+kubebuilder:printcolumn:name="Image",type="string",priority=1,JSONPath=".spec.image"
 
 // Satellite is the Schema for the satellites API

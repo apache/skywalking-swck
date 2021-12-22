@@ -32,7 +32,7 @@
 // oapserver/templates/service_account.yaml (1.09kB)
 // satellite/templates/cluster_role.yaml (1.104kB)
 // satellite/templates/cluster_role_binding.yaml (1.213kB)
-// satellite/templates/deployment.yaml (3.073kB)
+// satellite/templates/deployment.yaml (3.087kB)
 // satellite/templates/service.yaml (1.78kB)
 // satellite/templates/service_account.yaml (1.101kB)
 // storage/elasticsearch/templates/configmap.yaml (1.822kB)
@@ -1207,7 +1207,7 @@ spec:
             - name: SATELLITE_GRPC_CLIENT_KUBERNETES_KIND
               value: pod
             - name: SATELLITE_GRPC_CLIENT_KUBERNETES_SELECTOR_LABEL
-              value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Name }}"
+              value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Spec.OAPServerName }}"
             - name: SATELLITE_GRPC_CLIENT_KUBERNETES_EXTRA_PORT
               value: "11800"
             {{range .Spec.Config}}
@@ -1227,7 +1227,7 @@ func satelliteTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "satellite/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa6, 0xeb, 0x17, 0x56, 0x1f, 0xad, 0xb, 0xf2, 0x6d, 0xdd, 0x4b, 0x5e, 0x99, 0xdc, 0x37, 0xe1, 0x6, 0x8d, 0x4f, 0x98, 0x47, 0xa3, 0xac, 0x5a, 0x3d, 0x48, 0x11, 0xf3, 0x6b, 0x82, 0x7, 0xd0}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x9d, 0x4b, 0x8d, 0xce, 0xcb, 0xce, 0x6a, 0x5a, 0xa8, 0x2, 0x9b, 0x5d, 0xbb, 0xb4, 0xe3, 0x61, 0x40, 0x92, 0x7e, 0xb3, 0x52, 0x54, 0x45, 0xb, 0xeb, 0xa8, 0x4b, 0xa1, 0x64, 0x9f, 0x83, 0xa3}}
 	return a, nil
 }
 

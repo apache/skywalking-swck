@@ -49,6 +49,11 @@ func (r *Satellite) Default() {
 		r.Spec.Image = fmt.Sprintf("apache/skywalking-satellite:%s", r.Spec.Version)
 	}
 
+	oapServerName := r.Spec.OAPServerName
+	if oapServerName == "" {
+		r.Spec.OAPServerName = r.Name
+	}
+
 	if r.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
 		r.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
 			"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
