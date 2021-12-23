@@ -30,6 +30,11 @@
 // oapserver/templates/ingress.yaml (1.672kB)
 // oapserver/templates/service.yaml (1.782kB)
 // oapserver/templates/service_account.yaml (1.09kB)
+// satellite/templates/cluster_role.yaml (1.104kB)
+// satellite/templates/cluster_role_binding.yaml (1.213kB)
+// satellite/templates/deployment.yaml (3.087kB)
+// satellite/templates/service.yaml (1.78kB)
+// satellite/templates/service_account.yaml (1.101kB)
 // storage/elasticsearch/templates/configmap.yaml (1.822kB)
 // storage/elasticsearch/templates/service.yaml (1.322kB)
 // storage/elasticsearch/templates/service_account.yaml (1.095kB)
@@ -1032,6 +1037,313 @@ func oapserverTemplatesService_accountYaml() (*asset, error) {
 	return a, nil
 }
 
+var _satelliteTemplatesCluster_roleYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: swck:satellite
+  labels:
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: rbac
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+`)
+
+func satelliteTemplatesCluster_roleYamlBytes() ([]byte, error) {
+	return _satelliteTemplatesCluster_roleYaml, nil
+}
+
+func satelliteTemplatesCluster_roleYaml() (*asset, error) {
+	bytes, err := satelliteTemplatesCluster_roleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "satellite/templates/cluster_role.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x4d, 0xac, 0x31, 0xd6, 0xa9, 0x74, 0x27, 0xd4, 0x72, 0xae, 0x44, 0x61, 0x28, 0x6c, 0x78, 0xdc, 0x7e, 0x33, 0x46, 0x89, 0xab, 0x7b, 0x33, 0x14, 0x6, 0x36, 0xc, 0x2, 0x5b, 0xe9, 0x4a, 0x33}}
+	return a, nil
+}
+
+var _satelliteTemplatesCluster_role_bindingYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: swck:satellite
+  labels:
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: swck:satellite
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Name }}-satellite
+    namespace: {{ .Namespace }}
+`)
+
+func satelliteTemplatesCluster_role_bindingYamlBytes() ([]byte, error) {
+	return _satelliteTemplatesCluster_role_bindingYaml, nil
+}
+
+func satelliteTemplatesCluster_role_bindingYaml() (*asset, error) {
+	bytes, err := satelliteTemplatesCluster_role_bindingYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "satellite/templates/cluster_role_binding.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6, 0x26, 0xd9, 0xd1, 0xb, 0x1c, 0xce, 0x45, 0x3c, 0xc6, 0xbe, 0xe7, 0xd2, 0x79, 0x7, 0xdc, 0x3c, 0x8a, 0xd5, 0xb8, 0x50, 0x37, 0x39, 0xd4, 0xc8, 0xc7, 0x7a, 0x4c, 0x54, 0x4d, 0x9f, 0xfe}}
+	return a, nil
+}
+
+var _satelliteTemplatesDeploymentYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-satellite
+  namespace: {{ .Namespace }}
+  labels:
+    app: satellite
+    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: deployment
+
+spec:
+  replicas: {{ .Spec.Instances }}
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: satellite
+      operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: satellite
+        operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+        operator.skywalking.apache.org/application: satellite
+        operator.skywalking.apache.org/component: pod
+    spec:
+      serviceAccountName: {{ .Name }}-satellite
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: satellite
+                    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+      containers:
+        - name: satellite
+          image: {{ .Spec.Image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 11800
+              name: grpc
+            - containerPort: 1234
+              name: http-monitoring
+          readinessProbe:
+            tcpSocket:
+              port: 11800
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          env:
+            - name: SATELLITE_GRPC_CLIENT_FINDER
+              value: kubernetes
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_NAMESPACE
+              value: "{{ .Namespace }}"
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_KIND
+              value: pod
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_SELECTOR_LABEL
+              value: "app=oap,operator.skywalking.apache.org/oap-server-name={{ .Spec.OAPServerName }}"
+            - name: SATELLITE_GRPC_CLIENT_KUBERNETES_EXTRA_PORT
+              value: "11800"
+            {{range .Spec.Config}}
+            - name: {{ .Name }}
+              value: {{ .Value }}
+            {{end}}
+`)
+
+func satelliteTemplatesDeploymentYamlBytes() ([]byte, error) {
+	return _satelliteTemplatesDeploymentYaml, nil
+}
+
+func satelliteTemplatesDeploymentYaml() (*asset, error) {
+	bytes, err := satelliteTemplatesDeploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "satellite/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x9d, 0x4b, 0x8d, 0xce, 0xcb, 0xce, 0x6a, 0x5a, 0xa8, 0x2, 0x9b, 0x5d, 0xbb, 0xb4, 0xe3, 0x61, 0x40, 0x92, 0x7e, 0xb3, 0x52, 0x54, 0x45, 0xb, 0xeb, 0xa8, 0x4b, 0xa1, 0x64, 0x9f, 0x83, 0xa3}}
+	return a, nil
+}
+
+var _satelliteTemplatesServiceYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- $svc := .Spec.Service.Template }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}-satellite
+  namespace: {{ .Namespace }}
+  labels:
+    app: satellite
+    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: service
+spec:
+  type: {{ $svc.Type }}
+  ports:
+  - port: 11800
+    name: grpc
+  - port: 1234
+    name: http-monitoring
+  {{- if $svc.ExternalIPs }}
+  externalIPs:
+    {{- range $value := $svc.ExternalIPs }}
+    - {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  {{- if $svc.LoadBalancerIP }}
+  loadBalancerIP: {{ $svc.LoadBalancerIP }}
+  {{- end }}
+  {{- if $svc.LoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- range $value := $svc.LoadBalancerSourceRanges }}
+    - {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  selector:
+    app: satellite
+    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+`)
+
+func satelliteTemplatesServiceYamlBytes() ([]byte, error) {
+	return _satelliteTemplatesServiceYaml, nil
+}
+
+func satelliteTemplatesServiceYaml() (*asset, error) {
+	bytes, err := satelliteTemplatesServiceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "satellite/templates/service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe5, 0x52, 0xf7, 0xe, 0x18, 0x89, 0xda, 0x3a, 0x6d, 0x98, 0x3a, 0x3a, 0x15, 0xd8, 0x8b, 0x30, 0x1c, 0xfe, 0x6f, 0x52, 0x4a, 0x2d, 0x96, 0x1d, 0x49, 0x18, 0xb1, 0xf, 0x97, 0xa4, 0xac, 0x28}}
+	return a, nil
+}
+
+var _satelliteTemplatesService_accountYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Name }}-satellite
+  namespace: {{ .Namespace }}
+  labels:
+    operator.skywalking.apache.org/satellite-server-name: {{ .Name }}
+    operator.skywalking.apache.org/application: satellite
+    operator.skywalking.apache.org/component: rbac
+`)
+
+func satelliteTemplatesService_accountYamlBytes() ([]byte, error) {
+	return _satelliteTemplatesService_accountYaml, nil
+}
+
+func satelliteTemplatesService_accountYaml() (*asset, error) {
+	bytes, err := satelliteTemplatesService_accountYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "satellite/templates/service_account.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa8, 0x7c, 0xee, 0xa4, 0xdb, 0xf1, 0x4b, 0x6b, 0x79, 0x1a, 0x30, 0x7f, 0x16, 0xa5, 0xf1, 0x4b, 0x58, 0xae, 0xbf, 0xc1, 0xad, 0xfb, 0xd6, 0xed, 0x48, 0x97, 0xda, 0xb0, 0xed, 0x90, 0xab, 0x7d}}
+	return a, nil
+}
+
 var _storageElasticsearchTemplatesConfigmapYaml = []byte(`# Licensed to Apache Software Foundation (ASF) under one or more contributor
 # license agreements. See the NOTICE file distributed with
 # this work for additional information regarding copyright
@@ -1715,6 +2027,11 @@ var _bindata = map[string]func() (*asset, error){
 	"oapserver/templates/ingress.yaml":                     oapserverTemplatesIngressYaml,
 	"oapserver/templates/service.yaml":                     oapserverTemplatesServiceYaml,
 	"oapserver/templates/service_account.yaml":             oapserverTemplatesService_accountYaml,
+	"satellite/templates/cluster_role.yaml":                satelliteTemplatesCluster_roleYaml,
+	"satellite/templates/cluster_role_binding.yaml":        satelliteTemplatesCluster_role_bindingYaml,
+	"satellite/templates/deployment.yaml":                  satelliteTemplatesDeploymentYaml,
+	"satellite/templates/service.yaml":                     satelliteTemplatesServiceYaml,
+	"satellite/templates/service_account.yaml":             satelliteTemplatesService_accountYaml,
 	"storage/elasticsearch/templates/configmap.yaml":       storageElasticsearchTemplatesConfigmapYaml,
 	"storage/elasticsearch/templates/service.yaml":         storageElasticsearchTemplatesServiceYaml,
 	"storage/elasticsearch/templates/service_account.yaml": storageElasticsearchTemplatesService_accountYaml,
@@ -1792,6 +2109,15 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"ingress.yaml":              &bintree{oapserverTemplatesIngressYaml, map[string]*bintree{}},
 			"service.yaml":              &bintree{oapserverTemplatesServiceYaml, map[string]*bintree{}},
 			"service_account.yaml":      &bintree{oapserverTemplatesService_accountYaml, map[string]*bintree{}},
+		}},
+	}},
+	"satellite": &bintree{nil, map[string]*bintree{
+		"templates": &bintree{nil, map[string]*bintree{
+			"cluster_role.yaml":         &bintree{satelliteTemplatesCluster_roleYaml, map[string]*bintree{}},
+			"cluster_role_binding.yaml": &bintree{satelliteTemplatesCluster_role_bindingYaml, map[string]*bintree{}},
+			"deployment.yaml":           &bintree{satelliteTemplatesDeploymentYaml, map[string]*bintree{}},
+			"service.yaml":              &bintree{satelliteTemplatesServiceYaml, map[string]*bintree{}},
+			"service_account.yaml":      &bintree{satelliteTemplatesService_accountYaml, map[string]*bintree{}},
 		}},
 	}},
 	"storage": &bintree{nil, map[string]*bintree{

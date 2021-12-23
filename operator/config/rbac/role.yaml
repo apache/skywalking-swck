@@ -211,6 +211,32 @@ rules:
 - apiGroups:
   - operator.skywalking.apache.org
   resources:
+  - satellites
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - satellites/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - satellites/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
   - storages
   verbs:
   - create

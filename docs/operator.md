@@ -91,6 +91,11 @@ which `Storage` it would connect.
 
 > Caveat: `Stroage` only supports the `Elasticsearch`.
 
+### Satellite
+
+The `Satellite` custom resource definition (CRD) declaratively defines a desired Satellite setup to run in a Kubernetes cluster.
+It provides options for how to connect an `OAP`.
+
 ### Fetcher
 
 The `Fetcher` custom resource definition (CRD) declaratively defines a desired Fetcher setup to run in a Kubernetes cluster.
@@ -105,3 +110,4 @@ There are some instant examples to represent the functions or features of the Op
 - [Fetch metrics from the Istio control plane(istiod)](./examples/istio-controlplane.md)
 - [Inject the java agent to pods](./examples/java-agent-injector-usage.md)
 - [Deploy a storage](./examples/storage.md)
+- [Deploy a Satellite](./examples/satellite.md)

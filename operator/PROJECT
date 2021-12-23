@@ -3,7 +3,7 @@ layout:
 - go.kubebuilder.io/v3
 multigroup: true
 projectName: skywalking-swck
-repo: github.com/apache/skywalking-swck
+repo: github.com/apache/skywalking-swck/operator
 resources:
 - api:
     crdVersion: v1
@@ -65,6 +65,19 @@ resources:
   group: operator
   kind: JavaAgent
   path: github.com/apache/skywalking-swck/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: Satellite
+  path: github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true

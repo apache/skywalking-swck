@@ -131,7 +131,37 @@ jobs:
       - name: Run E2E Test
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
-          e2e-file: test/e2e/oap-agent-adapter-hpa/e2e.yaml           
+          e2e-file: test/e2e/oap-agent-adapter-hpa/e2e.yaml
+  e2e-tests-with-satellite:
+    name: e2e tests(oap+ui+agent+satellite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Run E2E Test
+        uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
+        with:
+          e2e-file: test/e2e/oap-ui-agent-satellite/e2e.yaml
+  adapter-satellite-hpa-e2e-tests:
+    name: e2e tests(oap+agent+satellite+adapter+hpa)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Run E2E Test
+        uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
+        with:
+          e2e-file: test/e2e/oap-satellite-adapter-hpa/e2e.yaml
   checks:
     name: build
     runs-on: ubuntu-20.04
