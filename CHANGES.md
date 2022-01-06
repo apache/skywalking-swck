@@ -2,6 +2,15 @@ Changes by Version
 ==================
 Release Notes.
 
+0.6.0
+------------------
+
+#### Features
+- Add the Satellite CRD, webhooks and controller
+
+#### Bugs
+- Update release images to set numeric user id 
+
 0.5.0
 ------------------
 
