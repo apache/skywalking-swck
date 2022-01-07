@@ -58,8 +58,9 @@ docker-push: ## Push docker image with the adapter.
 ##@ Deployment
 
 .PHONY: deploy
-deploy: kustomize ## Deploy ADAPTER controller to the K8s cluster specified in ~/.kube/config.
-	kustomize build config/ | kubectl apply -f -
+deploy: kustomize ## Deploy adapter controller to the K8s cluster specified in ~/.kube/config.
+	@echo "Deploy adapter"
+	-MOD=adapter DIR="./" IMG_PATH=namespaced/adapter IMG=metrics-adapter NEW_IMG=${ADAPTER_IMG} $(root_dir)/hack/deploy.sh d
 
 .PHONY: release-build
 release-build: ## Build binary for release
