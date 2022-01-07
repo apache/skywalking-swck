@@ -25,9 +25,16 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: skywalking-system-satellite
+  # Satellite count range limit
   minReplicas: 1
   maxReplicas: 3
+  # Limit continuous scaling up
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      selectPolicy: Min
   metrics:
+    # Average number of connections threshold
     - type: External
       external:
         metric:
@@ -43,6 +50,7 @@ spec:
         target:
           type: Value
           value: 1900
+    # Average CPU usage threshold
     - type: External
       external:
         metric:

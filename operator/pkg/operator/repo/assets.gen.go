@@ -32,7 +32,7 @@
 // oapserver/templates/service_account.yaml (1.09kB)
 // satellite/templates/cluster_role.yaml (1.104kB)
 // satellite/templates/cluster_role_binding.yaml (1.213kB)
-// satellite/templates/deployment.yaml (3.087kB)
+// satellite/templates/deployment.yaml (3.089kB)
 // satellite/templates/service.yaml (1.78kB)
 // satellite/templates/service_account.yaml (1.101kB)
 // storage/elasticsearch/templates/configmap.yaml (1.822kB)
@@ -1212,7 +1212,7 @@ spec:
               value: "11800"
             {{range .Spec.Config}}
             - name: {{ .Name }}
-              value: {{ .Value }}
+              value: "{{ .Value }}"
             {{end}}
 `)
 
@@ -1227,7 +1227,7 @@ func satelliteTemplatesDeploymentYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "satellite/templates/deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x9d, 0x4b, 0x8d, 0xce, 0xcb, 0xce, 0x6a, 0x5a, 0xa8, 0x2, 0x9b, 0x5d, 0xbb, 0xb4, 0xe3, 0x61, 0x40, 0x92, 0x7e, 0xb3, 0x52, 0x54, 0x45, 0xb, 0xeb, 0xa8, 0x4b, 0xa1, 0x64, 0x9f, 0x83, 0xa3}}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xd4, 0x11, 0x1b, 0x8f, 0x75, 0x86, 0x9c, 0x13, 0xaf, 0x30, 0xea, 0xfa, 0xd3, 0x53, 0x15, 0x3c, 0xc5, 0x36, 0xf0, 0x21, 0x57, 0x4f, 0xb3, 0x47, 0xa1, 0xbc, 0xb3, 0x33, 0xda, 0x12, 0x9c, 0x34}}
 	return a, nil
 }
 
