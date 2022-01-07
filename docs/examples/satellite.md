@@ -49,6 +49,7 @@ config:
 ```
 
 4. Add the HorizontalPodAutoScaler `CRD`, and [update the config file](../../operator/config/samples/satellite-hpa.yaml) the `service` and `target` to your excepted config.
+   It's recommend to set the `stabilizationWindowSeconds` and `selectPolicy` of scaling up in HPA, which would help prevent continuous scaling up of pods due to metric delay fluctuations. 
 5. Check the HorizontalPodAutoScaler in the Kubernetes:
 
 ```shell
