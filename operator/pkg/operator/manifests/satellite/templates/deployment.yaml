@@ -79,5 +79,5 @@ spec:
               value: "11800"
             {{range .Spec.Config}}
             - name: {{ .Name }}
-              value: {{ .Value }}
+              value: "{{ .Value }}"
             {{end}}
