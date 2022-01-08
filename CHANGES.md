@@ -12,6 +12,9 @@ Release Notes.
 - Update release images to set numeric user id 
 - Fix the satellite config not support number error
 
+#### Chores
+- Add stabilization windows feature in satellite HPA documentation
+
 0.5.0
 ------------------
 
