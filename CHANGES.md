@@ -10,6 +10,7 @@ Release Notes.
 
 #### Bugs
 - Update release images to set numeric user id 
+- Fix the satellite config not support number error
 
 0.5.0
 ------------------
