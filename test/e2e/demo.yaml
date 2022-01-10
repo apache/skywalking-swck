@@ -36,7 +36,7 @@ spec:
         imagePullPolicy: IfNotPresent
         image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
-        args: ["$(AGENT_OPTS)","-jar","/app.jar"]
+        args: ["-jar","/app.jar"]
         ports:
           - containerPort: 8085
         readinessProbe:
