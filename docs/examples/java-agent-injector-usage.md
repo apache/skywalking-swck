@@ -36,7 +36,7 @@ spec:
       - name: demo1
         image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
-        args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
+        args: ["-jar","/app.jar"]
    
 ```
 
@@ -47,13 +47,11 @@ spec:
   containers:
   - args:
     - -jar
-    - $(AGENT_OPTS)
-    - -jar
     - /app.jar
     command:
     - java
     env:
-    - name: AGENT_OPTS
+    - name: JAVA_TOOL_OPTIONS
       value: -javaagent:/sky/agent/skywalking-agent.jar
     image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo1
@@ -172,7 +170,7 @@ spec:
       - name: demo2
         image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
-        args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
+        args: ["-jar","/app.jar"]
 ```
 
 Get injected resources as below:
@@ -182,13 +180,11 @@ spec:
   containers:
   - args:
     - -jar
-    - $(AGENT_OPTS)
-    - -jar
     - /app.jar
     command:
     - java
     env:
-    - name: AGENT_OPTS
+    - name: JAVA_TOOL_OPTIONS
       value: -javaagent:/skytest/agent/skywalking-agent.jar
     image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo2
@@ -313,7 +309,7 @@ spec:
       - name: demo3
         image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
         command: ["java"]
-        args: ["-jar","$(AGENT_OPTS)","-jar","/app.jar"]
+        args: ["-jar","/app.jar"]
 ```
 
 Get injected resources as below:
@@ -326,13 +322,11 @@ spec:
     name: nginx
   - args:
     - -jar
-    - $(AGENT_OPTS)
-    - -jar
     - /app.jar
     command:
     - java
     env:
-    - name: AGENT_OPTS
+    - name: JAVA_TOOL_OPTIONS
       value: -javaagent:/sky/agent/skywalking-agent.jar=agent.ignore_suffix='jpg,.jpeg',agent.class_cache_mode=MEMORY,agent.sample_n_per_3_secs=6,agent.service_name=app,plugin.mount='plugins,activations',plugin.influxdb.trace_influxql=false,plugin.mongodb.trace_param=true
     image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo3

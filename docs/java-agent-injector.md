@@ -164,7 +164,7 @@ The injector can recognize the following annotations to configure the sidecar:
 | `sidecar.skywalking.apache.org/configmapVolume.Name`         | The name of configmap volume.                                | `java-agent-configmap-volume`                                |
 | `sidecar.skywalking.apache.org/configmapVolumeMount.MountPath` | Mount path of the configmap in the injected container        | `/sky/agent/config`                                          |
 | `sidecar.skywalking.apache.org/configmapVolume.ConfigMap.Name` | The name pf configmap used in the injected container as `agent.config ` | `skywalking-swck-java-agent-configmap`                       |
-| `sidecar.skywalking.apache.org/env.Name`                     | Environment Name used by the injected container (application container). | `AGENT_OPTS`                                                 |
+| `sidecar.skywalking.apache.org/env.Name`                     | Environment Name used by the injected container (application container). | `JAVA_TOOL_OPTIONS`                                                 |
 | `sidecar.skywalking.apache.org/env.Value`                    | Environment variables used by the injected container (application container). | `-javaagent:/sky/agent/skywalking-agent.jar`                 |
 
 ## The ways to get the final injected agent's configuration

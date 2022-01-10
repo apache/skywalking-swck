@@ -75,7 +75,7 @@ annotations:
     envName: nil
 
   - name: sidecar.skywalking.apache.org/env.Name
-    defaultValue: AGENT_OPTS
+    defaultValue: JAVA_TOOL_OPTIONS
     validateFunc: nil
     envName: nil
 
