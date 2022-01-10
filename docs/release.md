@@ -6,6 +6,7 @@ This documentation guides the release manager to release the SkyWalking Cloud on
 
 1. Close(if finished, or move to next milestone otherwise) all issues in the current milestone from [skywalking-swck](https://github.com/apache/skywalking-swck/milestones) and [skywalking](https://github.com/apache/skywalking/milestones), create a new milestone if needed.
 2. Update [CHANGES.md](../CHANGES.md).
+3. Update image tags of adapter and operator.
 
 
 ## Add your GPG public key to Apache svn

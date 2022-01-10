@@ -98,12 +98,12 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy operator controller to the K8s cluster specified in ~/.kube/config.
 	@echo "Deploy operator"
-	-$(root_dir)/hack/operator-deploy.sh d
+	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/hack/deploy.sh d
 
 .PHONY: undeploy
 undeploy: manifests ## Undeploy operator controller from the K8s cluster specified in ~/.kube/config.
 	@echo "Undeploy operator"
-	-$(root_dir)/hack/operator-deploy.sh u
+	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/hack/deploy.sh u
 
 ##@ Release
 

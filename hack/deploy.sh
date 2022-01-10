@@ -19,16 +19,23 @@
 set -u
 set -ex
 
-OUT_DIR=$(mktemp -d -t operator-deploy.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
+MOD=${MOD:-operator}
+DIR=${DIR:-default}
+IMG_PATH=${IMG_PATH:-manager}
+IMG=${IMG:-controller}
+NEW_IMG=${NEW_IMG:-controller}
+
+OUT_DIR=$(mktemp -d -t ${MOD}-deploy.XXXXXXXXXX) || { echo "Failed to create temp file"; exit 1; }
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOTDIR="${SCRIPTPATH}/../operator"
+TOOLBIN=${SCRIPTPATH}/../bin
+ROOTDIR="${SCRIPTPATH}/../${MOD}"
 
 main() {
     [[ $1 -eq 0 ]] && frag="apply" || frag="delete --ignore-not-found=true"
     cp -Rvf "${ROOTDIR}"/config/* "${OUT_DIR}"/.
-    cd "${OUT_DIR}"/manager && kustomize edit set image controller=${OPERATOR_IMG}
-    kustomize build "${OUT_DIR}"/default | kubectl ${frag} -f -
+    cd "${OUT_DIR}"/${IMG_PATH} && ${TOOLBIN}/kustomize edit set image ${IMG}=${NEW_IMG}
+    ${TOOLBIN}/kustomize build "${OUT_DIR}"/${DIR} | kubectl ${frag} -f -
 }
 
 usage() {
@@ -37,8 +44,8 @@ Usage:
     ${0} -[duh]
 
 Parameters:
-    -d  Deploy operator
-    -u  Undeploy operator
+    -d  Deploy ${MOD}
+    -u  Undeploy ${MOD}
     -h  Show this help.
 EOF
 exit 1
@@ -68,4 +75,4 @@ ret=0
 parseCmdLine "$@"
 ret=$?
 [ $ret -ne 0 ] && exit $ret
-echo "Done deploy [$OPERATOR_IMG] (exit $ret)"
+echo "Done deploy [$NEW_IMG] (exit $ret)"
