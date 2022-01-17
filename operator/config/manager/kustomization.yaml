@@ -30,4 +30,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: apache/skywalking-swck
-  newTag: v0.6.0
+  newTag: v0.6.1
