@@ -29,7 +29,7 @@ function install_kubectl()
       curl -LO https://dl.k8s.io/release/v1.19.1/bin/${OS}/${ARCH}/kubectl && chmod +x ./kubectl && mv ./kubectl ${INSTALL_DIR}
       if [ $? -ne 0 ]; then
         echo "install kubectl error, please check"
-        $prepare_ok=false
+        prepare_ok=false
       fi
     fi
 }
@@ -42,7 +42,7 @@ function install_swctl()
       && cd .. && rm -r skywalking-cli-0.9.0
       if [ $? -ne 0 ]; then
         echo "install swctl error, please check"
-        $prepare_ok=false
+        prepare_ok=false
       fi
     fi
 }
@@ -55,7 +55,7 @@ function install_yq()
       tar xz && mv yq_${OS}_${ARCH} ${INSTALL_DIR}/yq
       if [ $? -ne 0 ]; then
         echo "install yq error, please check"
-        $prepare_ok=false
+        prepare_ok=false
       fi
     fi
 }
