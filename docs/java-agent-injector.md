@@ -4,7 +4,7 @@ To use the java agent more natively, we propose the java agent injector to injec
 
 When enabled in a pod's namespace, the injector injects the java agent container at pod creation time using a mutating webhook admission controller. By rendering the java agent to a shared volume, containers within the pod can use the java agent.
  
-The following sections describe how to configure the agent, if you want to try it directly, please see [Usage](examples/java-agent-injector-usage) for more details.
+The following sections describe how to configure the agent, if you want to try it directly, please see [Usage](examples/java-agent-injector-usage.md) for more details.
 
 ## Install Injector
 
