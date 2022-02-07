@@ -19,6 +19,7 @@ package injector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -228,20 +229,25 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 	s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
 	s.Initcontainer.Command = make([]string, 1)
 	s.Initcontainer.Args = make([]string, 2)
+
+	limitsStr := ""
+	requestStr := ""
 	// every annotation map a pointer to the field of SidecarInjectField
 	annoField := map[string]*string{
-		"initcontainer.Name":             &s.Initcontainer.Name,
-		"initcontainer.Image":            &s.Initcontainer.Image,
-		"initcontainer.Command":          &s.Initcontainer.Command[0],
-		"initcontainer.args.Option":      &s.Initcontainer.Args[0],
-		"initcontainer.args.Command":     &s.Initcontainer.Args[1],
-		"sidecarVolume.Name":             &s.SidecarVolume.Name,
-		"sidecarVolumeMount.MountPath":   &s.SidecarVolumeMount.MountPath,
-		"configmapVolume.ConfigMap.Name": &s.ConfigmapVolume.ConfigMap.Name,
-		"configmapVolume.Name":           &s.ConfigmapVolume.Name,
-		"configmapVolumeMount.MountPath": &s.ConfigmapVolumeMount.MountPath,
-		"env.Name":                       &s.Env.Name,
-		"env.Value":                      &s.Env.Value,
+		"initcontainer.Name":               &s.Initcontainer.Name,
+		"initcontainer.Image":              &s.Initcontainer.Image,
+		"initcontainer.Command":            &s.Initcontainer.Command[0],
+		"initcontainer.args.Option":        &s.Initcontainer.Args[0],
+		"initcontainer.args.Command":       &s.Initcontainer.Args[1],
+		"initcontainer.resources.limits":   &limitsStr,
+		"initcontainer.resources.requests": &requestStr,
+		"sidecarVolume.Name":               &s.SidecarVolume.Name,
+		"sidecarVolumeMount.MountPath":     &s.SidecarVolumeMount.MountPath,
+		"configmapVolume.ConfigMap.Name":   &s.ConfigmapVolume.ConfigMap.Name,
+		"configmapVolume.Name":             &s.ConfigmapVolume.Name,
+		"configmapVolumeMount.MountPath":   &s.ConfigmapVolumeMount.MountPath,
+		"env.Name":                         &s.Env.Name,
+		"env.Value":                        &s.Env.Value,
 	}
 	anno := GetAnnotationsByPrefix(a, sidecarAnnotationPrefix)
 	for _, v := range anno.Annotations {
@@ -252,9 +258,31 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 			}
 		}
 	}
+
 	s.SidecarVolumeMount.Name = s.SidecarVolume.Name
 	s.ConfigmapVolumeMount.Name = s.ConfigmapVolume.Name
 	s.Initcontainer.VolumeMounts = []corev1.VolumeMount{s.SidecarVolumeMount}
+
+	// add requests and limits to initcontainer
+	if limitsStr != "nil" {
+		limits := make(corev1.ResourceList)
+		err := json.Unmarshal([]byte(limitsStr), &limits)
+		if err != nil {
+			log.Error(err, "unmarshal limitsStr error")
+			return false
+		}
+		s.Initcontainer.Resources.Limits = limits
+	}
+
+	if requestStr != "nil" {
+		requests := make(corev1.ResourceList)
+		err := json.Unmarshal([]byte(requestStr), &requests)
+		if err != nil {
+			log.Error(err, "unmarshal requestStr error")
+			return false
+		}
+		s.Initcontainer.Resources.Requests = requests
+	}
 
 	// the sidecar volume's type is determined
 	s.SidecarVolume.VolumeSource.EmptyDir = nil

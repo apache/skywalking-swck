@@ -158,7 +158,9 @@ The injector can recognize the following annotations to configure the sidecar:
 | `sidecar.skywalking.apache.org/initcontainer.Image`          | The container image of the injected java agent container.    | `apache/skywalking-java-agent:8.8.0-java8`                    |
 | `sidecar.skywalking.apache.org/initcontainer.Command`        | The command of the injected java agent container.            | `sh`                                                         |
 | `sidecar.skywalking.apache.org/initcontainer.args.Option`    | The args option of the injected java agent container.       | `-c`                                                         |
-| `sidecar.skywalking.apache.org/initcontainer.args.Command`   | The args command of  the injected java agent container.      | `mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent` |
+| `sidecar.skywalking.apache.org/initcontainer.args.Command`   | The args command of the injected java agent container.       | `mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent` |
+| `sidecar.skywalking.apache.org/initcontainer.resources.limits`   | The resources limits of the injected java agent container. You should use json type to define it such as `{"memory": "100Mi","cpu": "100m"}`      | `nil` |
+| `sidecar.skywalking.apache.org/initcontainer.resources.requests`   | The resources requests of  the injected java agent container. You should use json type to define it such as `{"memory": "100Mi","cpu": "100m"}`      | `nil` |
 | `sidecar.skywalking.apache.org/sidecarVolume.Name`           | The name of sidecar Volume.                                  | `sky-agent`                                                  |
 | `sidecar.skywalking.apache.org/sidecarVolumeMount.MountPath` | Mount path of the agent directory in the injected container. | `/sky/agent`                                                 |
 | `sidecar.skywalking.apache.org/configmapVolume.Name`         | The name of configmap volume.                                | `java-agent-configmap-volume`                                |
