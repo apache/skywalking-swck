@@ -51,12 +51,12 @@ annotations:
   
   - name: sidecar.skywalking.apache.org/initcontainer.resources.limits
     defaultValue: nil
-    validateFunc: nil
+    validateFunc: ValidateResourceRequirements
     envName: nil
 
   - name: sidecar.skywalking.apache.org/initcontainer.resources.requests
     defaultValue: nil
-    validateFunc: nil
+    validateFunc: ValidateResourceRequirements
     envName: nil
 
   - name: sidecar.skywalking.apache.org/sidecarVolume.Name

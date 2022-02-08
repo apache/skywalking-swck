@@ -18,12 +18,16 @@
 package injector
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // AnnotationValidateFunc is the type of validate function
@@ -35,7 +39,25 @@ var (
 		ValidateServiceName,
 		ValidateBackendServices,
 		ValidateIPv4OrHostname,
+		ValidateResourceRequirements,
 	}
+)
+
+const (
+	// CPU is in cores (100m = .1 cores)
+	CPU string = "cpu"
+	// Memory is in bytes (100Gi = 100GiB = 100 * 1024 * 1024 * 1024)
+	Memory string = "memory"
+	// EphemeralStorage is in bytes (100Gi = 100GiB = 100 * 1024 * 1024 * 1024)
+	EphemeralStorage string = "ephemeral-storage"
+	// HugePagesPrefix is huge pages prefix
+	HugePagesPrefix string = "hugepages-"
+)
+
+var standardContainerResources = sets.NewString(
+	CPU,
+	Memory,
+	EphemeralStorage,
 )
 
 // FindValidateFunc is find the validate function for an annotation
@@ -110,6 +132,33 @@ func ValidateIPv4OrHostname(annotation, service string) error {
 	}
 	if !match {
 		return fmt.Errorf("%s=%s error:not a valid ipv4 or hostname", annotation, host)
+	}
+
+	return nil
+}
+
+//ValidateResourceRequirements validates the resource requirement
+func ValidateResourceRequirements(annotation, value string) error {
+	if value == "nil" {
+		return nil
+	}
+
+	resource := make(corev1.ResourceList)
+	err := json.Unmarshal([]byte(value), &resource)
+	if err != nil {
+		return fmt.Errorf("%s unmarshal error:%s", annotation, err.Error())
+	}
+
+	for resourceName, quantity := range resource {
+		//validate resource name
+		if !standardContainerResources.Has(string(resourceName)) && !strings.HasPrefix(string(resourceName), HugePagesPrefix) {
+			return fmt.Errorf("%s error:%s isn't a standard resource type", annotation, string(resourceName))
+		}
+
+		//validate resource quantity value
+		if quantity.MilliValue() <= int64(0) {
+			return fmt.Errorf("%s error:%d must be greater than 0", annotation, quantity.MilliValue())
+		}
 	}
 
 	return nil
