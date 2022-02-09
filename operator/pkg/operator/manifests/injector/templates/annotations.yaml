@@ -48,6 +48,16 @@ annotations:
     defaultValue: "mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent"
     validateFunc: nil
     envName: nil
+  
+  - name: sidecar.skywalking.apache.org/initcontainer.resources.limits
+    defaultValue: nil
+    validateFunc: ValidateResourceRequirements
+    envName: nil
+
+  - name: sidecar.skywalking.apache.org/initcontainer.resources.requests
+    defaultValue: nil
+    validateFunc: ValidateResourceRequirements
+    envName: nil
 
   - name: sidecar.skywalking.apache.org/sidecarVolume.Name
     defaultValue: sky-agent
