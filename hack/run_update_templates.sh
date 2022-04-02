@@ -24,8 +24,6 @@ OUT_DIR=$(mktemp -d -t swck-templates.XXXXXXXXXX) || { echo "Failed to create te
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-GOBINDATA="${SCRIPTPATH}"/../bin/go-bindata
-
 ROOTDIR="${SCRIPTPATH}/../operator"
 OPERATOR_DIR="${ROOTDIR}"/pkg/operator
 INSTALLER_DIR="${OPERATOR_DIR}"/manifests
@@ -45,8 +43,5 @@ cd "${OUT_DIR}"
 set +e
 rm -f *.bak
 set -e
-"${GOBINDATA}" --nocompress --nometadata --pkg repo -o "${GEN_PATH}" ./...
 
 rm -Rf "${OUT_DIR}"
-
-bash ${SCRIPTPATH}/build-header.sh "${OPERATOR_DIR}"/pkg/operator/repo/assets.gen.go

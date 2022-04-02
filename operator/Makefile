@@ -57,15 +57,9 @@ test: generate format envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 
-GO_BINDATA := $(tool_bin)/go-bindata
-$(GO_BINDATA):
-	curl --location --output $(GO_BINDATA) https://github.com/kevinburke/go-bindata/releases/download/v3.21.0/go-bindata-$(OSNAME)-amd64 \
-		&& chmod +x $(GO_BINDATA)
-
 update-templates: $(GO_BINDATA) ## Update templates
 	@echo updating charts
 	-$(root_dir)/hack/run_update_templates.sh
-	-$(root_dir)/hack/build-header.sh pkg/operator/repo/assets.gen.go
 
 ##@ Build
 

@@ -37,7 +37,7 @@ import (
 	operatorcontroller "github.com/apache/skywalking-swck/operator/controllers/operator"
 	operatorcontrollers "github.com/apache/skywalking-swck/operator/controllers/operator"
 	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
-	"github.com/apache/skywalking-swck/operator/pkg/operator/repo"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/manifests"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -84,7 +84,7 @@ func main() {
 	if err = (&operatorcontroller.OAPServerReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("oapserver"),
+		FileRepo: manifests.NewRepo("oapserver"),
 		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
@@ -93,7 +93,7 @@ func main() {
 	if err = (&operatorcontroller.UIReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("ui"),
+		FileRepo: manifests.NewRepo("ui"),
 		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
@@ -102,7 +102,7 @@ func main() {
 	if err = (&operatorcontroller.FetcherReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("fetcher"),
+		FileRepo: manifests.NewRepo("fetcher"),
 		Recorder: mgr.GetEventRecorderFor("fetcher-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
@@ -111,7 +111,7 @@ func main() {
 	if err = (&operatorcontroller.StorageReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
-		FileRepo:   repo.NewRepo("storage"),
+		FileRepo:   manifests.NewRepo("storage"),
 		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
@@ -120,7 +120,7 @@ func main() {
 	if err = (&operatorcontroller.ConfigMapReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("injector"),
+		FileRepo: manifests.NewRepo("injector"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
 		os.Exit(1)
@@ -128,7 +128,7 @@ func main() {
 	if err = (&operatorcontroller.JavaAgentReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("injector"),
+		FileRepo: manifests.NewRepo("injector"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "JavaAgent")
 		os.Exit(1)
@@ -137,7 +137,7 @@ func main() {
 	if err = (&operatorcontrollers.SatelliteReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		FileRepo: repo.NewRepo("satellite"),
+		FileRepo: manifests.NewRepo("satellite"),
 		Recorder: mgr.GetEventRecorderFor("satellite-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Satellite")
