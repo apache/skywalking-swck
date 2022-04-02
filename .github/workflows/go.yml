@@ -22,6 +22,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: swck-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: Check
