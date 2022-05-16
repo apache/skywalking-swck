@@ -56,11 +56,6 @@ generate-deep: controller-gen ## Generate code containing DeepCopy, DeepCopyInto
 test: generate format envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
-
-update-templates: $(GO_BINDATA) ## Update templates
-	@echo updating charts
-	-$(root_dir)/hack/run_update_templates.sh
-
 ##@ Build
 
 .PHONY: build
