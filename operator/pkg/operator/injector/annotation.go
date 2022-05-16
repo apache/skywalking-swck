@@ -23,7 +23,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/apache/skywalking-swck/operator/pkg/operator/repo"
+	"github.com/apache/skywalking-swck/operator/pkg/operator/manifests"
 )
 
 // Annotation defines configuration that user can overlay, including
@@ -47,12 +47,12 @@ type Annotations struct {
 	Annotations []Annotation
 }
 
-//AnnotationOverlay is used to set overlaied value
+// AnnotationOverlay is used to set overlaied value
 type AnnotationOverlay map[Annotation]string
 
 // NewAnnotations will create a new AnnotationOverlay
 func NewAnnotations() (*Annotations, error) {
-	fileRepo := repo.NewRepo("injector")
+	fileRepo := manifests.NewRepo("injector")
 	data, err := fileRepo.ReadFile("injector/templates/annotations.yaml")
 	if err != nil {
 		return nil, err
@@ -76,13 +76,13 @@ func GetAnnotationsByPrefix(a Annotations, prefixName string) *Annotations {
 	return anno
 }
 
-//NewAnnotationOverlay will create a new AnnotationOverlay
+// NewAnnotationOverlay will create a new AnnotationOverlay
 func NewAnnotationOverlay() *AnnotationOverlay {
 	a := make(AnnotationOverlay)
 	return &a
 }
 
-//GetFinalValue will get overlaied value first , then default
+// GetFinalValue will get overlaied value first , then default
 func (as *AnnotationOverlay) GetFinalValue(a Annotation) string {
 	ov := a.DefaultValue
 	if v, ok := (*as)[a]; ok {
@@ -91,25 +91,25 @@ func (as *AnnotationOverlay) GetFinalValue(a Annotation) string {
 	return ov
 }
 
-//SetOverlay will set overlaied value
+// SetOverlay will set overlaied value
 func (as *AnnotationOverlay) SetOverlay(AnnotationOverlay *map[string]string, a Annotation) error {
 	if v, ok := (*AnnotationOverlay)[a.Name]; ok {
-		//if annotation has validate func then validate
+		// if annotation has validate func then validate
 		f := FindValidateFunc(a.ValidateFunc)
 		if f != nil {
 			err := f(a.Name, v)
-			//validate error
+			// validate error
 			if err != nil {
 				return err
 			}
 		}
-		//if no validate func then set Overlay directly
+		// if no validate func then set Overlay directly
 		(*as)[a] = v
 	}
 	return nil
 }
 
-//GetOverlayValue will get overlaied value, if not then return ""
+// GetOverlayValue will get overlaied value, if not then return ""
 func (as *AnnotationOverlay) GetOverlayValue(a Annotation) string {
 	if v, ok := (*as)[a]; ok {
 		return v
