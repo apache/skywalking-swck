@@ -40,7 +40,7 @@ all: build docker-build
 
 ##@ Development
 
-generate: generate-deep manifests update-templates ## Generate codes and manifests
+generate: generate-deep manifests ## Generate codes and manifests
 	$(MAKE) format
 
 .PHONY: manifests
