@@ -14,34 +14,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: OAPServer
+#
+# The following patch adds a directive for certmanager to inject CA into the CRD
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
 metadata:
-  name: default
-spec:
-  version: 9.0.0
-  instances: 1
-  image: apache/skywalking-oap-server:9.0.0
-  service:
-    template:
-      type: ClusterIP
-  storage:
-    name: sample
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
-metadata:
-  name: skywalking-system
-  namespace: skywalking-system
-spec:
-  version: 9.0.0
-  instances: 1
-  image: apache/skywalking-ui:9.0.0
-  OAPServerAddress: http://default-oap.default:12800
-  service:
-    template:
-      type: ClusterIP
-    ingress:
-      host: demo.ui.skywalking
-    
+  annotations:
+    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
+  name: oapserverconfigs.operator.skywalking.apache.org

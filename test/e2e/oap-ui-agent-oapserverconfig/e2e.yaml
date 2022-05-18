@@ -39,20 +39,16 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
-    - name: install metrics-adapter
-      command: |
-        export ADAPTER_IMG=metrics-adapter
-        make -C adapter docker-build
-        kind load docker-image metrics-adapter
-        make -C adapter deploy
-        kubectl wait pods -n skywalking-custom-metrics-system -l app=custom-metrics-apiserver --for condition=Ready --timeout=90s
     - name: setup oapserver and ui
-      command: |
+      command: | 
         kubectl create namespace skywalking-system
-        grep -B20 "\-\-\-" test/e2e/skywalking-components.yaml | kubectl apply -f -
+        kubectl apply -f test/e2e/skywalking-components.yaml
       wait:
         - namespace: skywalking-system
           resource: OAPServer/skywalking-system
+          for: condition=Available
+        - namespace: skywalking-system
+          resource: UI/skywalking-system
           for: condition=Available
     - name: setup java agent demo
       command: |
@@ -62,9 +58,19 @@ setup:
         - namespace: skywalking-system
           resource: deployment/demo
           for: condition=Available
-    - name: setup the hpa of java agent demo
+    - name: setup oapserverconfig
       command: |
-        kubectl apply -f test/e2e/hpa-demo.yaml
+        export oap_podname=$(kubectl get po -lapp=oap -n skywalking-system -o jsonpath='{.items[*].metadata.name}')
+        kubectl apply -f test/e2e/oapserverconfig-demo.yaml
+    - name: wait the old pod teminated
+      command: |
+        while kubectl get pod $oap_podname -n skywalking-system > /dev/null; \
+        do \
+          sleep 0.1; \
+        done
+    - name: update dynamic configuration
+      command: |
+        sed 's/default: 0.1/default: 500/' test/e2e/oapserverconfig-demo.yaml | kubectl apply -f -
   kind:
     expose-ports:
       - namespace: skywalking-system
@@ -73,6 +79,9 @@ setup:
       - namespace: skywalking-system
         resource: service/skywalking-system-oap
         port: 12800
+      - namespace: skywalking-system
+        resource: service/skywalking-system-ui
+        port: 80
   timeout: 20m
 
 cleanup:
@@ -81,8 +90,8 @@ cleanup:
 
 trigger:
   action: http
-  interval: 30s
-  times: 30
+  interval: 10s
+  times: 5
   url: http://${service_demo_host}:${service_demo_8085}/hello
   method: GET
 
@@ -92,10 +101,19 @@ verify:
     # max retry count
     count: 10
     # the interval between two attempts, e.g. 10s, 1m.
-    interval: 10s
+    interval: 20s
   cases:
+    # test oapserver
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
+      expected: ../verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
-      expected: ../verify/hpa-metrics.yaml
-    # the trigger will do 30 times, as the hpa's value is set as 5, so the deployment's replicas will be 3(maxReplicas).
-    - query: 'kubectl get deployment demo -n skywalking-system -o jsonpath=''{.status.replicas}'' | yq e ''{"replicas": .}'' - | yq e ''to_entries'' -'
-      expected: ../verify/replicas.yaml
+      expected: ../verify/metrics.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+      expected: ../verify/endpoint.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
+      expected: ../verify/metrics.yaml
+    - includes:
+        - ../ui-cases.yaml
+      # test oapserverconfig's dynamic config
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name=service_apdex --service-name=Your_ApplicationName | yq e 'to_entries' -
+      expected: ../verify/service-apdex.yaml

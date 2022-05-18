@@ -42,6 +42,7 @@ import (
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -144,11 +145,30 @@ func (r *StorageReconciler) checkState(ctx context.Context, log logr.Logger, sto
 		errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
 		return errCol.Error()
 	}
-	if err := r.Status().Update(ctx, storage); err != nil {
+	if err := r.updateStatus(ctx, storage, overlay, errCol); err != nil {
 		errCol.Collect(fmt.Errorf("failed to update status of es: %w", err))
 	}
 	log.Info("updated Status sub resource")
 	return errCol.Error()
+}
+
+func (r *StorageReconciler) updateStatus(ctx context.Context, storage *operatorv1alpha1.Storage,
+	overlay operatorv1alpha1.StorageStatus, errCol *kubernetes.ErrorCollector) error {
+	// avoid resource conflict
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: storage.Name, Namespace: storage.Namespace}, storage); err != nil {
+			errCol.Collect(fmt.Errorf("failed to get storage: %w", err))
+		}
+		storage.Status = overlay
+		storage.Kind = "Storage"
+		if err := kubernetes.ApplyOverlay(storage, &operatorv1alpha1.Storage{Status: overlay}); err != nil {
+			errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
+		}
+		if err := r.Status().Update(ctx, storage); err != nil {
+			errCol.Collect(fmt.Errorf("failed to update status of storage: %w", err))
+		}
+		return errCol.Error()
+	})
 }
 
 func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, s *operatorv1alpha1.Storage) {

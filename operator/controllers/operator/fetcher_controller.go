@@ -21,11 +21,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -67,17 +69,18 @@ func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Recorder: r.Recorder,
 	}
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
-		_ = r.updateStatus(ctx, fetcher, core.ConditionFalse, "Failed to apply resources")
+		_ = r.UpdateStatus(ctx, fetcher, core.ConditionFalse, "Failed to apply resources")
 		return ctrl.Result{}, err
 	}
-	if err := r.updateStatus(ctx, fetcher, core.ConditionTrue, "Reconciled all of resources"); err != nil {
+	if err := r.UpdateStatus(ctx, fetcher, core.ConditionTrue, "Reconciled all of resources"); err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
-func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv1alpha1.Fetcher, status core.ConditionStatus, msg string) error {
+func (r *FetcherReconciler) UpdateStatus(ctx context.Context, fetcher *operatorv1alpha1.Fetcher, status core.ConditionStatus, msg string) error {
 	log := runtimelog.FromContext(ctx)
+
 	if fetcher.Status.Replicas == 0 {
 		fetcher.Status.Replicas = 1
 	}
@@ -104,11 +107,31 @@ func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv
 	if !changed {
 		return nil
 	}
-	if err := r.Status().Update(ctx, fetcher); err != nil {
+	overlay := fetcher.Status
+	if err := r.updateStatus(ctx, fetcher, overlay, log); err != nil {
 		log.Error(err, "failed to update status")
 		return err
 	}
 	return nil
+}
+
+func (r *FetcherReconciler) updateStatus(ctx context.Context, fetcher *operatorv1alpha1.Fetcher,
+	overlay operatorv1alpha1.FetcherStatus, log logr.Logger) error {
+	// avoid resource conflict
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: fetcher.Name, Namespace: fetcher.Namespace}, fetcher); err != nil {
+			log.Error(err, "failed to get fetcher")
+		}
+		fetcher.Status = overlay
+		fetcher.Kind = "Fetcher"
+		if err := kubernetes.ApplyOverlay(fetcher, &operatorv1alpha1.Fetcher{Status: overlay}); err != nil {
+			log.Error(err, "failed to apply overlay")
+		}
+		if err := r.Status().Update(ctx, fetcher); err != nil {
+			log.Error(err, "failed to update status of fetcher")
+		}
+		return nil
+	})
 }
 
 func (r *FetcherReconciler) SetupWithManager(mgr ctrl.Manager) error {

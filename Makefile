@@ -54,7 +54,7 @@ clean: ## Clean project
 ##@ End to End Test
 
 .PHONY:e2e-test
-e2e-test: e2e-oap-ui-agent e2e-oap-ui-agent-storage-internal e2e-oap-agent-adapter-hpa e2e-oap-ui-agent-satellite e2e-oap-agent-satellite-adapter-hpa ## Run End to End tests.
+e2e-test: e2e-oap-ui-agent e2e-oap-ui-agent-storage-internal e2e-oap-agent-adapter-hpa e2e-oap-ui-agent-satellite e2e-oap-agent-satellite-adapter-hpa e2e-oap-ui-agent-oapserverconfig ## Run End to End tests.
 
 .PHONY:e2e-oap-ui-agent
 e2e-oap-ui-agent: e2e ## Run oap+ui+agent test
@@ -80,6 +80,11 @@ e2e-oap-ui-agent-satellite: e2e ## Run oap+ui+agent+satellite test
 e2e-oap-agent-satellite-adapter-hpa: e2e ## Run oap+agent+satellite+adapter HPA test
 	@echo "Run Satellite HPA e2e..."
 	$(E2E) run -c test/e2e/oap-satellite-adapter-hpa/e2e.yaml
+
+.PHONY:e2e-oap-ui-agent-oapserverconfig
+e2e-oap-ui-agent-oapserverconfig: e2e ## Run oap+ui+agent+oapserverconfig test
+	@echo "Run oap+ui+agent+oapserverconfig e2e..."
+	$(E2E) run -c test/e2e/oap-ui-agent-oapserverconfig/e2e.yaml
 
 E2E = $(tool_bin)/cmd
 .PHONY: e2e

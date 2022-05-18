@@ -32,9 +32,6 @@ spec:
         name: skywalking.apache.org|satellite_service_grpc_connect_count
         selector:
           matchLabels:
-            "service.str.0": "satellite"
-            "service.byte.1": "3a"
-            "service.byte.2": "3a"
             "service.str.3": "satellite"
             "service.byte.4": "2d"
             "service.str.5": "service"

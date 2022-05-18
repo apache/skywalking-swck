@@ -191,6 +191,26 @@ rules:
 - apiGroups:
   - operator.skywalking.apache.org
   resources:
+  - oapserverconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - oapserverconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
   - oapservers
   verbs:
   - create

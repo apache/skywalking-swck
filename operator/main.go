@@ -143,6 +143,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Satellite")
 		os.Exit(1)
 	}
+	if err = (&operatorcontrollers.OAPServerConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "OAPServerConfig")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
@@ -168,6 +175,10 @@ func main() {
 		}
 		if err = (&operatorv1alpha1.Satellite{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Satellite")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.OAPServerConfig{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServerConfig")
 			os.Exit(1)
 		}
 		// register a webhook to enable the java agent injector

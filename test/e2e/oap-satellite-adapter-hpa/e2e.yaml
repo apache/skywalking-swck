@@ -23,7 +23,7 @@ setup:
       command: |
         # kind k8s cluster is in $TMPDIR
         export KUBECONFIG=$TMPDIR/e2e-k8s.config
-        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
       wait:
         - namespace: cert-manager
           resource: pod
@@ -45,10 +45,7 @@ setup:
         make -C adapter docker-build
         kind load docker-image metrics-adapter
         make -C adapter deploy
-      wait:
-        - namespace: skywalking-custom-metrics-system
-          resource: pod
-          for: condition=Ready
+        kubectl wait pods -n skywalking-custom-metrics-system -l app=custom-metrics-apiserver --for condition=Ready --timeout=180s
     - name: setup oapserver and ui
       command: |
         kubectl create namespace skywalking-system
@@ -74,6 +71,7 @@ setup:
     - name: increase the satellite connection count
       command: |
         kubectl -n skywalking-system scale deployment/demo --replicas 5
+        kubectl rollout status --watch --timeout=120s deployment/demo -n skywalking-system
   kind:
     expose-ports:
       - namespace: skywalking-system
@@ -95,11 +93,11 @@ verify:
   # verify with retry strategy
   retry:
     # max retry count
-    count: 10
+    count: 15
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 15s
   cases:
-    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name satellite_service_grpc_connect_count --service-name satellite::satellite-service | yq e 'to_entries' -
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name satellite_service_grpc_connect_count --service-name satellite-service | yq e 'to_entries' -
       expected: ../verify/satellite-hpa-metrics.yaml
     # the trigger will do 30 times, as the hpa's value is set as 5, so the deployment's replicas will be 3(maxReplicas).
     - query: 'kubectl get deployment skywalking-system-satellite -n skywalking-system -o jsonpath=''{.status.replicas}'' | yq e ''{"replicas": .}'' - | yq e ''to_entries'' -'

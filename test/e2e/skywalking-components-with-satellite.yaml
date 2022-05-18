@@ -21,9 +21,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 8.9.1
+  version: 9.0.0
   instances: 1
-  image: ghcr.io/apache/skywalking/oap:e74adec05fd8a93ee945bcc4a3c7fcbb3761c5c7
+  image: apache/skywalking-oap-server:9.0.0
   config:
     - name: SW_METER_ANALYZER_ACTIVE_FILES
       value: satellite
@@ -55,9 +55,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 8.9.1
+  version: 9.0.0
   instances: 1
-  image: apache/skywalking-ui:8.9.1
+  image: apache/skywalking-ui:9.0.0
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:

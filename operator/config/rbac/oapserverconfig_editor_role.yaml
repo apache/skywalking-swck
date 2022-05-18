@@ -14,34 +14,28 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: OAPServer
+#
+# permissions for end users to edit oapserverconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: default
-spec:
-  version: 9.0.0
-  instances: 1
-  image: apache/skywalking-oap-server:9.0.0
-  service:
-    template:
-      type: ClusterIP
-  storage:
-    name: sample
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
-metadata:
-  name: skywalking-system
-  namespace: skywalking-system
-spec:
-  version: 9.0.0
-  instances: 1
-  image: apache/skywalking-ui:9.0.0
-  OAPServerAddress: http://default-oap.default:12800
-  service:
-    template:
-      type: ClusterIP
-    ingress:
-      host: demo.ui.skywalking
-    
+  name: oapserverconfig-editor-role
+rules:
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - oapserverconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - oapserverconfigs/status
+  verbs:
+  - get

@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -54,7 +55,7 @@ type JavaAgentReconciler struct {
 
 func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================javaagent started================================")
+	log.Info("=====================reconcile started================================")
 
 	pod := &core.Pod{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, pod)
@@ -150,7 +151,7 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	if err := r.updateStatus(ctx, log, req.Namespace, selectorname, podselector); err != nil {
+	if err := r.UpdateStatus(ctx, log, req.Namespace, selectorname, podselector); err != nil {
 		log.Error(err, "failed to update javaagent's status")
 		return ctrl.Result{}, err
 	}
@@ -158,7 +159,7 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *JavaAgentReconciler) updateStatus(ctx context.Context, log logr.Logger, namespace, selectorname, podselector string) error {
+func (r *JavaAgentReconciler) UpdateStatus(ctx context.Context, log logr.Logger, namespace, selectorname, podselector string) error {
 	errCol := new(kubernetes.ErrorCollector)
 
 	// get javaagent by selectorname
@@ -213,12 +214,32 @@ func (r *JavaAgentReconciler) updateStatus(ctx context.Context, log logr.Logger,
 		javaagent.Status.LastUpdateTime = now
 	}
 
-	if err := r.Status().Update(ctx, javaagent); err != nil {
+	overlay := javaagent.Status
+	if err := r.updateStatus(ctx, javaagent, overlay, errCol); err != nil {
 		errCol.Collect(fmt.Errorf("failed to update java status: %w", err))
 	}
 
 	log.Info("updated javaagent's status")
 	return errCol.Error()
+}
+
+func (r *JavaAgentReconciler) updateStatus(ctx context.Context, javaagent *operatorv1alpha1.JavaAgent,
+	overlay operatorv1alpha1.JavaAgentStatus, errCol *kubernetes.ErrorCollector) error {
+	// avoid resource conflict
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: javaagent.Name, Namespace: javaagent.Namespace}, javaagent); err != nil {
+			errCol.Collect(fmt.Errorf("failed to get javaagent: %w", err))
+		}
+		javaagent.Status = overlay
+		javaagent.Kind = "JavaAgent"
+		if err := kubernetes.ApplyOverlay(javaagent, &operatorv1alpha1.JavaAgent{Status: overlay}); err != nil {
+			errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
+		}
+		if err := r.Status().Update(ctx, javaagent); err != nil {
+			errCol.Collect(fmt.Errorf("failed to update status of JavaAgent: %w", err))
+		}
+		return errCol.Error()
+	})
 }
 
 func (r *JavaAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
