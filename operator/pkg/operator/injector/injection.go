@@ -20,6 +20,7 @@ package injector
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 )
 
 // Injection is each step of the injection process
@@ -50,6 +53,7 @@ type InjectProcessData struct {
 	injectFileds      *SidecarInjectField
 	annotation        *Annotations
 	annotationOverlay *AnnotationOverlay
+	swAgentL          *v1alpha1.SwAgentList
 	pod               *corev1.Pod
 	req               admission.Request
 	log               logr.Logger
@@ -75,6 +79,7 @@ type GetStrategy struct {
 // get injection strategy from pod's labels and annotations
 // if don't need to inject, then return the original pod, otherwise go to the next step
 func (gs *GetStrategy) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== GetStrategy ================")
 	ipd.injectFileds.GetInjectStrategy(*ipd.annotation, &ipd.pod.ObjectMeta.Labels, &ipd.pod.ObjectMeta.Annotations)
 	if !ipd.injectFileds.NeedInject {
 		log.Info("don't inject agent")
@@ -87,6 +92,25 @@ func (gs *GetStrategy) setNext(next Injection) {
 	gs.next = next
 }
 
+// OverlaySwAgentCR is the cr config step of injection process
+type OverlaySwAgentCR struct {
+	next Injection
+}
+
+// get configs from SwAgent CR
+func (gs *OverlaySwAgentCR) execute(ipd *InjectProcessData) admission.Response {
+	log.Info(fmt.Sprintf("=============== OverlaySwAgentCR(%d) ================ ", len(ipd.swAgentL.Items)))
+	if !ipd.injectFileds.OverlaySwAgentCR(ipd.swAgentL, ipd.pod) {
+		log.Info("overlay SwAgent cr config error.")
+		return PatchReq(ipd.pod, ipd.req)
+	}
+	return gs.next.execute(ipd)
+}
+
+func (gs *OverlaySwAgentCR) setNext(next Injection) {
+	gs.next = next
+}
+
 // OverlaySidecar is the second step of injection process
 type OverlaySidecar struct {
 	next Injection
@@ -95,6 +119,7 @@ type OverlaySidecar struct {
 // OverlaySidecar will inject sidecar information such as image, command, args etc.
 // Since we did not set the validation function for these fields, it usually goes to the next step
 func (os *OverlaySidecar) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== OverlaySidecar ================")
 	if !ipd.injectFileds.OverlaySidecar(*ipd.annotation, ipd.annotationOverlay, &ipd.pod.ObjectMeta.Annotations) {
 		return PatchReq(ipd.pod, ipd.req)
 	}
@@ -114,6 +139,7 @@ type OverlayAgent struct {
 // If the agent overlay option is not set, go directly to the next step
 // If set the wrong value in the annotation , inject the error info and return
 func (oa *OverlayAgent) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== OverlayAgent ================")
 	if !ipd.injectFileds.AgentOverlay {
 		return oa.next.execute(ipd)
 	}
@@ -136,6 +162,7 @@ type OverlayPlugins struct {
 // OverlayPlugins contains two step , the first is to set jvm string , the second is to set optional plugins
 // during the step , we need to add jvm string to the Env of injected container
 func (op *OverlayPlugins) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== OverlayPlugins ================")
 	if !ipd.injectFileds.AgentOverlay {
 		return op.next.execute(ipd)
 	}
@@ -143,7 +170,7 @@ func (op *OverlayPlugins) execute(ipd *InjectProcessData) admission.Response {
 	if ipd.injectFileds.JvmAgentConfigStr != "" {
 		ipd.injectFileds.Env.Value = strings.Join([]string{ipd.injectFileds.Env.Value, ipd.injectFileds.JvmAgentConfigStr}, "=")
 	}
-	ipd.injectFileds.OverlayOptional(&ipd.pod.ObjectMeta.Annotations)
+	ipd.injectFileds.OverlayOptional(ipd.swAgentL.Items, &ipd.pod.ObjectMeta.Annotations)
 	return op.next.execute(ipd)
 }
 func (op *OverlayPlugins) setNext(next Injection) {
@@ -158,6 +185,7 @@ type GetConfigmap struct {
 // GetConfigmap will get the configmap specified in the annotation. if not exist ,
 // we will get data from default configmap and create configmap in the req's namespace
 func (gc *GetConfigmap) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== GetConfigmap ================")
 	if !ipd.injectFileds.CreateConfigmap(ipd.ctx, ipd.kubeclient, ipd.req.Namespace, &ipd.pod.ObjectMeta.Annotations) {
 		return PatchReq(ipd.pod, ipd.req)
 	}
@@ -174,6 +202,7 @@ type PodInject struct {
 
 // PodInject will inject all fields to the pod
 func (pi *PodInject) execute(ipd *InjectProcessData) admission.Response {
+	log.Info("=============== PodInject ================")
 	ipd.injectFileds.Inject(ipd.pod)
 	ipd.injectFileds.injectSucceedAnnotation(&ipd.pod.Annotations)
 	log.Info("inject successfully!")
@@ -185,13 +214,14 @@ func (pi *PodInject) setNext(next Injection) {
 
 // NewInjectProcess create a new InjectProcess
 func NewInjectProcess(ctx context.Context, injectFileds *SidecarInjectField, annotation *Annotations,
-	annotationOverlay *AnnotationOverlay, pod *corev1.Pod, req admission.Request, log logr.Logger,
+	annotationOverlay *AnnotationOverlay, swAgentL *v1alpha1.SwAgentList, pod *corev1.Pod, req admission.Request, log logr.Logger,
 	kubeclient client.Client) *InjectProcessData {
 	return &InjectProcessData{
 		ctx:               ctx,
 		injectFileds:      injectFileds,
 		annotation:        annotation,
 		annotationOverlay: annotationOverlay,
+		swAgentL:          swAgentL,
 		pod:               pod,
 		req:               req,
 		log:               log,
@@ -220,9 +250,13 @@ func (ipd *InjectProcessData) Run() admission.Response {
 	overlaysidecar := &OverlaySidecar{}
 	overlaysidecar.setNext(overlayAgent)
 
+	// set next step is OverlaySwAgentCR
+	overlaySwAgentCR := &OverlaySwAgentCR{}
+	overlaySwAgentCR.setNext(overlaysidecar)
+
 	// set next step is OverlaySidecar
 	getStrategy := &GetStrategy{}
-	getStrategy.setNext(overlaysidecar)
+	getStrategy.setNext(overlaySwAgentCR)
 
 	// this is first step and do real injection
 	return getStrategy.execute(ipd)

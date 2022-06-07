@@ -44,7 +44,7 @@ inject-demo   1/1     Running   0          2d2h
 
 The java agent injector supports a precedence order to configure the agent:
 
-``` Annotations > Configmap > Default configmap```
+``` Annotations > SwAgent > Configmap (Deprecated) > Default Configmap (Deprecated)```
 
 ### Annotations
 
@@ -52,7 +52,13 @@ Annotations are described in [kubernetes annotations doc](https://kubernetes.io/
 
 We support annotations in [agent annotations](#Use-annotations-to-overlay-default-agent-configuration) and [sidecar annotations](#configure-sidecar).
 
-### Configmap
+### SwAgent
+
+SwAgent is a [Customer Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) defined by SWCK.
+
+We support SwAgent in [SwAgent usage guide](#use-swagent-to-overlay-default-agent-configuration)
+
+### Configmap (Deprecated)
 
 Configmap is described in [kubernetes configmap doc](https://kubernetes.io/docs/concepts/configuration/configmap/).
 
@@ -60,7 +66,7 @@ We need to use configmap to set [agent.config](https://skywalking.apache.org/doc
 
 If there are different configmap in the namepsace, you can choose a configmap by setting [sidecar annotations](#configure-sidecar); If there is no configmap, the injector will create a default configmap. 
 
-### Default configmap
+### Default configmap (Deprecated)
 
 The injector will create the default configmap to overlay the `agent.config` in the agent container. 
 
@@ -110,6 +116,68 @@ volumes:
       name: skywalking-swck-java-agent-configmap
     name: java-agent-configmap-volume
 ```
+
+### Use SwAgent to overlay default agent configuration
+
+The injector will read the SwAgent CR when pods creating.
+
+SwAgent CRD basic structure is like:
+
+```yaml
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: SwAgent
+metadata:
+  name: swagent
+  namespace: skywalking-system
+spec:
+  containerMatcher: ''
+  selector:
+    app: demo
+  javaSidecar:
+    name: swagent
+    image: apache/skywalking-java-agent:8.8.0-java8
+    env:
+      - name: SW_LOGGING_LEVEL
+        value: "DEBUG"
+  sharedVolume:
+    name: "sky-agent"
+    mountPath: "/sky/agent"
+```
+
+There are three kind of configs in SwAgent CR.
+
+#### 1. label selector and container matcher
+
+label selector and container matcher decides which pod and container should be injected.
+
+| key path              | description                                                                                                                                                            | default value    |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
+| spec.selector         | label selector for pods which should be effected during injection. if no label selector was set, SwAgent CR config will affect every pod during injection.             | no default value |
+| spec.containerMatcher | container matcher is used to decide which container to be inject during injection. regular expression is supported. default value '.*' would match any container name. | .*               |
+
+
+#### 2. injection configuration
+
+injection configuration will affect on agent injection behaviour
+
+| key path               | description                                                                                                       | default value                            |
+|------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+| javaSidecar            | javaSidecar is the configs for init container, which holds agent sdk and take agent sdk to the target containers. |                                          |
+| javaSidecar.name       | the name of the init container.                                                                                   | inject-skywalking-agent                  |
+| javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.8.0-java8 |
+| sharedVolume           | shareVolume is the configs for shared volume between init container and target container.                         |                                          |
+| sharedVolume.name      | the name of the shared volume.                                                                                    | sky-agent                                |
+| sharedVolume.mountPath | the mount path of the shared volume.                                                                              | /sky/agent                               |
+
+
+#### 3. skywalking agent configuration
+
+skywalking agent configuration is for agent SDK.
+
+| key path          | description                                                                                                                                                                                                                             | default value     |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|
+| javaSidecar.env   | the env list to be appended to target containers. usually we can use it to setup [agent configuration](https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/configurations/) at container level. | no default value. |
+
 
 ### Use annotations to overlay default agent configuration
 

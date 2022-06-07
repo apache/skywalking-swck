@@ -136,10 +136,10 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return podselector
 			},
 			"ServiceName": func() string {
-				return injector.GetServiceName(&config)
+				return operatorv1alpha1.GetServiceName(&config)
 			},
 			"BackendService": func() string {
-				return injector.GetBackendService(&config)
+				return operatorv1alpha1.GetBackendService(&config)
 			},
 		},
 	}
@@ -183,7 +183,7 @@ func (r *JavaAgentReconciler) UpdateStatus(ctx context.Context, log logr.Logger,
 		client.MatchingLabels{label[0]: label[1]},
 	}
 
-	if err := r.List(ctx, podList, opts...); err != nil && !apierrors.IsNotFound(err) {
+	if err := r.Client.List(ctx, podList, opts...); err != nil && !apierrors.IsNotFound(err) {
 		errCol.Collect(fmt.Errorf("failed to list pod: %w", err))
 	}
 

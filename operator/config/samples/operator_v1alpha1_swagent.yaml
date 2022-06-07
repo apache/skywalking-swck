@@ -16,32 +16,8 @@
 # under the License.
 
 apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: OAPServer
+kind: SwAgent
 metadata:
-  name: skywalking-system
-  namespace: skywalking-system
+  name: swagent-sample
 spec:
-  version: 9.0.0
-  instances: 1
-  image: ghcr.io/apache/skywalking/oap:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
-  service:
-    template:
-      type: ClusterIP
-  
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
-metadata:
-  name: skywalking-system
-  namespace: skywalking-system
-spec:
-  version: 9.0.0
-  instances: 1
-  image: ghcr.io/apache/skywalking/ui:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
-  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
-  service:
-    template:
-      type: ClusterIP
-    ingress:
-      host: demo.ui.skywalking
-    
+  # TODO(user): Add fields here
