@@ -257,6 +257,32 @@ rules:
 - apiGroups:
   - operator.skywalking.apache.org
   resources:
+  - swagents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - swagents/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - swagents/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
   - uis
   verbs:
   - create
