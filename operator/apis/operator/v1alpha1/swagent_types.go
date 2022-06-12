@@ -42,8 +42,8 @@ type SwAgentSpec struct {
 	// SharedVolume is the shared volume by initContainer and target containers.
 	SharedVolume SharedVolume `json:"sharedVolume,omitempty"`
 
-	// SwConfigMap defines the configmap which contains agent.config
-	SwConfigMap SwConfigMap `json:"swConfigmap,omitempty"`
+	// SwConfigMapVolume defines the configmap which contains agent.config
+	SwConfigMapVolume SwConfigMap `json:"swConfigMapVolume,omitempty"`
 
 	// Select the optional plugin which needs to be moved to the directory(/plugins). Such as`trace`,`webflux`,`cloud-gateway-2.1.x`.
 	OptionalPlugins []string `json:"optionalPlugins,omitempty"`
@@ -96,9 +96,9 @@ type SwConfigMap struct {
 	// The name pf configmap used in the injected container as agent.config
 	Name string `json:"name,omitempty" default:"java-agent-configmap-volume"`
 	// The name of configmap volume.
-	VolumeName string `json:"volumeName,omitempty" default:"skywalking-swck-java-agent-configmap"`
+	ConfigMapName string `json:"configMapName,omitempty" default:"skywalking-swck-java-agent-configmap"`
 	// Mount path of the configmap in the injected container
-	VolumeMountPath string `json:"volumeMountPath,omitempty" default:"/sky/agent/config"`
+	ConfigMapMountPath string `json:"configMapMountPath,omitempty" default:"/sky/agent/config"`
 }
 
 //+kubebuilder:object:root=true

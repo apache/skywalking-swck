@@ -135,10 +135,10 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return podselector
 			},
 			"ServiceName": func() string {
-				return injector.GetServiceName(&config)
+				return operatorv1alpha1.GetServiceName(&config)
 			},
 			"BackendService": func() string {
-				return injector.GetBackendService(&config)
+				return operatorv1alpha1.GetBackendService(&config)
 			},
 		},
 	}

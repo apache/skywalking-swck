@@ -28,26 +28,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-v1-pod
-  failurePolicy: Fail
-  name: mpod.kb.io
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - pods
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
       path: /mutate-operator-skywalking-apache-org-v1alpha1-fetcher
   failurePolicy: Fail
   name: mfetcher.kb.io
@@ -148,6 +128,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-swagent
+  failurePolicy: Fail
+  name: mswagent.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - swagents
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-skywalking-apache-org-v1alpha1-ui
   failurePolicy: Fail
   name: mui.kb.io
@@ -161,6 +161,26 @@ webhooks:
     - UPDATE
     resources:
     - uis
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-v1-pod
+  failurePolicy: Fail
+  name: mpod.kb.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pods
   sideEffects: None
 
 ---
@@ -269,6 +289,26 @@ webhooks:
     - UPDATE
     resources:
     - storages
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-swagent
+  failurePolicy: Fail
+  name: vswagent.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - swagents
   sideEffects: None
 - admissionReviewVersions:
   - v1

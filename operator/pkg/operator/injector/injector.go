@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,10 +29,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 )
 
 const (
-	// the label means whether to enbale injection , "true" of "false"
+	// the label means whether to enbale injection , "true" or "false".
 	ActiveInjectorLabel = "swck-java-agent-injected"
 	// SidecarInjectSucceedAnno represents injection succeed
 	SidecarInjectSucceedAnno = "sidecar.skywalking.apache.org/succeed"
@@ -58,9 +61,6 @@ const (
 	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
 	// such as optional-exporter.skywalking.apache.org: "kafka"
 	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
-	// the ServiceName and BackendService are important information that need to be printed
-	ServiceName    = "agent.service_name"
-	BackendService = "collector.backend_service"
 )
 
 // log is for logging in this package.
@@ -89,6 +89,8 @@ type SidecarInjectField struct {
 	ConfigmapVolumeMount corev1.VolumeMount
 	// env is used to set java agent’s parameters
 	Env corev1.EnvVar
+	// envs is the envs pass to target containers
+	Envs []corev1.EnvVar
 	// the string is used to set jvm agent ,just like following
 	// -javaagent: /sky/agent/skywalking-agent,jar=jvmAgentConfigStr
 	JvmAgentConfigStr string
@@ -103,6 +105,7 @@ func NewSidecarInjectField() *SidecarInjectField {
 
 // Inject will do real injection
 func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
+	log.Info(fmt.Sprintf("inject pod : %s", pod.GenerateName))
 	// add initcontrainers to spec
 	if pod.Spec.InitContainers != nil {
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, s.Initcontainer)
@@ -118,30 +121,22 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 	}
 
 	// choose a specific container to inject
-	containers := []*corev1.Container{}
-
-	c := s.findInjectContainer(pod.Spec.Containers)
-	if c != nil {
-		containers = append(containers, c)
-	} else {
-		for i := range pod.Spec.Containers {
-			containers = append(containers, &pod.Spec.Containers[i])
-		}
-	}
+	targetContainers := s.findInjectContainer(pod.Spec.Containers)
 
 	// add volumemount and env to container
-	for i := range containers {
-		if (*containers[i]).VolumeMounts != nil {
-			(*containers[i]).VolumeMounts = append((*containers[i]).VolumeMounts,
+	for i := range targetContainers {
+		log.Info(fmt.Sprintf("inject container : %s", targetContainers[i].Name))
+		if (*targetContainers[i]).VolumeMounts != nil {
+			(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts,
 				s.SidecarVolumeMount, s.ConfigmapVolumeMount)
 		} else {
-			(*containers[i]).VolumeMounts = []corev1.VolumeMount{s.SidecarVolumeMount,
+			(*targetContainers[i]).VolumeMounts = []corev1.VolumeMount{s.SidecarVolumeMount,
 				s.ConfigmapVolumeMount}
 		}
-		if (*containers[i]).Env != nil {
-			(*containers[i]).Env = append((*containers[i]).Env, s.Env)
+		if (*targetContainers[i]).Env != nil {
+			(*targetContainers[i]).Env = append((*targetContainers[i]).Env, s.Env)
 		} else {
-			(*containers[i]).Env = []corev1.EnvVar{s.Env}
+			(*targetContainers[i]).Env = []corev1.EnvVar{s.Env}
 		}
 	}
 }
@@ -151,15 +146,14 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 	annotation *map[string]string) {
 	// set default value
 	s.NeedInject = false
-	s.InjectContainer = ""
 	s.AgentOverlay = false
 
-	// set NeedInject's value , if the pod has the label "swck-java-agent-injected=true",means need inject
+	// set NeedInject's value , if the pod has the label "swck-java-agent-injected=true", means need inject
 	if *labels == nil {
 		return
 	}
 
-	if strings.EqualFold(strings.ToLower((*labels)[ActiveInjectorLabel]), "true") {
+	if strings.EqualFold((*labels)[ActiveInjectorLabel], "true") {
 		s.NeedInject = true
 	}
 
@@ -180,18 +174,32 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 	}
 }
 
-func (s *SidecarInjectField) findInjectContainer(containers []corev1.Container) *corev1.Container {
-	// validate the container is or not exist
-	if s.InjectContainer == "" {
-		return nil
+func (s *SidecarInjectField) findInjectContainer(containers []corev1.Container) []*corev1.Container {
+
+	var targetContainers []*corev1.Container
+
+	if len(containers) == 0 {
+		return targetContainers
 	}
 
+	// validate the container is or not exist
+	if s.InjectContainer == "" {
+		return targetContainers
+	}
+
+	containerMatcher, err := regexp.Compile(s.InjectContainer)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("failed to compile regular expression: %s", s.InjectContainer))
+		targetContainers = append(targetContainers, &containers[0])
+		return targetContainers
+	}
 	for i := range containers {
-		if containers[i].Name == s.InjectContainer {
-			return &containers[i]
+		if containerMatcher.MatchString(containers[i].Name) {
+			log.Info(fmt.Sprintf("container %s matched. ", &containers[i].Name))
+			targetContainers = append(targetContainers, &containers[i])
 		}
 	}
-	return nil
+	return targetContainers
 }
 
 func (s *SidecarInjectField) injectErrorAnnotation(annotation *map[string]string, errorInfo string) {
@@ -200,6 +208,7 @@ func (s *SidecarInjectField) injectErrorAnnotation(annotation *map[string]string
 
 func (s *SidecarInjectField) injectSucceedAnnotation(annotation *map[string]string) {
 	(*annotation)[SidecarInjectSucceedAnno] = "true"
+	(*annotation)[ActiveInjectorLabel] = "true"
 }
 
 // SidecarOverlayandGetValue get final value of sidecar
@@ -212,21 +221,81 @@ func (s *SidecarInjectField) SidecarOverlayandGetValue(ao *AnnotationOverlay, an
 			return "", false
 		}
 	}
-	return ao.GetFinalValue(a), true
+	return (*ao)[a], true
 }
 
+// annotation > swAgent > default
 func (s *SidecarInjectField) setValue(config *string, ao *AnnotationOverlay, annotation *map[string]string,
 	a Annotation) bool {
 	if v, ok := s.SidecarOverlayandGetValue(ao, annotation, a); ok {
-		*config = v
-		return true
+		if len(v) > 0 {
+			*config = v
+			return true
+		} else if len(*config) > 0 {
+			return true
+		} else {
+			*config = a.DefaultValue
+			return true
+		}
 	}
 	return false
 }
 
+func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, pod *corev1.Pod) bool {
+	s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
+	// selector
+	var availableSwAgentL []v1alpha1.SwAgent
+	for _, swAgent := range swAgentL.Items {
+		isMatch := true
+		if len(swAgent.Spec.Selector) != 0 {
+			for k, v := range swAgent.Spec.Selector {
+				if !strings.EqualFold(v, pod.Labels[k]) {
+					isMatch = false
+				}
+			}
+		}
+		if isMatch {
+			availableSwAgentL = append(availableSwAgentL, swAgent)
+		}
+	}
+
+	log.Info(fmt.Sprintf("%d swAgent match this pod.", len(availableSwAgentL)))
+
+	for _, swAgent := range availableSwAgentL {
+
+		// shared volume
+		s.SidecarVolume.Name = swAgent.Spec.SharedVolume.Name
+		s.SidecarVolume.VolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
+		s.SidecarVolumeMount.Name = swAgent.Spec.SharedVolume.Name
+		s.SidecarVolumeMount.MountPath = swAgent.Spec.SharedVolume.MountPath
+
+		// agent configmap
+		s.ConfigmapVolume.Name = swAgent.Spec.SwConfigMapVolume.Name
+		s.ConfigmapVolume.ConfigMap.Name = swAgent.Spec.SwConfigMapVolume.ConfigMapName
+		s.ConfigmapVolumeMount.Name = swAgent.Spec.SwConfigMapVolume.Name
+		s.ConfigmapVolumeMount.MountPath = swAgent.Spec.SwConfigMapVolume.ConfigMapMountPath
+
+		// init container
+		s.Initcontainer.Name = swAgent.Spec.JavaSidecar.Name
+		s.Initcontainer.Image = swAgent.Spec.JavaSidecar.Image
+		s.Initcontainer.Args = swAgent.Spec.JavaSidecar.Args
+		s.Initcontainer.Command = swAgent.Spec.JavaSidecar.Command
+		s.Initcontainer.VolumeMounts = append(s.Initcontainer.VolumeMounts, corev1.VolumeMount{
+			Name:      swAgent.Spec.SharedVolume.Name,
+			MountPath: swAgent.Spec.SharedVolume.MountPath,
+		})
+
+		// target container
+		s.Envs = swAgent.Spec.JavaSidecar.Env
+		s.InjectContainer = swAgent.Spec.ContainerMatcher
+	}
+
+	return true
+}
+
 // OverlaySidecar overlays default config
 func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay, annotation *map[string]string) bool {
-	s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
+	//s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
 	s.Initcontainer.Command = make([]string, 1)
 	s.Initcontainer.Args = make([]string, 2)
 
@@ -249,6 +318,7 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 		"env.Name":                         &s.Env.Name,
 		"env.Value":                        &s.Env.Value,
 	}
+
 	anno := GetAnnotationsByPrefix(a, sidecarAnnotationPrefix)
 	for _, v := range anno.Annotations {
 		fieldName := strings.TrimPrefix(v.Name, sidecarAnnotationPrefix)
@@ -445,18 +515,7 @@ func GetInjectedAgentConfig(annotation *map[string]string, configuration *map[st
 	}
 }
 
-func GetServiceName(configuration *map[string]string) string {
-	v, ok := (*configuration)[ServiceName]
-	if !ok {
-		return ""
-	}
-	return v
-}
-
-func GetBackendService(configuration *map[string]string) string {
-	v, ok := (*configuration)[BackendService]
-	if !ok {
-		return ""
-	}
-	return v
+func PrintStructJson(prefix string, i interface{}) {
+	marshal, _ := json.Marshal(i)
+	log.Info("%s %s", prefix, string(marshal))
 }

@@ -242,18 +242,19 @@ spec:
                     description: The name of shared volume
                     type: string
                 type: object
-              swConfigmap:
-                description: SwConfigMap defines the configmap which contains agent.config
+              swConfigMapVolume:
+                description: SwConfigMapVolume defines the configmap which contains
+                  agent.config
                 properties:
+                  configMapMountPath:
+                    description: Mount path of the configmap in the injected container
+                    type: string
+                  configMapName:
+                    description: The name of configmap volume.
+                    type: string
                   name:
                     description: The name pf configmap used in the injected container
                       as agent.config
-                    type: string
-                  volumeMountPath:
-                    description: Mount path of the configmap in the injected container
-                    type: string
-                  volumeName:
-                    description: The name of configmap volume.
                     type: string
                 type: object
             type: object

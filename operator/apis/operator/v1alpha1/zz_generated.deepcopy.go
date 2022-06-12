@@ -801,7 +801,7 @@ func (in *SwAgentSpec) DeepCopyInto(out *SwAgentSpec) {
 	}
 	in.JavaSidecar.DeepCopyInto(&out.JavaSidecar)
 	out.SharedVolume = in.SharedVolume
-	out.SwConfigMap = in.SwConfigMap
+	out.SwConfigMapVolume = in.SwConfigMapVolume
 	if in.OptionalPlugins != nil {
 		in, out := &in.OptionalPlugins, &out.OptionalPlugins
 		*out = make([]string, len(*in))

@@ -177,6 +177,10 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Satellite")
 			os.Exit(1)
 		}
+		if err = (&operatorv1alpha1.SwAgent{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "SwAgent")
+			os.Exit(1)
+		}
 		// register a webhook to enable the java agent injector
 		setupLog.Info("registering /mutate-v1-pod webhook")
 		mgr.GetWebhookServer().Register("/mutate-v1-pod",
