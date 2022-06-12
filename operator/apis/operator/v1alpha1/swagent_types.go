@@ -35,10 +35,6 @@ type SwAgentSpec struct {
 	// +kubebuilder:validation:Optional
 	ContainerMatcher string `json:"containerMatcher,omitempty"`
 
-	// Env defines env vars to be injected.
-	// +kubebuilder:validation:Optional
-	Env []corev1.EnvVar `json:"env,omitempty"`
-
 	// Java defines Java agent special configs.
 	// +kubebuilder:validation:Optional
 	JavaSidecar JavaSidecar `json:"javaSidecar,omitempty"`

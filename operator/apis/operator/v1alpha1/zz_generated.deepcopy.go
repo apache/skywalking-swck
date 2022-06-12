@@ -799,13 +799,6 @@ func (in *SwAgentSpec) DeepCopyInto(out *SwAgentSpec) {
 			(*out)[key] = val
 		}
 	}
-	if in.Env != nil {
-		in, out := &in.Env, &out.Env
-		*out = make([]corev1.EnvVar, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	in.JavaSidecar.DeepCopyInto(&out.JavaSidecar)
 	out.SharedVolume = in.SharedVolume
 	out.SwConfigMap = in.SwConfigMap
