@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -32,6 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	operatorcontroller "github.com/apache/skywalking-swck/operator/controllers/operator"
@@ -150,8 +150,15 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServerConfig")
 		os.Exit(1)
 	}
-	//+kubebuilder:scaffold:builder
+	if err = (&operatorcontrollers.OAPServerDynamicConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "OAPServerDynamicConfig")
+		os.Exit(1)
+	}
 
+	//+kubebuilder:scaffold:builder
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServer")
@@ -179,6 +186,10 @@ func main() {
 		}
 		if err = (&operatorv1alpha1.OAPServerConfig{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServerConfig")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.OAPServerDynamicConfig{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "OAPServerDynamicConfig")
 			os.Exit(1)
 		}
 		// register a webhook to enable the java agent injector

@@ -20,8 +20,7 @@ package operator
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strings"
+	"sort"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -43,6 +42,30 @@ import (
 type OAPServerConfigReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+}
+
+type SortByFileName []operatorv1alpha1.FileConfig
+
+func (a SortByFileName) Len() int {
+	return len(a)
+}
+func (a SortByFileName) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a SortByFileName) Less(i, j int) bool {
+	return a[i].Name < a[j].Name
+}
+
+type SortByEnvName []core.EnvVar
+
+func (a SortByEnvName) Len() int {
+	return len(a)
+}
+func (a SortByEnvName) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a SortByEnvName) Less(i, j int) bool {
+	return a[i].Name < a[j].Name
 }
 
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=oapserverconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -74,18 +97,24 @@ func (r *OAPServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	for i := range oapList.Items {
 		if oapList.Items[i].Spec.Version == oapServerConfig.Spec.Version {
 			oapServer := oapList.Items[i]
-			// Update the static configuration
-			labelSelector, err := r.UpdateStaticConfig(ctx, log, &oapServer, &oapServerConfig)
-			if err != nil {
-				log.Error(err, "failed to update the static configuration")
+			deployment := apps.Deployment{}
+			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
+				return ctrl.Result{}, fmt.Errorf("failed to get the deployment of OAPServer: %w", err)
 			}
-
-			if oapServerConfig.Spec.DynamicConfig != nil {
-				// Update the dynamic configuration
-				err = r.UpdateDynamicConfig(ctx, log, &oapServer, &oapServerConfig, labelSelector)
-				if err != nil {
-					log.Error(err, "failed to update OAPServerConfig's status")
-					return ctrl.Result{}, err
+			// overlay the env configuration
+			envChanged, err := r.OverlayEnv(ctx, log, &oapServer, &oapServerConfig, &deployment)
+			if err != nil {
+				log.Error(err, "failed to overlay the env configuration")
+			}
+			// overlay the file configuration
+			fileChanged, err := r.OverlayStaticFile(ctx, log, &oapServerConfig, &deployment)
+			if err != nil {
+				log.Error(err, "failed to overlay the file configuration")
+			}
+			// update the deployment
+			if envChanged || fileChanged {
+				if err := r.Client.Update(ctx, &deployment); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to update the deployment of OAPServer: %w", err)
 				}
 			}
 		}
@@ -99,168 +128,90 @@ func (r *OAPServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
-func (r *OAPServerConfigReconciler) UpdateStaticConfig(ctx context.Context, log logr.Logger,
-	oapServer *operatorv1alpha1.OAPServer, oapServerConfig *operatorv1alpha1.OAPServerConfig) (string, error) {
-	labelSelector := ""
-	deployment := apps.Deployment{}
-
+func (r *OAPServerConfigReconciler) OverlayEnv(ctx context.Context, log logr.Logger,
+	oapServer *operatorv1alpha1.OAPServer, oapServerConfig *operatorv1alpha1.OAPServerConfig, deployment *apps.Deployment) (bool, error) {
 	changed := false
 
-	oldConfig := make(map[string]string)
-	newConfig := make(map[string]string)
+	sort.Sort(SortByEnvName(oapServerConfig.Spec.Env))
+	newMd5Hash := MD5Hash(oapServerConfig.Spec.Env)
 
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace, Name: oapServer.Name + "-oap"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
-		return labelSelector, fmt.Errorf("failed to get deployment: %w", err)
-	}
-
-	for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
-		if e.Name == "SW_CLUSTER_K8S_LABEL" {
-			labelSelector = e.Value
-		}
-	}
-	// setup the new Config
-	for _, e := range oapServerConfig.Spec.StaticConfig {
-		newConfig[e.Name] = e.Value
-	}
-
-	// enable the dynamic configuration
-	if oapServerConfig.Spec.DynamicConfig != nil {
-		newConfig["SW_CONFIGURATION"] = "k8s-configmap"
-	}
-
-	configmap := core.ConfigMap{}
-	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace,
-		Name: oapServer.Name + "-" + oapServerConfig.Spec.Version + "-static-config"}, &configmap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error(err, "failed to get static configuration configmap")
-		return labelSelector, err
-	}
-
-	// if the configmap exist
-	if !apierrors.IsNotFound(err) {
-		oldConfig = configmap.Data
-		if reflect.DeepEqual(oldConfig, newConfig) {
-			log.Info("Static configuration keeps the same as before")
-			return labelSelector, nil
-		}
-		// delete the old configmap
-		if err := r.Client.Delete(ctx, &configmap); err != nil {
-			log.Error(err, "faled to delete the static configuration configmap")
-		}
-	}
-
-	// overlay the deployment's Env
-	configExist := make(map[string]bool)
-	overlay := []core.EnvVar{}
-	for i, e := range deployment.Spec.Template.Spec.Containers[0].Env {
-		v, newok := newConfig[e.Name]
-		_, oldok := oldConfig[e.Name]
-		if e.Name == "SW_CLUSTER_K8S_LABEL" && newok {
-			labelSelector = v
-		}
-		// the value updated in the new config
-		if newok {
-			configExist[e.Name] = true
-			if v != e.Value {
-				overlay = append(overlay, core.EnvVar{Name: e.Name, Value: v})
-				changed = true
-				continue
-			}
-		}
-		// the value deleted in the new config
-		if !newok && oldok {
-			changed = true
-			continue
-		}
-		overlay = append(overlay, deployment.Spec.Template.Spec.Containers[0].Env[i])
-	}
-
-	for k, v := range newConfig {
-		if _, ok := configExist[k]; !ok {
-			overlay = append(overlay, core.EnvVar{Name: k, Value: v})
-			changed = true
-		}
+	oldMd5Hash, ok := deployment.Spec.Template.Labels["md5-env"]
+	if !ok || oldMd5Hash != newMd5Hash {
+		changed = true
 	}
 
 	if changed {
-		deployment.Spec.Template.Spec.Containers[0].Env = overlay
-		if err := r.Client.Update(ctx, &deployment); err != nil {
-			return labelSelector, fmt.Errorf("failed to update the deployment of OAPServer: %w", err)
+		deployment.Spec.Template.Spec.Containers[0].Env = oapServerConfig.Spec.Env
+		deployment.Spec.Template.Labels["md5-env"] = newMd5Hash
+	} else {
+		log.Info("env configuration keeps the same as before")
+		return changed, nil
+	}
+
+	log.Info("successfully overlay the env configuration")
+	return changed, nil
+}
+
+func (r *OAPServerConfigReconciler) OverlayStaticFile(ctx context.Context, log logr.Logger,
+	oapServerConfig *operatorv1alpha1.OAPServerConfig, deployment *apps.Deployment) (bool, error) {
+	changed := false
+
+	sort.Sort(SortByFileName(oapServerConfig.Spec.File))
+	newMd5Hash := MD5Hash(oapServerConfig.Spec.File)
+	configmap := core.ConfigMap{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServerConfig.Namespace,
+		Name: oapServerConfig.Name}, &configmap)
+	if err != nil && !apierrors.IsNotFound(err) {
+		log.Error(err, "failed to get the static file configuration's configmap")
+		return changed, err
+	}
+	// if the configmap exist and the static configuration changed, then delete it
+	if !apierrors.IsNotFound(err) {
+		oldMd5Hash := configmap.Labels["md5-file"]
+		if oldMd5Hash != newMd5Hash {
+			changed = true
+			if err := r.Client.Delete(ctx, &configmap); err != nil {
+				log.Error(err, "faled to delete the static file configuration's configmap")
+			}
+		} else {
+			log.Info("file configuration keeps the same as before")
+			return changed, nil
 		}
 	}
 
-	// create new static configuration configmap
-	configmap = core.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      oapServer.Name + "-" + oapServerConfig.Spec.Version + "-static-config",
-			Namespace: oapServer.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
-					APIVersion: oapServerConfig.APIVersion,
-					Kind:       oapServerConfig.Kind,
-					Name:       oapServerConfig.Name,
-					UID:        oapServerConfig.UID,
+	data := make(map[string]string)
+	mounts := []core.VolumeMount{}
+	volume := core.Volume{
+		Name: oapServerConfig.Name,
+		VolumeSource: core.VolumeSource{
+			ConfigMap: &core.ConfigMapVolumeSource{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: oapServerConfig.Name,
 				},
 			},
 		},
-		Data: newConfig,
 	}
-
-	if err := r.Client.Create(ctx, &configmap); err != nil {
-		log.Error(err, "failed to create static configuration configmap")
-		return labelSelector, err
-	}
-
-	log.Info("successfully setup the static configuration")
-	return labelSelector, nil
-}
-
-func (r *OAPServerConfigReconciler) UpdateDynamicConfig(ctx context.Context, log logr.Logger,
-	oapServer *operatorv1alpha1.OAPServer, oapServerConfig *operatorv1alpha1.OAPServerConfig, labelSelector string) error {
-	// if the configmap doesn't exist, then create configmap
-	configmap := core.ConfigMap{}
-	changed := false
-	err := r.Client.Get(ctx, client.ObjectKey{Namespace: oapServer.Namespace,
-		Name: oapServer.Name + "-" + oapServerConfig.Spec.Version + "-dynamic-config"}, &configmap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error(err, "failed to get dynamic configuration configmap")
-		return err
+	for _, f := range oapServerConfig.Spec.File {
+		mounts = append(mounts, core.VolumeMount{
+			MountPath: f.Path + "/" + f.Name,
+			Name:      oapServerConfig.Name,
+			SubPath:   f.Name,
+		})
+		data[f.Name] = f.Data
 	}
 
 	labels := make(map[string]string)
-	str := strings.Split(labelSelector, ",")
-	for i := range str {
-		s := strings.Split(str[i], "=")
-		labels[s[0]] = s[1]
-	}
-
-	// check the dynamic configuration
-	oldConfig := configmap.Data
-	newConfig := oapServerConfig.Spec.DynamicConfig
-	if !reflect.DeepEqual(oldConfig, newConfig) {
-		changed = true
-	}
-
-	// check the k8s label
-	if !reflect.DeepEqual(labels, configmap.Labels) {
-		changed = true
-	}
-
-	// if the configmap exist and the dynamic configuration or k8s label changed, then delete it
-	if !apierrors.IsNotFound(err) {
-		if changed {
-			if err := r.Client.Delete(ctx, &configmap); err != nil {
-				log.Error(err, "faled to delete the dynamic configuration configmap")
-			}
-		} else {
-			log.Info("Dynamic configuration keeps the same as before")
-			return nil
-		}
-	}
+	// set the version label
+	labels["version"] = oapServerConfig.Spec.Version
+	// set the configuration type
+	labels["oapServerConfig"] = "static"
+	// set the md5 value of the data
+	labels["md5-file"] = newMd5Hash
+	// create configmap for static files
 	configmap = core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      oapServer.Name + "-" + oapServerConfig.Spec.Version + "-dynamic-config",
-			Namespace: oapServer.Namespace,
+			Name:      oapServerConfig.Name,
+			Namespace: oapServerConfig.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
 					APIVersion: oapServerConfig.APIVersion,
@@ -271,17 +222,23 @@ func (r *OAPServerConfigReconciler) UpdateDynamicConfig(ctx context.Context, log
 			},
 			Labels: labels,
 		},
-		Data: oapServerConfig.Spec.DynamicConfig,
+		Data: data,
 	}
 
-	// create the dynamic configuration configmap
 	if err := r.Client.Create(ctx, &configmap); err != nil {
-		log.Error(err, "failed to create dynamic configuration configmap")
-		return err
+		log.Error(err, "failed to create static configuration configmap")
+		return changed, err
 	}
 
-	log.Info("successfully setup the dynamic configuration")
-	return nil
+	overlayDeployment := deployment
+	overlayDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = mounts
+	overlayDeployment.Spec.Template.Spec.Volumes = []core.Volume{volume}
+	if err := kubernetes.ApplyOverlay(deployment, overlayDeployment); err != nil {
+		log.Error(err, "failed to apply overlay deployment")
+	}
+
+	log.Info("successfully overlay the file configuration")
+	return changed, nil
 }
 
 func (r *OAPServerConfigReconciler) checkState(ctx context.Context, log logr.Logger,
@@ -316,7 +273,7 @@ func (r *OAPServerConfigReconciler) checkState(ctx context.Context, log logr.Log
 	}
 
 	if err := r.updateStatus(ctx, oapServerConfig, overlay, errCol); err != nil {
-		errCol.Collect(fmt.Errorf("failed to update status of oapServerConfig: %w", err))
+		errCol.Collect(fmt.Errorf("failed to update status of OAPServerConfig: %w", err))
 	}
 
 	log.Info("updated OAPServerConfig sub resource")
@@ -336,7 +293,7 @@ func (r *OAPServerConfigReconciler) updateStatus(ctx context.Context, oapServerC
 			errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
 		}
 		if err := r.Status().Update(ctx, oapServerConfig); err != nil {
-			errCol.Collect(fmt.Errorf("failed to update status of oapServerConfig: %w", err))
+			errCol.Collect(fmt.Errorf("failed to update status: %w", err))
 		}
 		return errCol.Error()
 	})

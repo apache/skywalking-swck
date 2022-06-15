@@ -13,14 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# this config file contains all config fields with comments
-# NOTE: this is not a particularly useful config file
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-# control plane node
-nodes:
-# the control plane node config 1.24.10
-- role: control-plane
-  image: kindest/node:v1.21.10
-- role: worker
-  image: kindest/node:v1.21.10
+{{- contains . }}
+- servicename: agent::songs
+  serviceid: {{ b64enc "agent::songs" }}.1
+  serviceinstancename: songs
+  serviceinstanceid: {{ b64enc "agent::songs" }}.1_{{ b64enc "songs" }}
+  endpointname: null
+  endpointid: null
+  traceid: {{ .traceid }}
+  timestamp: {{ gt .timestamp 0 }}
+  contenttype: TEXT
+  content: |
+    {{ notEmpty .content }}
+  tags:
+  {{- contains .tags }}
+  - key: level
+    value: INFO
+  - key: logger
+    value: {{ notEmpty .value }}
+  - key: thread
+    value: {{ notEmpty .value }}
+  {{- end }}
+{{- end }}

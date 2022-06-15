@@ -50,7 +50,7 @@ setup:
         - namespace: skywalking-system
           resource: UI/skywalking-system
           for: condition=Available
-    - name: setup java agent demo
+    - name: setup java agent demo(test for dynamic configuration)
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
         sed 's/oap-service/skywalking-system-oap.skywalking-system/' test/e2e/demo.yaml | kubectl create -f -
@@ -58,9 +58,9 @@ setup:
         - namespace: skywalking-system
           resource: deployment/demo
           for: condition=Available
-    - name: setup oapserverconfig
+    - name: setup oapserverconfig(static configuration)
       command: |
-        export oap_podname=$(kubectl get po -lapp=oap -n skywalking-system -o jsonpath='{.items[*].metadata.name}')
+        export oap_podname=$(kubectl get pod -lapp=oap -n skywalking-system -o jsonpath='{.items[*].metadata.name}')
         kubectl apply -f test/e2e/oapserverconfig-demo.yaml
     - name: wait the old pod teminated
       command: |
@@ -68,14 +68,25 @@ setup:
         do \
           sleep 0.1; \
         done
-    - name: update dynamic configuration
+    - name: setup java agent demo(test for static configuration)
       command: |
-        sed 's/default: 0.1/default: 500/' test/e2e/oapserverconfig-demo.yaml | kubectl apply -f -
+        sed 's/oap-service/skywalking-system-oap.skywalking-system/' test/e2e/resource.yaml | kubectl create -f -
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/songs-deployment
+          for: condition=Available 
+    - name: setup oapserverdynamicconfig(dynamic configuration)
+      command: |
+        sed 's/default: 0.1/default: 500/' test/e2e/oapserverdynamicconfig-demo.yaml | kubectl apply -f -
+        kubectl get po -A
   kind:
     expose-ports:
       - namespace: skywalking-system
         resource: service/demo 
         port: 8085
+      - namespace: skywalking-system
+        resource: service/songs 
+        port: 80
       - namespace: skywalking-system
         resource: service/skywalking-system-oap
         port: 12800
@@ -90,7 +101,7 @@ cleanup:
 
 trigger:
   action: http
-  interval: 10s
+  interval: 5s
   times: 5
   url: http://${service_demo_host}:${service_demo_8085}/hello
   method: GET
@@ -99,9 +110,9 @@ verify:
   # verify with retry strategy
   retry:
     # max retry count
-    count: 10
+    count: 20
     # the interval between two attempts, e.g. 10s, 1m.
-    interval: 20s
+    interval: 10s
   cases:
     # test oapserver
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
@@ -114,6 +125,15 @@ verify:
       expected: ../verify/metrics.yaml
     - includes:
         - ../ui-cases.yaml
-      # test oapserverconfig's dynamic config
+    # test oapsever's static configuration
+    - query: |
+        swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql logs list --service-name=agent::songs --tags level=INFO --trace-id=$( \
+            swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql trace ls \
+              | yq e '.traces | select(.[].endpointnames[0]=="HikariCP/Connection/getConnection") | .[0].traceids[0]' -
+        ) | yq e '.logs' -
+      expected: ../verify/logs.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name=log_count_info --instance-name=songs --service-name=agent::songs | yq e 'to_entries' -
+      expected: ../verify/metrics.yaml
+    # test oapsever's dynamic configuration
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name=service_apdex --service-name=Your_ApplicationName | yq e 'to_entries' -
       expected: ../verify/service-apdex.yaml

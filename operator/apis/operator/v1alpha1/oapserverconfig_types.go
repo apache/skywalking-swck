@@ -22,17 +22,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// FileConfig contains the static file configuration's name, path and data
+// Static files refer to all files in the oap-server's configuration directory
+// (/skywalking/config)
+type FileConfig struct {
+	// Name of static file
+	Name string `json:"name,omitempty"`
+	// Path of static file
+	Path string `json:"path,omitempty"`
+	// Data of static file
+	Data string `json:"data,omitempty"`
+}
+
 // OAPServerConfigSpec defines the desired state of OAPServerConfig
 type OAPServerConfigSpec struct {
 	// Version of OAP.
 	//+kubebuilder:validation:Required
 	Version string `json:"version,omitempty"`
-	// StaticConfig holds the OAP server static configuration.
+	// Env holds the OAP server environment configuration.
 	// +kubebuilder:validation:Optional
-	StaticConfig []corev1.EnvVar `json:"staticConfig,omitempty"`
-	// DynamicConfig holds the OAP server dynamic configuration.
+	Env []corev1.EnvVar `json:"env,omitempty"`
+	// File holds the OAP server's static file configuration
 	// +kubebuilder:validation:Optional
-	DynamicConfig map[string]string `json:"dynamicConfig,omitempty"`
+	File []FileConfig `json:"file,omitempty"`
 }
 
 // OAPServerConfigStatus defines the observed state of OAPServerConfig

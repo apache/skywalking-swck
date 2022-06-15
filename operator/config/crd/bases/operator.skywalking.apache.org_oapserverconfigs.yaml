@@ -66,13 +66,8 @@ spec:
           spec:
             description: OAPServerConfigSpec defines the desired state of OAPServerConfig
             properties:
-              dynamicConfig:
-                additionalProperties:
-                  type: string
-                description: DynamicConfig holds the OAP server dynamic configuration.
-                type: object
-              staticConfig:
-                description: StaticConfig holds the OAP server static configuration.
+              env:
+                description: Env holds the OAP server environment configuration.
                 items:
                   description: EnvVar represents an environment variable present in
                     a Container.
@@ -174,6 +169,24 @@ spec:
                       type: object
                   required:
                   - name
+                  type: object
+                type: array
+              file:
+                description: File holds the OAP server's static file configuration
+                items:
+                  description: FileConfig contains the static file configuration's
+                    name, path and data Static files refer to all files in the oap-server's
+                    configuration directory (/skywalking/config)
+                  properties:
+                    data:
+                      description: Data of static file
+                      type: string
+                    name:
+                      description: Name of static file
+                      type: string
+                    path:
+                      description: Path of static file
+                      type: string
                   type: object
                 type: array
               version:
