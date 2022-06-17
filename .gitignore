@@ -26,6 +26,7 @@ testbin/*
 build/bin
 build/release/
 apiserver.local*
+vendor/
 
 # Test binary, build with `go test -c`
 *.test
