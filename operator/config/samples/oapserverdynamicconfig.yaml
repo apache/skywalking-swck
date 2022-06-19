@@ -22,8 +22,6 @@ metadata:
 spec:
   # The version of OAPServer
   version: 9.0.0
-  # All configuration in one CR
-  allInOne: true
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:

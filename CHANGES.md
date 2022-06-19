@@ -11,6 +11,7 @@ Release Notes.
 
 #### Bugs
 - Fixed the error in e2e testing.
+- Fixed status inconsistent with CI.
 
 #### Chores
 - Bump up SkyWalking OAP to 9.0.0.

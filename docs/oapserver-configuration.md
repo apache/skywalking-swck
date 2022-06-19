@@ -111,7 +111,6 @@ spec:
 | Field Name    | Description                                            |
 | ------------- | ------------------------------------------------------ |
 | Version       | The version of the OAP server, the default value is 9.0.0      |
-| AllInOne      | All configurations in one CR, the default value is `false` |
 | LabelSelector | The label selector of the specific configmap, the default value is "app=collector,release=skywalking"               |
 | Data          | All configurations' key and value                      |
 
@@ -129,11 +128,9 @@ spec:
 
 ## Usage of OAPServerDynamicConfig
 
-There are two ways to configure the OAPServerDynamicConfig. 
+> Notice, the CR's name cannot contain capital letters.
 
-- **Global configuration**. Put all the dynamic configurations in one CR, you need to set the field `allInOne` to true.
-
-- **Singel configuration**. Only one dynamic configuration exists for a CR, and the `metadata.name` + `spec.data.name` = `dynamic configuration's name`. Notice, the CR's name cannot contain capital letters. 
+Users can split all configurations into several CRs. when using the OAPServerDynamicConfig, users can not only put some configurations in a CR, but also put a configuration in a CR, and the `spec.data.name` in CR represents one dynamic configuration.
 
 
 
@@ -147,8 +144,6 @@ metadata:
 spec:
   # The version of OAPServer
   version: 9.0.0
-  # All configuration in one CR
-  allInOne: true
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:

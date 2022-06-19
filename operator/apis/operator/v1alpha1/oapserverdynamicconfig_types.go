@@ -34,9 +34,6 @@ type OAPServerDynamicConfigSpec struct {
 	// Version of OAP.
 	//+kubebuilder:validation:Required
 	Version string `json:"version,omitempty"`
-	// All configurations in one CR
-	// +kubebuilder:validation:Optional
-	AllInOne bool `json:"allInOne,omitempty"`
 	// Locate specific configmap
 	// +kubebuilder:validation:Optional
 	LabelSelector string `json:"labelSelector,omitempty"`

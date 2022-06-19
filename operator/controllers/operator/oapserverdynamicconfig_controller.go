@@ -111,23 +111,30 @@ func (r *OAPServerDynamicConfigReconciler) Reconcile(ctx context.Context, req ct
 func (r *OAPServerDynamicConfigReconciler) UpdateDynamicConfig(ctx context.Context, log logr.Logger,
 	oapServer *operatorv1alpha1.OAPServer, config *operatorv1alpha1.OAPServerDynamicConfig) error {
 	changed := false
+	exsitedConfiguration := map[string]bool{}
 
-	configuration := []operatorv1alpha1.Config{}
-	if config.Spec.AllInOne {
-		configuration = config.Spec.Data
-	} else {
-		for _, v := range config.Spec.Data {
-			k := config.Name
-			if v.Name != "" {
-				k = k + "." + v.Name
+	dynamicConfigList := operatorv1alpha1.OAPServerDynamicConfigList{}
+	opts := []client.ListOption{
+		client.InNamespace(config.Namespace),
+	}
+	if err := r.List(ctx, &dynamicConfigList, opts...); err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to list OAPServerDynamicConfig: %w", err)
+	}
+	for _, i := range dynamicConfigList.Items {
+		if i.Name != config.Name {
+			for _, n := range i.Spec.Data {
+				exsitedConfiguration[n.Name] = true
 			}
-			configuration = append(configuration, operatorv1alpha1.Config{
-				Name:  k,
-				Value: v.Value,
-			})
 		}
 	}
 
+	configuration := config.Spec.Data
+	for i := range configuration {
+		_, ok := exsitedConfiguration[configuration[i].Name]
+		if ok {
+			return fmt.Errorf("the configuration %s already exist", configuration[i].Name)
+		}
+	}
 	sort.Sort(SortByConfigName(configuration))
 	newMd5Hash := MD5Hash(configuration)
 
@@ -152,8 +159,6 @@ func (r *OAPServerDynamicConfigReconciler) UpdateDynamicConfig(ctx context.Conte
 	// if the configmap exist and the dynamic configuration or labelselector changed, then delete it
 	if !apierrors.IsNotFound(err) {
 		oldMd5Hash := configmap.Labels["md5"]
-		fmt.Println("oldMd5Hash:", oldMd5Hash)
-		fmt.Println("newMd5Hash:", newMd5Hash)
 		// check dynamic configuration
 		if oldMd5Hash != newMd5Hash {
 			changed = true
