@@ -21,7 +21,7 @@ metadata:
   name: oapserverconfig-sample
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.1.0
   # The labelselector of OAPServer's dynamic configuration 
   labelSelector: app=collector,release=skywalking
   # Enable the dynamic configuration before using the OAPServerDynamicConfig

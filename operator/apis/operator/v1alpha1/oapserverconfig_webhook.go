@@ -44,9 +44,9 @@ var _ webhook.Defaulter = &OAPServerConfig{}
 func (r *OAPServerConfig) Default() {
 	oapserverconfiglog.Info("default", "name", r.Name)
 
-	// Default version is "9.0.0"
+	// Default version is "9.1.0"
 	if r.Spec.Version == "" {
-		r.Spec.Version = "9.0.0"
+		r.Spec.Version = "9.1.0"
 	}
 }
 
