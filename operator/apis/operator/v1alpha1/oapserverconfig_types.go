@@ -50,9 +50,9 @@ type OAPServerConfigSpec struct {
 // OAPServerConfigStatus defines the observed state of OAPServerConfig
 type OAPServerConfigStatus struct {
 	// The number of oapserver that need to be configured
-	ExpectedConfiguredNum int `json:"expectedConfiguredNum,omitempty"`
+	Desired int `json:"desired,omitempty"`
 	// The number of oapserver that configured successfully
-	RealConfiguredNum int `json:"realConfiguredNum,omitempty"`
+	Ready int `json:"ready,omitempty"`
 	// The time the OAPServerConfig was created.
 	CreationTime metav1.Time `json:"creationTime,omitempty"`
 	// The last time this condition was updated.
@@ -62,8 +62,8 @@ type OAPServerConfigStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Version",type="string",priority=1,JSONPath=".spec.version",description="The version"
-// +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".status.expectedConfiguredNum",description="The number of expected instance"
-// +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.realConfiguredNum",description="The number of running"
+// +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".status.desired",description="The number of expected instance"
+// +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.ready",description="The number of running"
 
 // OAPServerConfig is the Schema for the oapserverconfigs API
 type OAPServerConfig struct {

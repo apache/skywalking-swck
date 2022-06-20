@@ -39,11 +39,11 @@ spec:
       priority: 1
       type: string
     - description: The number of expected instance
-      jsonPath: .status.expectedConfiguredNum
+      jsonPath: .status.desired
       name: Instances
       type: string
     - description: The number of running
-      jsonPath: .status.realConfiguredNum
+      jsonPath: .status.ready
       name: Running
       type: string
     name: v1alpha1
@@ -200,14 +200,14 @@ spec:
                 description: The time the OAPServerConfig was created.
                 format: date-time
                 type: string
-              expectedConfiguredNum:
+              desired:
                 description: The number of oapserver that need to be configured
                 type: integer
               lastUpdateTime:
                 description: The last time this condition was updated.
                 format: date-time
                 type: string
-              realConfiguredNum:
+              ready:
                 description: The number of oapserver that configured successfully
                 type: integer
             type: object

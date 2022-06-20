@@ -252,8 +252,8 @@ func (r *OAPServerConfigReconciler) checkState(ctx context.Context, log logr.Log
 	// get Instances and AvailableReplicas
 	for i := range oapList.Items {
 		if oapList.Items[i].Spec.Version == oapServerConfig.Spec.Version {
-			overlay.ExpectedConfiguredNum += int(oapList.Items[i].Spec.Instances)
-			overlay.RealConfiguredNum += int(oapList.Items[i].Status.AvailableReplicas)
+			overlay.Desired += int(oapList.Items[i].Spec.Instances)
+			overlay.Ready += int(oapList.Items[i].Status.AvailableReplicas)
 		}
 	}
 
