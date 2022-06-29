@@ -186,7 +186,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright {yyyy} {name of copyright owner}
+   Copyright [yyyy] [name of copyright owner]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,44 +199,3 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-
-========================================================================
-Apache 2.0 licenses
-========================================================================
-
-The following components are provided under the Apache License. See project link for details.
-The text of each license is the standard Apache 2.0 license.
-
-	logr v0.4.0: https://github.com/go-logr/logr Apache 2.0
-	k8s.io/api v0.22.1: https://github.com/kubernetes/api Apache 2.0
-	k8s.io/apimachinery v0.22.1: https://github.com/kubernetes/apimachinery Apache 2.0
-	k8s.io/client-go v0.22.1: https://github.com/kubernetes/client-go Apache 2.0
-	controller-runtime v0.10.0: https://github.com/kubernetes-sigs/controller-runtime Apache 2.0
-	custom-metrics-apiserver v1.21.0: https://github.com/kubernetes-sigs/custom-metrics-apiserver Apache 2.0
-	k8s.io/apimachinery v0.21.2: https://github.com/kubernetes/apimachinery Apache 2.0
-	k8s.io/apiserver v0.21.2: https://github.com/kubernetes/apiserver Apache 2.0
-	k8s.io/component-base v0.21.2: https://github.com/kubernetes/component-base Apache 2.0
-	k8s.io/metrics v2.21.2: https://github.com/kubernetes/klog Apache 2.0
-	k8s.io/klog v2.9.0: https://github.com/kubernetes/klog Apache 2.0
-
-========================================================================
-MIT licenses
-========================================================================
-
-The following components are provided under the MIT License. See project link for details.
-The text of each license is also included at licenses/LICENSE-[project].txt.
-
-	sirupsen (logrus) 1.8.1: https://github.com/sirupsen/logrus MIT
-	sprig v3.1.0: https://github.com/Masterminds/sprig/v3 MIT
-	ghodss (yaml) v1.1.0: https://github.com/ghodss/yaml MIT
-	urfave (cli) v1.22.1: https://github.com/urfave/cli MIT
-
-========================================================================
-BSD licenses
-========================================================================
-
-The following components are provided under a BSD license. See project link for details.
-The text of each license is also included at licenses/LICENSE-[project].txt.
-
-	json-patch v4.11.0 https://github.com/evanphx/json-patch BSD 3-Clause
-    software.sslmate.com/src/go-pkcs12 v0.0.0 https://github.com/SSLMate/go-pkcs12

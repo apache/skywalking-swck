@@ -92,9 +92,11 @@ e2e: ## Download e2e-setup locally if necessary.
 check: ## Check that the status
 	$(MAKE) -C operator generate
 	$(MAKE) -C operator lint
+	$(MAKE) -C operator dependency-resolve
 	$(MAKE) -C operator check
 	$(MAKE) -C adapter format
 	$(MAKE) -C adapter lint
+	$(MAKE) -C adapter dependency-resolve
 	$(MAKE) -C adapter check
 	$(MAKE) license-check
 
