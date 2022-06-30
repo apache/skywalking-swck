@@ -22,14 +22,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/apiserver"
-	basecmd "github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/cmd"
-	generatedopenapi "github.com/kubernetes-sigs/custom-metrics-apiserver/test-adapter/generated/openapi"
 	"k8s.io/apimachinery/pkg/util/wait"
 	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
+	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
+	generatedopenapi "sigs.k8s.io/custom-metrics-apiserver/test-adapter/generated/openapi"
 
 	swckprov "github.com/apache/skywalking-swck/adapter/pkg/provider"
 )
@@ -51,6 +51,7 @@ type Adapter struct {
 func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
+	klog.InitFlags(nil)
 
 	cmd := &Adapter{}
 

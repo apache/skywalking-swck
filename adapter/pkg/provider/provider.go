@@ -18,6 +18,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -28,7 +29,6 @@ import (
 
 	swctlapi "github.com/apache/skywalking-cli/api"
 	"github.com/apache/skywalking-cli/pkg/graphql/metrics"
-	apiprovider "github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/provider"
 	"github.com/urfave/cli"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,6 +37,7 @@ import (
 	apischema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	"k8s.io/metrics/pkg/apis/external_metrics"
+	apiprovider "sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
 )
 
 const labelValueTypeStr string = "str"
@@ -160,7 +161,7 @@ func bufferEntity(buff []string, index int, requirement labels.Requirement, dec 
 	return buff, nil
 }
 
-func (p *externalMetricsProvider) GetExternalMetric(namespace string, metricSelector labels.Selector,
+func (p *externalMetricsProvider) GetExternalMetric(ctx context.Context, namespace string, metricSelector labels.Selector,
 	info apiprovider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
 	var md *swctlapi.MetricDefinition
 	for _, m := range p.metricDefines {

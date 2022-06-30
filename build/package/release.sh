@@ -33,6 +33,10 @@ binary(){
     cp -Rfv ${ROOTDIR}/CHANGES.md ${bindir}
     cp -Rfv ${ROOTDIR}/docs/binary-readme.md ${bindir}/README.md
     cp -Rfv ${ROOTDIR}/dist/* ${bindir}
+    cp -Rfv ${ROOTDIR}/operator/dist/* ${bindir}
+    mkdir -p ${bindir}/licenses/adapter-licenses
+    cp -Rfv ${ROOTDIR}/adapter/dist/licenses/* ${bindir}/licenses/adapter-licenses
+	cat ${ROOTDIR}/adapter/dist/LICENSE >> ${bindir}/LICENSE
     # Docker
     cp -Rfv ${ROOTDIR}/build/images/Dockerfile.release-bin ${bindir}/Dockerfile
     echo -e "build:" > ${bindir}/Makefile

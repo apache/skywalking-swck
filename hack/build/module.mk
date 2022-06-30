@@ -80,3 +80,7 @@ golangci-lint: ## Download golangci-lint locally if necessary.
 .PHONY: dependency-check
 dependency-check: licenseeye ## Check dependencies
 	$(LICENSEEYE) -c $(module_dir)/.dep.licenserc.yaml dep check
+
+.PHONY: dependency-resolve
+dependency-resolve: licenseeye ## Check dependencies
+	$(LICENSEEYE) -c $(module_dir)/.dep.licenserc.yaml dep resolve -o $(module_dir)/dist/licenses -s $(module_dir)/dist/LICENSE.tpl
