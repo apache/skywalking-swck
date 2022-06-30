@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 
 	"github.com/apache/skywalking-cli/pkg/graphql/metrics"
-	apiprovider "sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
+	apiprovider "sigs.k8s.io/custom-metrics-apiserver/pkg/provider"
 )
 
 func (p *externalMetricsProvider) ListAllExternalMetrics() (externalMetricsInfo []apiprovider.ExternalMetricInfo) {
