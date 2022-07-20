@@ -1,0 +1,113 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: oapserverdynamicconfigs.operator.skywalking.apache.org
+spec:
+  group: operator.skywalking.apache.org
+  names:
+    kind: OAPServerDynamicConfig
+    listKind: OAPServerDynamicConfigList
+    plural: oapserverdynamicconfigs
+    singular: oapserverdynamicconfig
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: The version
+      jsonPath: .spec.version
+      name: Version
+      priority: 1
+      type: string
+    - description: The state of dynamic configuration
+      jsonPath: .status.state
+      name: State
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: OAPServerDynamicConfig is the Schema for the oapserverdynamicconfigs
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: OAPServerDynamicConfigSpec defines the desired state of OAPServerDynamicConfig
+            properties:
+              data:
+                description: All configurations' key and value
+                items:
+                  description: Config contains the dynamic configuration's key and
+                    value
+                  properties:
+                    name:
+                      description: configuration's key
+                      type: string
+                    value:
+                      description: configuration's value
+                      type: string
+                  type: object
+                type: array
+              labelSelector:
+                description: Locate specific configmap
+                type: string
+              version:
+                description: Version of OAP.
+                type: string
+            type: object
+          status:
+            description: OAPServerDynamicConfigStatus defines the observed state of
+              OAPServerDynamicConfig
+            properties:
+              creationTime:
+                description: The time the OAPServerDynamicConfig was created.
+                format: date-time
+                type: string
+              lastUpdateTime:
+                description: The last time this condition was updated.
+                format: date-time
+                type: string
+              state:
+                description: The state of dynamic configuration
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

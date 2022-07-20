@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+#
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -101,6 +101,46 @@ webhooks:
     - UPDATE
     resources:
     - oapservers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-oapserverconfig
+  failurePolicy: Fail
+  name: moapserverconfig.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - oapserverconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig
+  failurePolicy: Fail
+  name: moapserverdynamicconfig.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - oapserverdynamicconfigs
   sideEffects: None
 - admissionReviewVersions:
   - v1
@@ -229,6 +269,46 @@ webhooks:
     - UPDATE
     resources:
     - oapservers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-oapserverconfig
+  failurePolicy: Fail
+  name: voapserverconfig.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - oapserverconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig
+  failurePolicy: Fail
+  name: voapserverdynamicconfig.kb.io
+  rules:
+  - apiGroups:
+    - operator.skywalking.apache.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - oapserverdynamicconfigs
   sideEffects: None
 - admissionReviewVersions:
   - v1

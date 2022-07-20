@@ -23,7 +23,7 @@ setup:
       command: |
         # kind k8s cluster is in $TMPDIR
         export KUBECONFIG=$TMPDIR/e2e-k8s.config
-        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
       wait:
         - namespace: cert-manager
           resource: pod
@@ -45,10 +45,7 @@ setup:
         make -C adapter docker-build
         kind load docker-image metrics-adapter
         make -C adapter deploy
-      wait:
-        - namespace: skywalking-custom-metrics-system
-          resource: pod
-          for: condition=Ready
+        kubectl wait pods -n skywalking-custom-metrics-system -l app=custom-metrics-apiserver --for condition=Ready --timeout=90s
     - name: setup oapserver and ui
       command: |
         kubectl create namespace skywalking-system

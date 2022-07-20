@@ -2,6 +2,21 @@ Changes by Version
 ==================
 Release Notes.
 
+0.7.0
+------------------
+
+#### Features
+- Add the OAPServerConfig CRD, webhooks and controller.
+- Add the OAPServerDynamicConfig CRD, webhooks and controller.
+
+#### Bugs
+- Fixed the error in e2e testing.
+- Fixed status inconsistent with CI.
+
+#### Chores
+- Bump up SkyWalking OAP to 9.0.0.
+- Bump up the k8s api of the e2e environment to v1.21.10
+
 0.6.1
 ------------------
 

@@ -1,0 +1,62 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: songs-deployment
+  namespace: skywalking-system
+  labels:
+    app: songs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: songs
+  template:
+    metadata:
+      labels:
+        swck-java-agent-injected: "true"
+        app: songs
+      annotations:
+        strategy.skywalking.apache.org/agent.Overlay: "true"
+        agent.skywalking.apache.org/agent.service_name: "agent::songs"
+        agent.skywalking.apache.org/collector.backend_service: "oap-service:11800"
+        agent.skywalking.apache.org/agent.instance_name: "songs"
+    spec:
+      containers:
+        - name: songs
+          image: ghcr.io/apache/skywalking-showcase/songs-service:7c17079-agentless
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: songs
+  namespace: skywalking-system
+spec:
+  selector:
+    app: songs
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

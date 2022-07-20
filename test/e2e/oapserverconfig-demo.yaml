@@ -1,0 +1,87 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# static configuration of OAPServer
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: OAPServerConfig
+metadata:
+  name: oapserverconfig-sample
+  namespace: skywalking-system
+spec:
+  # The version of OAPServer
+  version: 9.0.0
+  # The env configuration of OAPServer
+  env:
+    - name: ONLY_TEST
+      value: testonly
+    - name: JAVA_OPTS
+      value: -Xmx2048M
+    - name: SW_CLUSTER
+      value: kubernetes
+    - name: SW_CLUSTER_K8S_NAMESPACE
+      value: skywalking-system
+    # enable the dynamic configuration
+    - name: SW_CONFIGURATION
+      value: k8s-configmap
+    # set the labelselector of the dynamic configuration
+    - name: SW_CLUSTER_K8S_LABEL
+      value: app=collector,release=skywalking
+    - name: SW_TELEMETRY
+      value: prometheus
+    - name: SW_HEALTH_CHECKER
+      value: default
+    - name: SKYWALKING_COLLECTOR_UID
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.uid
+    - name: SW_LOG_LAL_FILES
+      value: test1
+    - name: SW_LOG_MAL_FILES
+      value: test2
+  # The file configuration of OAPServer
+  # we should avoid setting the same name in the file
+  file:
+    - name: test1.yaml
+      path: /skywalking/config/lal
+      data: |
+        rules:
+          - name: example
+            dsl: |
+              filter {
+                text {
+                  abortOnFailure false // for test purpose, we want to persist all logs
+                  regexp $/(?s)(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}) \[TID:(?<tid>.+?)] \[(?<thread>.+?)] (?<level>\w{4,}) (?<logger>.{1,36}) (?<msg>.+)/$
+                }
+                extractor {
+                  metrics {
+                    timestamp log.timestamp as Long
+                    labels level: parsed.level, service: log.service, instance: log.serviceInstance
+                    name "log_count"
+                    value 1
+                  }
+                }
+                sink {
+                }
+              }
+    - name: test2.yaml
+      path: /skywalking/config/log-mal-rules
+      data: |
+        expSuffix: instance(['service'], ['instance'], Layer.GENERAL)
+        metricPrefix: log
+        metricsRules:
+          - name: count_info
+            exp: log_count.tagEqual('level', 'INFO').sum(['service', 'instance']).downsampling(SUM)

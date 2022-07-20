@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -113,18 +114,33 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	if apiequal.Semantic.DeepDerivative(overlay, oapServer.Status) {
 		log.Info("Status keeps the same as before")
 	}
-	oapServer.Status = overlay
-	oapServer.Kind = "OAPServer"
-	if err := kubernetes.ApplyOverlay(oapServer, &operatorv1alpha1.OAPServer{Status: overlay}); err != nil {
-		errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
-		return errCol.Error()
+
+	if err := r.updateStatus(ctx, oapServer, overlay, errCol); err != nil {
+		errCol.Collect(fmt.Errorf("failed to update status of oapServer: %w", err))
 	}
-	if err := r.Status().Update(ctx, oapServer); err != nil {
-		errCol.Collect(fmt.Errorf("failed to update status of OAPServer: %w", err))
-	}
+
 	log.Info("updated Status sub resource")
 
 	return errCol.Error()
+}
+
+func (r *OAPServerReconciler) updateStatus(ctx context.Context, oapServer *operatorv1alpha1.OAPServer,
+	overlay operatorv1alpha1.OAPServerStatus, errCol *kubernetes.ErrorCollector) error {
+	// avoid resource conflict
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: oapServer.Name, Namespace: oapServer.Namespace}, oapServer); err != nil {
+			errCol.Collect(fmt.Errorf("failed to get oapServer: %w", err))
+		}
+		oapServer.Status = overlay
+		oapServer.Kind = "OAPServer"
+		if err := kubernetes.ApplyOverlay(oapServer, &operatorv1alpha1.OAPServer{Status: overlay}); err != nil {
+			errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
+		}
+		if err := r.Status().Update(ctx, oapServer); err != nil {
+			errCol.Collect(fmt.Errorf("failed to update status of OAPServer: %w", err))
+		}
+		return errCol.Error()
+	})
 }
 
 //InjectStorage Inject Storage
