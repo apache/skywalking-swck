@@ -43,6 +43,7 @@ apiserver.local*
 *.swo
 *~
 .vscode
+*.code-workspace
 
 .DS_Store
 .env

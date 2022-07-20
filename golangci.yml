@@ -47,6 +47,7 @@ run:
   skip-dirs:
     - config
     - docs
+    - dist
 issues:
   exclude:
     # staticcheck
