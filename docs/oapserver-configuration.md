@@ -21,8 +21,8 @@ To configure the OAP Sever, we propose two CRDs:
 
 | Field Name            | Description                                          |
 | --------------------- | ---------------------------------------------------- |
-| ExpectedConfiguredNum | The number of oapserver that need to be configured   |
-| RealConfiguredNum     | The number of oapserver that configured successfully |
+| Desired  | The number of oapserver that need to be configured   |
+| Ready     | The number of oapserver that configured successfully |
 | CreationTime          | The time the OAPServerConfig was created.            |
 | LastUpdateTime        | The last time this condition was updated.            |
 
