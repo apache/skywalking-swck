@@ -102,7 +102,7 @@ func (r *JavaAgent) validate() error {
 func GetServiceName(configuration *map[string]string) string {
 	v, ok := (*configuration)[ServiceName]
 	if !ok {
-		return ""
+		return "Your_ApplicationName"
 	}
 	return v
 }
@@ -110,7 +110,7 @@ func GetServiceName(configuration *map[string]string) string {
 func GetBackendService(configuration *map[string]string) string {
 	v, ok := (*configuration)[BackendService]
 	if !ok {
-		return ""
+		return "127.0.0.1:11800"
 	}
 	return v
 }

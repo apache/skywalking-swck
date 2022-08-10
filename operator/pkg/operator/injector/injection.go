@@ -186,7 +186,7 @@ type GetConfigmap struct {
 // we will get data from default configmap and create configmap in the req's namespace
 func (gc *GetConfigmap) execute(ipd *InjectProcessData) admission.Response {
 	log.Info("=============== GetConfigmap ================")
-	if !ipd.injectFileds.CreateConfigmap(ipd.ctx, ipd.kubeclient, ipd.req.Namespace, &ipd.pod.ObjectMeta.Annotations) {
+	if !ipd.injectFileds.ValidateConfigmap(ipd.ctx, ipd.kubeclient, ipd.req.Namespace, &ipd.pod.ObjectMeta.Annotations) {
 		return PatchReq(ipd.pod, ipd.req)
 	}
 	return gc.next.execute(ipd)

@@ -50,7 +50,7 @@ type SatelliteReconciler struct {
 
 func (r *SatelliteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================satellite reconcile started================================")
 
 	satellite := operatorv1alpha1.Satellite{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &satellite); err != nil {

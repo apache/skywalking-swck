@@ -42,7 +42,7 @@ setup:
     - name: setup oapserver and swagent cr
       command: |
         kubectl create namespace skywalking-system
-        kubectl apply -f test/e2e/skywalking-components-with-swagent.yaml
+        kubectl apply -f test/e2e/skywalking-components-with-swagent-configmap.yaml
       wait:
         - namespace: skywalking-system
           resource: OAPServer/skywalking-system
@@ -53,7 +53,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed '/agent.skywalking.apache.org\/collector.backend_service/d' test/e2e/demo.yaml | kubectl create -f -
+        kubectl create -f test/e2e/demo-swagent.yaml
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
@@ -100,11 +100,11 @@ verify:
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: ../verify/metrics.yaml
     - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.volumes'''
-      expected: ../verify/swagent-volumemount.yaml
+      expected: ../verify/swagent-configmap-volumemounts.yaml
     - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.initContainers[0]'''
-      expected: ../verify/swagent-initcontainer.yaml
+      expected: ../verify/swagent-configmap-initcontainer.yaml
     - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.containers[0]'''
-      expected: ../verify/swagent-target-container.yaml
+      expected: ../verify/swagent-configmap-target-container.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
       expected: ../verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName

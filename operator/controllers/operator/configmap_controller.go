@@ -45,7 +45,7 @@ type ConfigMapReconciler struct {
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================configmap reconcile started================================")
 
 	configmap := &core.ConfigMap{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: injector.DefaultConfigmapNamespace, Name: injector.DefaultConfigmapName}, configmap)

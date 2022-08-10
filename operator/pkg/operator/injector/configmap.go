@@ -115,9 +115,13 @@ func GetConfigmapConfiguration(configmap *corev1.ConfigMap) (map[string]string, 
 	data := configmap.Data
 	configuration := make(map[string]string)
 
+	if nil == data {
+		return configuration, nil
+	}
+
 	v, ok := data[DefaultConfigmapKey]
 	if !ok {
-		return configuration, fmt.Errorf("DefaultConfigmapKey %s not exist", DefaultConfigmapKey)
+		return configuration, nil
 	}
 
 	str := strings.Split(v, "\n")

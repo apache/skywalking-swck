@@ -70,17 +70,17 @@ annotations:
     envName: nil
 
   - name: sidecar.skywalking.apache.org/configmapVolume.ConfigMap.Name
-    defaultValue: skywalking-swck-java-agent-configmap
+    defaultValue:
     validateFunc: nil
     envName: nil
 
   - name: sidecar.skywalking.apache.org/configmapVolume.Name
-    defaultValue: java-agent-configmap-volume
+    defaultValue:
     validateFunc: nil
     envName: nil
 
   - name: sidecar.skywalking.apache.org/configmapVolumeMount.MountPath
-    defaultValue: /sky/agent/config
+    defaultValue:
     validateFunc: nil
     envName: nil
 

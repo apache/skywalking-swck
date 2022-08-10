@@ -25,14 +25,23 @@ spec:
   template:
     metadata:
       labels:
-        swck-java-agent-injected: "true"
         app: demo1
     spec:
       containers:
-      - name: demo1
-        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
-        command: ["java"]
-        args: ["-jar","/app.jar"]
+        - name: demo1
+          image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+          command: ["java"]
+          args: ["-jar","/app.jar"]
+          ports:
+            - containerPort: 8085
+          readinessProbe:
+            httpGet:
+              path: /hello
+              port: 8085
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 10
+
 ```
 
 ## Enable Injection for Namespace and Deployments/StatefulSets.
@@ -46,7 +55,17 @@ kubectl label namespace default(your namespace) swck-injection=enabled
 Secondly, set the injection label for your target Deployment/StatefulSet.
 
 ```shell
-kubectl -n default(your namespace) patch deployment demo1 --patch '{"spec": {"template": {"metadata": {"labels": {"swck-java-agent-injected": "true"}}}}}'
+kubectl -n default patch deployment demo1 --patch '{
+    "spec": {
+        "template": {
+            "metadata": {
+                "labels": {
+                    "swck-java-agent-injected": "true"
+                }
+            }
+        }
+    }
+}'
 ```
 
 Then the pods create by the Deployments/StatefulSets would be recreated with agent injected.
@@ -68,8 +87,6 @@ spec:
     name: demo1
     - mountPath: /sky/agent
       name: sky-agent
-    - mountPath: /sky/agent/config
-      name: java-agent-configmap-volume
   initContainers:
   - args:
     - -c
@@ -84,26 +101,17 @@ spec:
   volumes:
   - emptyDir: {}
     name: sky-agent
-  - configMap:
-      name: skywalking-swck-java-agent-configmap
-    name: java-agent-configmap-volume
-```
-
-```shell
-$ kubectl get configmap skywalking-swck-java-agent-configmap -n default(your namespace)
-NAME                                   DATA   AGE
-skywalking-swck-java-agent-configmap   1      61s
 ```
 
 Then you can get the final agent configuration and the pod as below.
 
 ```shell
 $ kubectl get javaagent
-NAME                  PODSELECTOR   SERVICENAME            BACKENDSERVICE
-app-demo1-javaagent   app=demo1     Your_ApplicationName   127.0.0.1:11800
+NAME                  PODSELECTOR   SERVICENAME   BACKENDSERVICE
+app-demo1-javaagent   app=demo1     demo1         127.0.0.1:11800
 $ kubectl get pod -l app=demo1(the podSelector)
 NAME                     READY   STATUS    RESTARTS   AGE
-demo1-8554b96b4c-6czv7   1/1     Running   0          85s
+demo1-5fbb6fcd98-cq5ws   1/1     Running   0          54s
 ```
 
 Get the javaagent's yaml for more datails.
@@ -113,7 +121,7 @@ $ kubectl get javaagent app-demo1-javaagent -o yaml
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: JavaAgent
 metadata:
-  creationTimestamp: "2021-10-15T04:52:46Z"
+  creationTimestamp: "2022-08-16T12:09:34Z"
   generation: 1
   name: app-demo1-javaagent
   namespace: default
@@ -122,23 +130,20 @@ metadata:
     blockOwnerDeletion: true
     controller: true
     kind: ReplicaSet
-    name: demo1-8554b96b4c
-    uid: f3d71b5c-1e26-401a-8d0d-055d1e89bc64
-  resourceVersion: "455104"
-  selfLink: /apis/operator.skywalking.apache.org/v1alpha1/namespaces/default/javaagents/app-demo1-javaagent
-  uid: 2bf828d6-4f83-4c7d-9356-83066ae334d3
+    name: demo1-7fdffc7b95
+    uid: 417c413f-0cc0-41f9-b6eb-0192eb8c8622
+  resourceVersion: "25067"
+  uid: 1cdab012-784c-4efb-b5d2-c032eb2fb22a
 spec:
-  agentConfiguration:
-    agent.service_name: Your_ApplicationName
-    collector.backend_service: 127.0.0.1:11800
   backendService: 127.0.0.1:11800
   podSelector: app=demo1
   serviceName: Your_ApplicationName
 status:
-  creationTime: "2021-10-15T04:52:46Z"
+  creationTime: "2022-08-16T12:09:34Z"
   expectedInjectiedNum: 1
-  lastUpdateTime: "2021-10-15T04:52:49Z"
+  lastUpdateTime: "2022-08-16T12:10:04Z"
   realInjectedNum: 1
+
 ```
 
 ## Use SwAgent CR to setup override default configuration
@@ -152,43 +157,35 @@ Apply SwAgent CR with correct label selector and container matcher:
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: SwAgent
 metadata:
-  name: swagent-001
-  namespace: skywalking-system
+  name: swagent-demo
+  namespace: default
 spec:
-  # container matcher, regular expression is supported
-  containerMatcher: '.*'
-  # label selector
+  containerMatcher: ''
   selector:
-    app: demo1
   javaSidecar:
-    # init container name
-    name: swagent-001
-    # init container image
-    image: apache/skywalking-java-agent:8.9.0-java8
-    # envs to be appended to target containers
+    name: swagent-demo
+    image: apache/skywalking-java-agent:8.10.0-java8
     env:
-      - name: SW_LOGGING_LEVEL
+      - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
-  # share volume
-  sharedVolume:
-    name: "sky-agent-test-001"
-    mountPath: "/sky/agent"
-  # default configmap
-  swConfigMapVolume:
-    name: "java-agent-configmap-test-001-volume"
-    configMapName: "skywalking-swck-java-agent-configmap"
-    configMapMountPath: "/sky/agent/config"
-
+      - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
+        value: "skywalking-system-oap:11800"
+  sharedVolumeName: "sky-agent-demo"
+  optionalPlugins:
+    - "webflux"
+    - "cloud-gateway-2.1.x"
 ```
 
 ```shell
-kubectl -n skywalking-system apply swagent.yaml
+kubectl -n default apply swagent.yaml
 ```
 
 You can also get SwAgent CR by:
 
 ```shell
-kubectl -n skywalking-system get SwAgent
+kubectl -n default get SwAgent
+NAME           AGE
+swagent-demo   38s
 ```
 
 Now the pod is still the old one, because pod could not load the SwAgent config automatically.
@@ -197,15 +194,15 @@ So you need to recreate pod to load swagent config. For the pods created by Depl
 
 ```shell
 # verify pods to be delete 
-kubectl -n skywalking-system get pods -l app=demo1
+kubectl -n default get pods -l app=demo1
 # delete pods
-kubectl -n skywalking-system delete pods -l app=demo1
+kubectl -n default delete pods -l app=demo1
 ```
 
 After the pods recreated, we can get injected pod as below.
 
 ```shell
-kubectl -n skywalking-system get pods -l app=demo1
+kubectl -n default get pods -l app=demo1
 ```
 
 ```yaml
@@ -217,33 +214,30 @@ spec:
     command:
     - java
     env:
-    - name: JAVA_TOOL_OPTIONS
-      value: -javaagent:/sky/agent/skywalking-agent.jar
-    - name: SW_LOGGING_LEVEL
-      value: "DEBUG"
+      - name: JAVA_TOOL_OPTIONS
+        value: -javaagent:/sky/agent/skywalking-agent.jar=agent.service_name=demo1,collector.backend_service=skywalking-system-oap.skywalking-system:11800
+      - name: SW_LOGGING_LEVEL
+        value: DEBUG
+      - name: SW_AGENT_COLLECTOR_BACKEND_SERVICES
+        value: skywalking-system-oap.default.svc:11800
     image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo1
     - mountPath: /sky/agent
-      name: sky-agent-test-001
-    - mountPath: /sky/agent/config
-      name: java-agent-configmap-test-001-volume
+      name: sky-agent-demo
   initContainers:
   - args:
     - -c
     - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
     command:
     - sh
-    image: apache/skywalking-java-agent:8.9.0-java8
-    name: swagent-001
+    image: apache/skywalking-java-agent:8.10.0-java8
+    name: swagent-demo
     volumeMounts:
     - mountPath: /sky/agent
-      name: sky-agent-test-001
+      name: sky-agent-demo
   volumes:
   - emptyDir: {}
-    name: sky-agent-test-001
-  - configMap:
-      name: skywalking-swck-java-agent-configmap
-    name: java-agent-configmap-test-001-volume
+    name: sky-agent-demo
 ```
 
 ## Use annotation to override sidecar configuration
@@ -254,25 +248,20 @@ Then add [agent configuration](../java-agent-injector.md#use-annotations-to-over
 and [sidecar configuration](../java-agent-injector.md#configure-sidecar) to annotations as below.
 
 ```yaml
-# demo1.yaml
+# demo1_anno.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: demo1
   namespace: default
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: demo1
   template:
     metadata:
-      name: inject-demo3
-      labels:
-        swck-java-agent-injected: "true"
-        app: demo1
       annotations:
-        strategy.skywalking.apache.org/inject.Container: "demo"
+        strategy.skywalking.apache.org/inject.Container: "demo1"
         strategy.skywalking.apache.org/agent.Overlay: "true"
         agent.skywalking.apache.org/agent.service_name: "app"
         agent.skywalking.apache.org/agent.sample_n_per_3_secs: "6"
@@ -283,19 +272,30 @@ spec:
         plugins.skywalking.apache.org/plugin.influxdb.trace_influxql: "false"
         optional.skywalking.apache.org: "trace|webflux|cloud-gateway-2.1.x"
         optional-reporter.skywalking.apache.org: "kafka"
-      namespace: default
+      labels:
+        swck-java-agent-injected: "true"
+        app: demo1
     spec:
       containers:
-      - name: demo1
-        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
-        command: ["java"]
-        args: ["-jar","/app.jar"]
+        - name: demo1
+          image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+          command: ["java"]
+          args: ["-jar","/app.jar"]
+          ports:
+            - containerPort: 8085
+          readinessProbe:
+            httpGet:
+              path: /hello
+              port: 8085
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 10
 ```
 
 Then we can get injected pod as below:
 
 ```shell
-kubectl -n skywalking-system get pods -l app=demo1
+kubectl -n default get pods -l app=demo1
 ```
 
 ```yaml
@@ -311,33 +311,42 @@ spec:
     - java
     env:
     - name: JAVA_TOOL_OPTIONS
-      value: -javaagent:/sky/agent/skywalking-agent.jar=agent.ignore_suffix='jpg,.jpeg',agent.class_cache_mode=MEMORY,agent.sample_n_per_3_secs=6,agent.service_name=app,plugin.mount='plugins,activations',plugin.influxdb.trace_influxql=false,plugin.mongodb.trace_param=true
+      value: -javaagent:/sky/agent/skywalking-agent.jar=agent.ignore_suffix='jpg,.jpeg',agent.service_name=app,agent.class_cache_mode=MEMORY,agent.sample_n_per_3_secs=6,plugin.mongodb.trace_param=true,plugin.influxdb.trace_influxql=false,plugin.mount='plugins,activations'
     image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
     name: demo1
+    ports:
+    - containerPort: 8085
+      protocol: TCP
+    readinessProbe:
+      failureThreshold: 10
+      httpGet:
+        path: /hello
+        port: 8085
+        scheme: HTTP
+      initialDelaySeconds: 3
+      periodSeconds: 3
+      successThreshold: 1
+      timeoutSeconds: 1
+    volumeMounts: 
     - mountPath: /sky/agent
-      name: sky-agent-test-001
-    - mountPath: /sky/agent/config
-      name: java-agent-configmap-test-001-volume
+      name: sky-agent
   initContainers:
   - args:
     - -c
-    - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent && cd /sky/agent/optional-plugins/&&
-      ls | grep -E "trace|webflux|cloud-gateway-2.1.x"  | xargs -i cp {} /sky/agent/plugins/
-      && cd /sky/agent/optional-reporter-plugins/&& ls | grep -E "kafka"  | xargs
+    - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent && cd /sky/agent/optional-plugins/
+      && ls | grep -E "trace|webflux|cloud-gateway-2.1.x"  | xargs -i cp {} /sky/agent/plugins/
+      && cd /sky/agent/optional-reporter-plugins/ && ls | grep -E "kafka"  | xargs
       -i cp {} /sky/agent/plugins/
     command:
     - sh
     image: apache/skywalking-java-agent:8.10.0-java8
-    name: swagent-001
+    name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent
-      name: sky-agent-test-001
+      name: sky-agent
   volumes:
   - emptyDir: {}
-    name: sky-agent-test-001
-  - configMap:
-      name: skywalking-swck-java-agent-configmap
-    name: java-agent-configmap-test-001-volume
+    name: sky-agent
 
 ```
 
@@ -347,21 +356,20 @@ Then you can get the final agent configuration and the pod as below.
 $ kubectl get javaagent
 NAME                  PODSELECTOR   SERVICENAME   BACKENDSERVICE
 app-demo1-javaagent   app=demo1     app           127.0.0.1:11800
+
 $ kubectl get pod -l app=demo1(the podSelector)
-NAME                     READY   STATUS    RESTARTS   AGE
-demo1-69bff546df-55w8c   1/1     Running   0          57s
-demo1-69bff546df-mn5fq   1/1     Running   0          57s
-demo1-69bff546df-skklk   1/1     Running   0          57s
+NAME                    READY   STATUS    RESTARTS   AGE
+demo1-d48b96467-p7zrv   1/1     Running   0          5m25s
 ```
 
 Get the javaagent's yaml for more datails.
 
 ```shell
-$ kubectl get javaagent app-demo3-javaagent -oyaml
+$ kubectl get javaagent app-demo1-javaagent -o yaml
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: JavaAgent
 metadata:
-  creationTimestamp: "2021-10-15T05:21:06Z"
+  creationTimestamp: "2022-08-16T12:18:53Z"
   generation: 1
   name: app-demo1-javaagent
   namespace: default
@@ -370,29 +378,28 @@ metadata:
     blockOwnerDeletion: true
     controller: true
     kind: ReplicaSet
-    name: demo3-69bff546df
-    uid: 1f04a239-0247-4f5c-967a-64009adae42c
-  resourceVersion: "461000"
-  selfLink: /apis/operator.skywalking.apache.org/v1alpha1/namespaces/default/javaagents/app-demo3-javaagent
-  uid: be35588e-9b2d-4528-90df-c1a630616632
+    name: demo1-d48b96467
+    uid: 2b7f1ac4-b459-41cd-8568-ecd4578ca457
+  resourceVersion: "26187"
+  uid: c2b2f3e2-9442-4465-9423-d24249b2c53b
 spec:
   agentConfiguration:
     agent.class_cache_mode: MEMORY
     agent.ignore_suffix: '''jpg,.jpeg'''
     agent.sample_n_per_3_secs: "6"
     agent.service_name: app
-    collector.backend_service: 127.0.0.1:11800
     optional-plugin: trace|webflux|cloud-gateway-2.1.x
     optional-reporter-plugin: kafka
     plugin.influxdb.trace_influxql: "false"
     plugin.mongodb.trace_param: "true"
     plugin.mount: '''plugins,activations'''
   backendService: 127.0.0.1:11800
-  podSelector: app=demo3
+  podSelector: app=demo1
   serviceName: app
 status:
-  creationTime: "2021-10-15T05:21:06Z"
-  expectedInjectiedNum: 3
-  lastUpdateTime: "2021-10-15T05:21:10Z"
-  realInjectedNum: 3
+  creationTime: "2022-08-16T12:18:53Z"
+  expectedInjectiedNum: 1
+  lastUpdateTime: "2022-08-16T12:19:18Z"
+  realInjectedNum: 1
+
 ```

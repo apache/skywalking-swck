@@ -231,22 +231,15 @@ spec:
                   type: string
                 description: Selector is the selector label of injected Object
                 type: object
-              sharedVolume:
-                description: SharedVolume is the shared volume by initContainer and
-                  target containers.
-                properties:
-                  mountPath:
-                    description: The mountPath of shared volume
-                    type: string
-                  name:
-                    description: The name of shared volume
-                    type: string
-                type: object
+              sharedVolumeName:
+                description: SharedVolume is the name of an empty volume which shared
+                  by initContainer and target containers.
+                type: string
               swConfigMapVolume:
                 description: SwConfigMapVolume defines the configmap which contains
                   agent.config
                 properties:
-                  configMapMountPath:
+                  configMapMountFile:
                     description: Mount path of the configmap in the injected container
                     type: string
                   configMapName:

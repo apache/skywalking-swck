@@ -54,7 +54,7 @@ type UIReconciler struct {
 
 func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================ui reconcile started================================")
 
 	ui := uiv1alpha1.UI{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &ui); err != nil {

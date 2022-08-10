@@ -23,7 +23,7 @@ metadata:
 spec:
   version: 9.0.0
   instances: 1
-  image: ghcr.io/apache/skywalking/oap:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
+  image: apache/skywalking-oap-server:9.0.0
   service:
     template:
       type: ClusterIP
@@ -37,7 +37,7 @@ metadata:
 spec:
   version: 9.0.0
   instances: 1
-  image: ghcr.io/apache/skywalking/ui:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
+  image: apache/skywalking-ui:9.0.0
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:

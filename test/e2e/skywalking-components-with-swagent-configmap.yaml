@@ -46,6 +46,27 @@ spec:
       host: demo.ui.skywalking
 
 ---
+
+apiVersion: v1
+data:
+  agent.config: |-
+    # The service name in UI
+    agent.service_name=${SW_AGENT_NAME:Your_ApplicationName}
+
+    # Backend service addresses.
+    collector.backend_service=${SW_AGENT_COLLECTOR_BACKEND_SERVICES:oap:11800}
+
+    logging.level=debug
+    logging.output=CONSOLE
+
+    # Please refer to https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/configurations/#table-of-agent-configuration-properties to get more details.
+kind: ConfigMap
+metadata:
+  name: java-agent-config
+  namespace: skywalking-system
+
+
+---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: SwAgent
 metadata:
@@ -56,35 +77,17 @@ spec:
   selector:
   javaSidecar:
     name: swagent-001
-    image: ghcr.io/apache/skywalking-java/skywalking-java:f8deb7c30b931aae83ac1f438ce72b3f74414ae5-java8
-    env:
-      - name: "SW_LOGGING_LEVEL"
-        value: "DEBUG"
-      - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
-        value: "skywalking-system-oap:11800"
-  sharedVolumeName: "sky-agent-test-001"
-  optionalPlugins:
-    - "webflux"
-    - "cloud-gateway-2.1.x"
-
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: SwAgent
-metadata:
-  name: swagent-002
-  namespace: skywalking-system
-spec:
-  containerMatcher: ''
-  selector:
-  javaSidecar:
-    name: swagent-002
     image: ghcr.io/apache/skywalking-java/skywalking-java:438d2954232ee7b996ca0a7d961eddcd2da0c5e6-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
       - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
-        value: "skywalking-system-oap:11800"
-  sharedVolumeName: "sky-agent-test-002"
+        value: "skywalking-system-oap.skywalking-system.svc:11800"
+  sharedVolumeName: "sky-agent-test-001"
+  swConfigMapVolume:
+    name: "java-agent-configmap-test-001-volume"
+    configMapName: "java-agent-config"
+    configMapMountFile: "agent.config"
   optionalPlugins:
     - "webflux"
     - "cloud-gateway-2.1.x"

@@ -21,7 +21,5 @@ env:
     value: "DEBUG"
 volumeMounts:
   - mountPath: /sky/agent
-    name: sky-agent-test-002
-  - mountPath: /sky/agent/config
-    name: java-agent-configmap-test-002-volume
+    name: sky-agent-test-001
 {{- end}}

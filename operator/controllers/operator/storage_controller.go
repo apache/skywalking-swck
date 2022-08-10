@@ -70,7 +70,7 @@ type StorageReconciler struct {
 
 func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================storage reconcile started================================")
 
 	storage := operatorv1alpha1.Storage{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &storage); err != nil {

@@ -110,22 +110,8 @@ func (r *SwAgent) setDefault() {
 		r.setOrAddEnv("JAVA_TOOL_OPTIONS", " -javaagent:/sky/agent/skywalking-agent.jar")
 
 		// default values for shared volume
-		if len(r.Spec.SharedVolume.Name) == 0 {
-			r.Spec.SharedVolume.Name = "sky-agent"
-		}
-		if len(r.Spec.SharedVolume.MountPath) == 0 {
-			r.Spec.SharedVolume.MountPath = "/sky/agent"
-		}
-
-		// default values for agent configmap
-		if len(r.Spec.SwConfigMapVolume.Name) == 0 {
-			r.Spec.SwConfigMapVolume.Name = "java-agent-configmap-volume"
-		}
-		if len(r.Spec.SwConfigMapVolume.ConfigMapName) == 0 {
-			r.Spec.SwConfigMapVolume.ConfigMapName = "skywalking-swck-java-agent-configmap"
-		}
-		if len(r.Spec.SwConfigMapVolume.ConfigMapMountPath) == 0 {
-			r.Spec.SwConfigMapVolume.ConfigMapMountPath = "/sky/agent/config"
+		if len(r.Spec.SharedVolumeName) == 0 {
+			r.Spec.SharedVolumeName = "sky-agent"
 		}
 
 	}

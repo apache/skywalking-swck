@@ -26,7 +26,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -61,6 +60,8 @@ const (
 	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
 	// such as optional-exporter.skywalking.apache.org: "kafka"
 	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
+	// the mount path of empty volume, which shared by init container and target container.
+	mountPath = "/sky/agent"
 )
 
 // log is for logging in this package.
@@ -114,10 +115,12 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 	}
 
 	// add volume to spec
-	if pod.Spec.Volumes != nil {
-		pod.Spec.Volumes = append(pod.Spec.Volumes, s.SidecarVolume, s.ConfigmapVolume)
-	} else {
-		pod.Spec.Volumes = []corev1.Volume{s.SidecarVolume, s.ConfigmapVolume}
+	if pod.Spec.Volumes == nil {
+		pod.Spec.Volumes = []corev1.Volume{}
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, s.SidecarVolume)
+	if len(s.ConfigmapVolume.Name) > 0 && len(s.ConfigmapVolume.ConfigMap.Name) > 0 {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, s.ConfigmapVolume)
 	}
 
 	// choose a specific container to inject
@@ -126,18 +129,21 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 	// add volumemount and env to container
 	for i := range targetContainers {
 		log.Info(fmt.Sprintf("inject container : %s", targetContainers[i].Name))
-		if (*targetContainers[i]).VolumeMounts != nil {
-			(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts,
-				s.SidecarVolumeMount, s.ConfigmapVolumeMount)
-		} else {
-			(*targetContainers[i]).VolumeMounts = []corev1.VolumeMount{s.SidecarVolumeMount,
-				s.ConfigmapVolumeMount}
+		if (*targetContainers[i]).VolumeMounts == nil {
+			(*targetContainers[i]).VolumeMounts = []corev1.VolumeMount{}
 		}
+
+		(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts, s.SidecarVolumeMount)
+		if len(s.ConfigmapVolumeMount.Name) > 0 && len(s.ConfigmapVolumeMount.MountPath) > 0 {
+			(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts, s.ConfigmapVolumeMount)
+		}
+
 		if (*targetContainers[i]).Env != nil {
 			(*targetContainers[i]).Env = append((*targetContainers[i]).Env, s.Env)
 		} else {
 			(*targetContainers[i]).Env = []corev1.EnvVar{s.Env}
 		}
+
 		// envs to be append
 		var envsTBA []corev1.EnvVar
 		for j, envInject := range s.Envs {
@@ -268,17 +274,27 @@ func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, po
 	if len(swAgentL.Items) > 0 {
 		swAgent := swAgentL.Items[len(swAgentL.Items)-1]
 		log.Info(fmt.Sprintf("agent %s loaded.", swAgent.Name))
-		// shared volume
-		s.SidecarVolume.Name = swAgent.Spec.SharedVolume.Name
+		// shared volume, mount path is fixed
+		s.SidecarVolume.Name = swAgent.Spec.SharedVolumeName
 		s.SidecarVolume.VolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
-		s.SidecarVolumeMount.Name = swAgent.Spec.SharedVolume.Name
-		s.SidecarVolumeMount.MountPath = swAgent.Spec.SharedVolume.MountPath
+		s.SidecarVolumeMount.Name = swAgent.Spec.SharedVolumeName
+		s.SidecarVolumeMount.MountPath = mountPath
 
 		// agent configmap
-		s.ConfigmapVolume.Name = swAgent.Spec.SwConfigMapVolume.Name
-		s.ConfigmapVolume.ConfigMap.Name = swAgent.Spec.SwConfigMapVolume.ConfigMapName
-		s.ConfigmapVolumeMount.Name = swAgent.Spec.SwConfigMapVolume.Name
-		s.ConfigmapVolumeMount.MountPath = swAgent.Spec.SwConfigMapVolume.ConfigMapMountPath
+		if swAgent.Spec.SwConfigMapVolume != nil {
+			if len(swAgent.Spec.SwConfigMapVolume.Name) > 0 &&
+				len(swAgent.Spec.SwConfigMapVolume.ConfigMapName) > 0 &&
+				len(swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile) > 0 {
+				//s.ConfigmapVolume = corev1.Volume{}
+				s.ConfigmapVolume.Name = swAgent.Spec.SwConfigMapVolume.Name
+				s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
+				s.ConfigmapVolume.ConfigMap.Name = swAgent.Spec.SwConfigMapVolume.ConfigMapName
+				//s.ConfigmapVolumeMount = corev1.VolumeMount{}
+				s.ConfigmapVolumeMount.Name = swAgent.Spec.SwConfigMapVolume.Name
+				s.ConfigmapVolumeMount.MountPath = "/sky/agent/config/" + swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile
+				s.ConfigmapVolumeMount.SubPath = swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile
+			}
+		}
 
 		// init container
 		s.Initcontainer.Name = swAgent.Spec.JavaSidecar.Name
@@ -286,8 +302,8 @@ func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, po
 		s.Initcontainer.Args = swAgent.Spec.JavaSidecar.Args
 		s.Initcontainer.Command = swAgent.Spec.JavaSidecar.Command
 		s.Initcontainer.VolumeMounts = append(s.Initcontainer.VolumeMounts, corev1.VolumeMount{
-			Name:      swAgent.Spec.SharedVolume.Name,
-			MountPath: swAgent.Spec.SharedVolume.MountPath,
+			Name:      swAgent.Spec.SharedVolumeName,
+			MountPath: mountPath,
 		})
 
 		// target container
@@ -300,9 +316,11 @@ func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, po
 
 // OverlaySidecar overlays default config
 func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay, annotation *map[string]string) bool {
-	//s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
 	s.Initcontainer.Command = make([]string, 1)
 	s.Initcontainer.Args = make([]string, 2)
+	if nil == s.ConfigmapVolume.ConfigMap {
+		s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
+	}
 
 	limitsStr := ""
 	requestStr := ""
@@ -475,9 +493,12 @@ func (s *SidecarInjectField) OverlayPlugins(annotation *map[string]string) {
 	}
 }
 
-// CreateConfigmap will create a configmap to set java agent config.
-func (s *SidecarInjectField) CreateConfigmap(ctx context.Context, kubeclient client.Client, namespace string,
+// ValidateConfigmap will validate a configmap(if exists) to set java agent config.
+func (s *SidecarInjectField) ValidateConfigmap(ctx context.Context, kubeclient client.Client, namespace string,
 	annotation *map[string]string) bool {
+	if len(s.ConfigmapVolume.Name) == 0 || len(s.ConfigmapVolume.ConfigMap.Name) == 0 {
+		return true
+	}
 	configmap := &corev1.ConfigMap{}
 	configmapName := s.ConfigmapVolume.VolumeSource.ConfigMap.LocalObjectReference.Name
 	// check whether the configmap is existed
@@ -494,32 +515,6 @@ func (s *SidecarInjectField) CreateConfigmap(ctx context.Context, kubeclient cli
 			return true
 		}
 		log.Error(errinfo, "the configmap validate false", "configmapName", configmapName)
-	}
-	// if configmap not exist or validate false , get default configmap
-	defaultConfigmap := &corev1.ConfigMap{}
-	if err := kubeclient.Get(ctx, client.ObjectKey{Namespace: DefaultConfigmapNamespace,
-		Name: DefaultConfigmapName}, defaultConfigmap); err != nil {
-		log.Error(err, "can't get default configmap")
-		s.injectErrorAnnotation(annotation, fmt.Sprintf("get configmap %s from namespace %s error[%s]",
-			DefaultConfigmapName, DefaultConfigmapNamespace, err.Error()))
-		return false
-	}
-
-	// use default configmap's data to create new configmap and update namespace
-	injectConfigmap := corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      configmapName,
-			Namespace: namespace,
-		},
-		Data: defaultConfigmap.Data,
-	}
-
-	// create the configmap in user's namespace
-	if err := kubeclient.Create(ctx, &injectConfigmap); err != nil {
-		log.Error(err, "create configmap failed")
-		s.injectErrorAnnotation(annotation, fmt.Sprintf("create configmap %s in namespace %s error[%s]",
-			configmapName, namespace, err.Error()))
-		return false
 	}
 	return true
 }

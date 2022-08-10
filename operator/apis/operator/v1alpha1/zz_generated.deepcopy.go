@@ -1029,8 +1029,11 @@ func (in *SwAgentSpec) DeepCopyInto(out *SwAgentSpec) {
 		}
 	}
 	in.JavaSidecar.DeepCopyInto(&out.JavaSidecar)
-	out.SharedVolume = in.SharedVolume
-	out.SwConfigMapVolume = in.SwConfigMapVolume
+	if in.SwConfigMapVolume != nil {
+		in, out := &in.SwConfigMapVolume, &out.SwConfigMapVolume
+		*out = new(SwConfigMap)
+		**out = **in
+	}
 	if in.OptionalPlugins != nil {
 		in, out := &in.OptionalPlugins, &out.OptionalPlugins
 		*out = make([]string, len(*in))
