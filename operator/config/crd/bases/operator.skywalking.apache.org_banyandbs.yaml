@@ -1,0 +1,468 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: banyandbs.operator.skywalking.apache.org
+spec:
+  group: operator.skywalking.apache.org
+  names:
+    kind: BanyanDB
+    listKind: BanyanDBList
+    plural: banyandbs
+    singular: banyandb
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: BanyanDB is the Schema for the banyandbs API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: BanyanDBSpec defines the desired state of BanyanDB
+            properties:
+              config:
+                additionalProperties:
+                  type: string
+                description: BanyanDB startup parameters
+                type: object
+              counts:
+                description: Number of replicas
+                type: integer
+              image:
+                description: Pod template of each BanyanDB instance
+                type: string
+              service:
+                description: TODO support TLS settings BanyanDB Service
+                properties:
+                  ingress:
+                    description: Ingress defines the behavior of an ingress
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations is an unstructured key value map
+                          stored with a resource that may be set by external tools
+                          to store and retrieve arbitrary metadata. They are not queryable
+                          and should be preserved when modifying objects.
+                        type: object
+                      host:
+                        description: Host is the fully qualified domain name of a
+                          network host, as defined by RFC 3986. Note the following
+                          deviations from the "host" part of the URI as defined in
+                          RFC 3986
+                        type: string
+                      ingressClassName:
+                        description: IngressClassName is the name of the IngressClass
+                          cluster resource. The associated IngressClass defines which
+                          controller will implement the resource. This replaces the
+                          deprecated `kubernetes.io/ingress.class` annotation. For
+                          backwards compatibility, when that annotation is set, it
+                          must be given precedence over this field. The controller
+                          may emit a warning if the field and annotation have different
+                          values. Implementations of this API should ignore Ingresses
+                          without a class specified. An IngressClass resource may
+                          be marked as default, which can be used to set a default
+                          value for this field. For more information, refer to the
+                          IngressClass documentation.
+                        type: string
+                      tls:
+                        description: TLS configuration. Currently the Ingress only
+                          supports a single TLS port, 443. If multiple members of
+                          this list specify different hosts, they will be multiplexed
+                          on the same port according to the hostname specified through
+                          the SNI TLS extension, if the ingress controller fulfilling
+                          the ingress supports SNI.
+                        items:
+                          description: IngressTLS describes the transport layer security
+                            associated with an Ingress.
+                          properties:
+                            hosts:
+                              description: Hosts are a list of hosts included in the
+                                TLS certificate. The values in this list must match
+                                the name/s used in the tlsSecret. Defaults to the
+                                wildcard host setting for the loadbalancer controller
+                                fulfilling this Ingress, if left unspecified.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: atomic
+                            secretName:
+                              description: SecretName is the name of the secret used
+                                to terminate TLS traffic on port 443. Field is left
+                                optional to allow TLS routing based on SNI hostname
+                                alone. If the SNI host in a listener conflicts with
+                                the "Host" header field used by an IngressRule, the
+                                SNI host is used for termination and value of the
+                                Host header is used for routing.
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                  template:
+                    description: ServiceTemplate defines the behavior of a service.
+                    properties:
+                      clusterIP:
+                        description: clusterIP is the IP address of the service and
+                          is usually assigned randomly.
+                        type: string
+                      externalIPs:
+                        description: externalIPs is a list of IP addresses for which
+                          nodes in the cluster will also accept traffic for this service.
+                        items:
+                          type: string
+                        type: array
+                      loadBalancerIP:
+                        description: 'Only applies to Service Type: LoadBalancer LoadBalancer
+                          will get created with the IP specified in this field.'
+                        type: string
+                      loadBalancerSourceRanges:
+                        description: If specified and supported by the platform, this
+                          will restrict traffic through the cloud-provider load-balancer
+                          will be restricted to the specified client IPs.
+                        items:
+                          type: string
+                        type: array
+                      type:
+                        description: type determines how the Service is exposed.
+                        type: string
+                    type: object
+                type: object
+              storages:
+                description: BanyanDB Storage
+                items:
+                  description: PersistentVolumeClaim is a user's request for and claim
+                    to a persistent volume
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                      type: object
+                    spec:
+                      description: 'Spec defines the desired characteristics of a
+                        volume requested by a pod author. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                      properties:
+                        accessModes:
+                          description: 'AccessModes contains the desired access modes
+                            the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                          items:
+                            type: string
+                          type: array
+                        dataSource:
+                          description: 'This field can be used to specify either:
+                            * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+                            * An existing PVC (PersistentVolumeClaim) If the provisioner
+                            or an external controller can support the specified data
+                            source, it will create a new volume based on the contents
+                            of the specified data source. If the AnyVolumeDataSource
+                            feature gate is enabled, this field will always have the
+                            same contents as the DataSourceRef field.'
+                          properties:
+                            apiGroup:
+                              description: APIGroup is the group for the resource
+                                being referenced. If APIGroup is not specified, the
+                                specified Kind must be in the core API group. For
+                                any other third-party types, APIGroup is required.
+                              type: string
+                            kind:
+                              description: Kind is the type of resource being referenced
+                              type: string
+                            name:
+                              description: Name is the name of resource being referenced
+                              type: string
+                          required:
+                          - kind
+                          - name
+                          type: object
+                        dataSourceRef:
+                          description: 'Specifies the object from which to populate
+                            the volume with data, if a non-empty volume is desired.
+                            This may be any local object from a non-empty API group
+                            (non core object) or a PersistentVolumeClaim object. When
+                            this field is specified, volume binding will only succeed
+                            if the type of the specified object matches some installed
+                            volume populator or dynamic provisioner. This field will
+                            replace the functionality of the DataSource field and
+                            as such if both fields are non-empty, they must have the
+                            same value. For backwards compatibility, both fields (DataSource
+                            and DataSourceRef) will be set to the same value automatically
+                            if one of them is empty and the other is non-empty. There
+                            are two important differences between DataSource and DataSourceRef:
+                            * While DataSource only allows two specific types of objects,
+                            DataSourceRef   allows any non-core object, as well as
+                            PersistentVolumeClaim objects. * While DataSource ignores
+                            disallowed values (dropping them), DataSourceRef   preserves
+                            all values, and generates an error if a disallowed value
+                            is   specified. (Alpha) Using this field requires the
+                            AnyVolumeDataSource feature gate to be enabled.'
+                          properties:
+                            apiGroup:
+                              description: APIGroup is the group for the resource
+                                being referenced. If APIGroup is not specified, the
+                                specified Kind must be in the core API group. For
+                                any other third-party types, APIGroup is required.
+                              type: string
+                            kind:
+                              description: Kind is the type of resource being referenced
+                              type: string
+                            name:
+                              description: Name is the name of resource being referenced
+                              type: string
+                          required:
+                          - kind
+                          - name
+                          type: object
+                        resources:
+                          description: 'Resources represents the minimum resources
+                            the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources'
+                          properties:
+                            limits:
+                              additionalProperties:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              description: 'Limits describes the maximum amount of
+                                compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                              type: object
+                            requests:
+                              additionalProperties:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              description: 'Requests describes the minimum amount
+                                of compute resources required. If Requests is omitted
+                                for a container, it defaults to Limits if that is
+                                explicitly specified, otherwise to an implementation-defined
+                                value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                              type: object
+                          type: object
+                        selector:
+                          description: A label query over volumes to consider for
+                            binding.
+                          properties:
+                            matchExpressions:
+                              description: matchExpressions is a list of label selector
+                                requirements. The requirements are ANDed.
+                              items:
+                                description: A label selector requirement is a selector
+                                  that contains values, a key, and an operator that
+                                  relates the key and values.
+                                properties:
+                                  key:
+                                    description: key is the label key that the selector
+                                      applies to.
+                                    type: string
+                                  operator:
+                                    description: operator represents a key's relationship
+                                      to a set of values. Valid operators are In,
+                                      NotIn, Exists and DoesNotExist.
+                                    type: string
+                                  values:
+                                    description: values is an array of string values.
+                                      If the operator is In or NotIn, the values array
+                                      must be non-empty. If the operator is Exists
+                                      or DoesNotExist, the values array must be empty.
+                                      This array is replaced during a strategic merge
+                                      patch.
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              description: matchLabels is a map of {key,value} pairs.
+                                A single {key,value} in the matchLabels map is equivalent
+                                to an element of matchExpressions, whose key field
+                                is "key", the operator is "In", and the values array
+                                contains only "value". The requirements are ANDed.
+                              type: object
+                          type: object
+                        storageClassName:
+                          description: 'Name of the StorageClass required by the claim.
+                            More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1'
+                          type: string
+                        volumeMode:
+                          description: volumeMode defines what type of volume is required
+                            by the claim. Value of Filesystem is implied when not
+                            included in claim spec.
+                          type: string
+                        volumeName:
+                          description: VolumeName is the binding reference to the
+                            PersistentVolume backing this claim.
+                          type: string
+                      type: object
+                    status:
+                      description: 'Status represents the current information/status
+                        of a persistent volume claim. Read-only. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                      properties:
+                        accessModes:
+                          description: 'AccessModes contains the actual access modes
+                            the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                          items:
+                            type: string
+                          type: array
+                        capacity:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: Represents the actual resources of the underlying
+                            volume.
+                          type: object
+                        conditions:
+                          description: Current Condition of persistent volume claim.
+                            If underlying persistent volume is being resized then
+                            the Condition will be set to 'ResizeStarted'.
+                          items:
+                            description: PersistentVolumeClaimCondition contails details
+                              about state of pvc
+                            properties:
+                              lastProbeTime:
+                                description: Last time we probed the condition.
+                                format: date-time
+                                type: string
+                              lastTransitionTime:
+                                description: Last time the condition transitioned
+                                  from one status to another.
+                                format: date-time
+                                type: string
+                              message:
+                                description: Human-readable message indicating details
+                                  about last transition.
+                                type: string
+                              reason:
+                                description: Unique, this should be a short, machine
+                                  understandable string that gives the reason for
+                                  condition's last transition. If it reports "ResizeStarted"
+                                  that means the underlying persistent volume is being
+                                  resized.
+                                type: string
+                              status:
+                                type: string
+                              type:
+                                description: PersistentVolumeClaimConditionType is
+                                  a valid value of PersistentVolumeClaimCondition.Type
+                                type: string
+                            required:
+                            - status
+                            - type
+                            type: object
+                          type: array
+                        phase:
+                          description: Phase represents the current phase of PersistentVolumeClaim.
+                          type: string
+                      type: object
+                  type: object
+                type: array
+              version:
+                description: Version of BanyanDB.
+                type: string
+            required:
+            - counts
+            - image
+            - version
+            type: object
+          status:
+            description: BanyanDBStatus defines the observed state of BanyanDB
+            properties:
+              available_pods:
+                type: integer
+              conditions:
+                description: Represents the latest available observations of the underlying
+                  statefulset's current state.
+                items:
+                  description: DeploymentCondition describes the state of a deployment
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    lastUpdateTime:
+                      description: The last time this condition was updated.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of deployment condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
