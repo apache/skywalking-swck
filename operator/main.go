@@ -158,6 +158,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&operatorcontrollers.BanyanDBReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: manifests.NewRepo("banyandb"),
+		Recorder: mgr.GetEventRecorderFor("banyandb-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "BanyanDB")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
