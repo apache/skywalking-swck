@@ -24,6 +24,8 @@ spec:
       app: demo
   template:
     metadata:
+      annotations:
+        strategy.skywalking.apache.org/agent.Overlay: "true"
       labels:
         swck-java-agent-injected: "true"
         app: demo

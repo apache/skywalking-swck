@@ -53,7 +53,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed '/agent.skywalking.apache.org\/collector.backend_service/d' test/e2e/demo.yaml | kubectl create -f -
+        kubectl create -f test/e2e/demo-swagent.yaml
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
@@ -105,9 +105,9 @@ verify:
       expected: ../verify/swagent-initcontainer.yaml
     - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.containers[0]'''
       expected: ../verify/swagent-target-container.yaml
-    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*webflux.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*webflux.*\.jar" | awk -F: ''{print "{\"key\":\""$1"\"}"}'' | yq e ''to_entries'' -'
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*webflux.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*webflux.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
       expected: ../verify/optional-plugin.yaml
-    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*cloud-gateway.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*cloud-gateway.*\.jar" | awk -F: ''{print "{\"key\":\""$1"\"}"}'' | yq e ''to_entries'' -'
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*cloud-gateway-2\.1\.x.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*cloud-gateway-2\.1\.x.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
       expected: ../verify/optional-plugin.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
       expected: ../verify/service.yaml

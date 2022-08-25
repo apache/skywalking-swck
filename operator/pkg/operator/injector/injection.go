@@ -139,10 +139,10 @@ type OverlayAgent struct {
 // If the agent overlay option is not set, go directly to the next step
 // If set the wrong value in the annotation , inject the error info and return
 func (oa *OverlayAgent) execute(ipd *InjectProcessData) admission.Response {
-	log.Info("=============== OverlayAgent ================")
 	if !ipd.injectFileds.AgentOverlay {
 		return oa.next.execute(ipd)
 	}
+	log.Info("=============== OverlayAgent ================")
 	if !ipd.injectFileds.OverlayAgent(*ipd.annotation, ipd.annotationOverlay, &ipd.pod.ObjectMeta.Annotations) {
 		ipd.log.Info("overlay agent config error!please look the error annotation!")
 		return PatchReq(ipd.pod, ipd.req)
@@ -162,10 +162,10 @@ type OverlayPlugins struct {
 // OverlayPlugins contains two step , the first is to set jvm string , the second is to set optional plugins
 // during the step , we need to add jvm string to the Env of injected container
 func (op *OverlayPlugins) execute(ipd *InjectProcessData) admission.Response {
-	log.Info("=============== OverlayPlugins ================")
 	if !ipd.injectFileds.AgentOverlay {
 		return op.next.execute(ipd)
 	}
+	log.Info("=============== OverlayPlugins ================")
 	ipd.injectFileds.OverlayPlugins(&ipd.pod.ObjectMeta.Annotations)
 	if ipd.injectFileds.JvmAgentConfigStr != "" {
 		ipd.injectFileds.Env.Value = strings.Join([]string{ipd.injectFileds.Env.Value, ipd.injectFileds.JvmAgentConfigStr}, "=")

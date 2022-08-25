@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- contains .}}
-- key: {{ notEmpty .key }}
+{{- contains . }}
+- key: {{ ge .key 0 }}
   value: {{ notEmpty .value }}
-{{- end}}
+{{- end }}
