@@ -19,6 +19,12 @@ package operator
 
 import (
 	"context"
+	"fmt"
+	"github.com/go-logr/logr"
+	apps "k8s.io/api/apps/v1"
+	apiequal "k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -72,6 +78,47 @@ func (r *BanyanDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *BanyanDBReconciler) checkState(ctx context.Context, log logr.Logger, banyanDB *operatorv1alpha1.BanyanDB) error {
+	overlay := operatorv1alpha1.BanyanDBStatus{}
+	deployment := apps.Deployment{}
+	errCol := new(kubernetes.ErrorCollector)
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: banyanDB.Namespace, Name: banyanDB.Name + "-banyandb"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
+		errCol.Collect(fmt.Errorf("failed to get deployment: %w", err))
+	} else {
+		overlay.Conditions = deployment.Status.Conditions
+		overlay.AvailableReplicas = deployment.Status.AvailableReplicas
+	}
+	if apiequal.Semantic.DeepDerivative(overlay, banyanDB.Status) {
+		log.Info("Status keeps the same as before")
+	}
+
+	if err := r.updateStatus(ctx, banyanDB, overlay, errCol); err != nil {
+		errCol.Collect(fmt.Errorf("failed to update status of banyanDB: %w", err))
+	}
+
+	log.Info("updated Status sub resource")
+
+	return errCol.Error()
+}
+
+func (r *BanyanDBReconciler) updateStatus(ctx context.Context, banyanDB *operatorv1alpha1.BanyanDB,
+	overlay operatorv1alpha1.BanyanDBStatus, errCol *kubernetes.ErrorCollector) error {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := r.Client.Get(ctx, client.ObjectKey{Namespace: banyanDB.Namespace, Name: banyanDB.Name}, banyanDB); err != nil {
+			errCol.Collect(fmt.Errorf("failed to get banyanDB: %w", err))
+		}
+		banyanDB.Status = overlay
+		banyanDB.Kind = "BanyanDB"
+		if err := kubernetes.ApplyOverlay(banyanDB, &operatorv1alpha1.BanyanDB{Status: overlay}); err != nil {
+			errCol.Collect(fmt.Errorf("failed to apply overlay: %w", err))
+		}
+		if err := r.Status().Update(ctx, banyanDB); err != nil {
+			errCol.Collect(fmt.Errorf("failed to update status of banyandb: %w", err))
+		}
+		return errCol.Error()
+	})
 }
 
 // SetupWithManager sets up the controller with the Manager.
