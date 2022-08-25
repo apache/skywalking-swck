@@ -39,7 +39,7 @@ type BanyanDBSpec struct {
 
 	// BanyanDB startup parameters
 	// +kubebuilder:validation:Optional
-	Config map[string]string `json:"config"`
+	Config []string `json:"config"`
 
 	// TODO support TLS settings
 	// BanyanDB Service

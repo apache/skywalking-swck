@@ -93,10 +93,8 @@ func (in *BanyanDBSpec) DeepCopyInto(out *BanyanDBSpec) {
 	*out = *in
 	if in.Config != nil {
 		in, out := &in.Config, &out.Config
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	in.Service.DeepCopyInto(&out.Service)
 	if in.Storages != nil {

@@ -20,14 +20,14 @@ package operator
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/util/retry"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"

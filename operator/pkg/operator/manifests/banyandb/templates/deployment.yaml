@@ -44,7 +44,18 @@ spec:
         - name: banyandb-container
           image: {{ .Spec.Image }}
           imagePullPolicy: IfNotPresent
-          args: ["standalone"]
+          args:
+            {{- range $value := .Spec.Config }}
+            - {{ $value }}
+            {{- end }}
+          ports:
+            - containerPort: 17912
+              name: grpc
+            - containerPort: 2121
+              name: observability
+            - containerPort: 6060
+              name: pprof
+
 
 
 

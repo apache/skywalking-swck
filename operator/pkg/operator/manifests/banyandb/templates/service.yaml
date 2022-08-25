@@ -33,11 +33,11 @@ spec:
     operator.skywalking.apache.org/banyandb-name: {{ .Name }}
   ports:
     - port: 17912
-      name: todo1
+      name: grpc
     - port: 2121
-      name: todo2
+      name: observability
     - port: 6060
-      name: todo3
+      name: pprof
 
   {{- if $svc.ExternalIPs }}
   externalIPs:
@@ -49,9 +49,12 @@ spec:
   {{- if $svc.LoadBalancerIP }}
   loadBalancerIP: {{ $svc.LoadBalancerIP }}
   {{- end }}
+
+  {{- if $svc.LoadBalancerSourceRanges }}
   loadBalancerSourceRanges:
     {{- range $value := $svc.LoadBalancerSourceRanges }}
     - {{ $value | quote }}
-    {{- end}}
+    {{- end }}
+  {{- end }}
 
 

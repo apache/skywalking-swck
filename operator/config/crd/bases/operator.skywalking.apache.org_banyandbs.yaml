@@ -53,10 +53,10 @@ spec:
             description: BanyanDBSpec defines the desired state of BanyanDB
             properties:
               config:
-                additionalProperties:
-                  type: string
                 description: BanyanDB startup parameters
-                type: object
+                items:
+                  type: string
+                type: array
               counts:
                 description: Number of replicas
                 type: integer
@@ -419,6 +419,7 @@ spec:
             description: BanyanDBStatus defines the observed state of BanyanDB
             properties:
               available_pods:
+                format: int32
                 type: integer
               conditions:
                 description: Represents the latest available observations of the underlying

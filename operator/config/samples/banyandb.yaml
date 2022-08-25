@@ -23,5 +23,6 @@ spec:
   version: 1.0.9
   counts: 1
   image: apache/skywalking-banyandb:latest
-
+  config:
+    - "standalone"
 

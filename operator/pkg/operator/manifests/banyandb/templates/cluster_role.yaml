@@ -23,7 +23,9 @@ metadata:
     operator.skywalking.apache.org/application: banyandb
     operator.skywalking.apache.org/component: rbac
 rules:
-  # TODO: define the proper permissions
   - apiGroups: [""]
-    resources: ["pods"]
+    resources: ["pods", "services"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["extensions"]
+    resources: ["deployments"]
     verbs: ["get", "watch", "list"]
