@@ -35,7 +35,6 @@ spec:
         swck-java-agent-injected: "true"
         app: songs
       annotations:
-        strategy.skywalking.apache.org/agent.Overlay: "true"
         agent.skywalking.apache.org/agent.service_name: "agent::songs"
         agent.skywalking.apache.org/collector.backend_service: "oap-service:11800"
         agent.skywalking.apache.org/agent.instance_name: "songs"

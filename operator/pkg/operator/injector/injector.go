@@ -39,8 +39,6 @@ const (
 	SidecarInjectSucceedAnno = "sidecar.skywalking.apache.org/succeed"
 	// the annotation means which container to inject
 	sidecarInjectContainerAnno = "strategy.skywalking.apache.org/inject.Container"
-	// the annotation means whether to enable overlay agent, "true" of "false"
-	sidecarAgentOverlayAnno = "strategy.skywalking.apache.org/agent.Overlay"
 	// the annotation that specify the reason for injection failure
 	sidecarInjectErrorAnno = "sidecar.skywalking.apache.org/error"
 	// those annotations with the following prefixes represent sidecar information
@@ -71,11 +69,6 @@ var log = logf.Log.WithName("injector")
 type SidecarInjectField struct {
 	// determine whether to inject , default is not to inject
 	NeedInject bool
-	// determine whether to use annotation to overlay agent config ,
-	// default is not to overlay，which means only use configmap to set agent config
-	// Otherwise, the way to overlay is set jvm agent ,just like following
-	// -javaagent: /sky/agent/skywalking-agent,jar={config1}={value1},{config2}={value2}
-	AgentOverlay bool
 	// Initcontainer is a container that has the agent folder
 	Initcontainer corev1.Container
 	// sidecarVolume is a shared directory between App's container and initcontainer
@@ -169,7 +162,6 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 	annotation *map[string]string) {
 	// set default value
 	s.NeedInject = false
-	s.AgentOverlay = false
 
 	// set NeedInject's value , if the pod has the label "swck-java-agent-injected=true", means need inject
 	if *labels == nil {
@@ -187,13 +179,6 @@ func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
 	// set injectContainer's value
 	if v, ok := (*annotation)[sidecarInjectContainerAnno]; ok {
 		s.InjectContainer = v
-	}
-
-	// set AgentOverlay's value
-	if v, ok := (*annotation)[sidecarAgentOverlayAnno]; ok {
-		if strings.EqualFold(strings.ToLower(v), "true") {
-			s.AgentOverlay = true
-		}
 	}
 }
 
@@ -520,9 +505,6 @@ func (s *SidecarInjectField) ValidateConfigmap(ctx context.Context, kubeclient c
 }
 
 func GetInjectedAgentConfig(annotation *map[string]string, configuration *map[string]string) {
-	if strings.ToLower((*annotation)[sidecarAgentOverlayAnno]) != "true" {
-		return
-	}
 	for k, v := range *annotation {
 		if strings.HasPrefix(k, agentAnnotationPrefix) {
 			option := strings.TrimPrefix(k, agentAnnotationPrefix)

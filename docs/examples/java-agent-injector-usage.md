@@ -262,7 +262,6 @@ spec:
     metadata:
       annotations:
         strategy.skywalking.apache.org/inject.Container: "demo1"
-        strategy.skywalking.apache.org/agent.Overlay: "true"
         agent.skywalking.apache.org/agent.service_name: "app"
         agent.skywalking.apache.org/agent.sample_n_per_3_secs: "6"
         agent.skywalking.apache.org/agent.class_cache_mode: "MEMORY"

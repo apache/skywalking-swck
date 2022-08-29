@@ -190,7 +190,6 @@ The strategy configuration is the annotation as below.
 | Annotation key                                    | Description                                                  | Annotation Default value |
 | ------------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
 | `strategy.skywalking.apache.org/inject.Container` | Select the injected container, if not set, inject all containers. | not set                  |
-| `strategy.skywalking.apache.org/agent.Overlay`    | Whether to overlay the agent configuration. If set true, then you can see the next details to configure the agent. If set false, then you can skip [Configure agent](#configure-agent). | `false`                  |
 
 #### 2. agent configuration
 
