@@ -7,50 +7,54 @@ Apache SkyWalking Cloud on Kubernetes
 
 A bridge project between [Apache SkyWalking](https://github.com/apache/skywalking) and Kubernetes.
 
-SWCK is a platform for the SkyWalking user, provisions, upgrades, maintains SkyWalking relevant components, and makes them work natively on Kubernetes. 
+SWCK is a platform for the SkyWalking user that provisions, upgrades, maintains SkyWalking relevant components, and makes them work natively on Kubernetes.
 
 # Features
 
- 1. Java Agent Injector: Inject the java agent into the application pod natively.
- 1. Operator: Provision and maintain SkyWalking backend components.
- 1. Custom Metrics Adapter: Provides custom metrics come from SkyWalking OAP cluster for autoscaling by Kubernetes HPA
+* Java Agent Injector: Inject the java agent into the application pod natively.
+  * Inject the java agent into the application pod.
+  * Leverage a global configuration to simplify the agent and injector setup.
+  * Use the annotation to customize specific workloads.
+  * Synchronize injecting status to `JavaAgent` CR for monitoring purposes.
+* Operator: Provision and maintain SkyWalking backend components.
+* Custom Metrics Adapter: Provides custom metrics coming from SkyWalking OAP cluster for autoscaling by Kubernetes HPA
 
 # Quick Start
 
- * Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download latest release manifest. 
+* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to
+a folder named `skywalking-swck-<SWCK_VERSION>-bin`
 
 ## Java Agent Injector
 
-The java agent injector share the same binary with the operator. Follow the installation procedure of the operator
-to onboard the injector.
+* Install the [Operator](#operator)
+* Label the namespace with `swck-injection=enabled`
 
-The injector can:
+```shell
+$ kubectl label namespace default(your namespace) swck-injection=enabled
+```
 
-* Inject the java agent into the application pod.
-* Leverage a global configuration to simplify the agent and injector setup.
-* Use the annotation to customize specific workloads.
-* Sync injecting status to `JavaAgent` CR for monitoring purpose.
+* Add label `swck-java-agent-injected: "true"` to the workloads
 
-For more details, please read [Java agent injector](docs/java-agent-injector.md)
+For more details, please read [Java agent injector](/docs/java-agent-injector.md)
 
 ## Operator
 
- * To install the operator in an existing cluster, make sure you have  [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
- * Apply the manifests for the Controller and CRDs in release/config:
+* To install the operator in an existing cluster, ensure you have [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
+* Apply the manifests for the Controller and CRDs in release/config:
  
  ```
- kubectl apply -f release/operator/config
+ kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/operator-bundle.yaml
  ```
 
 For more details, please refer to [deploy operator](docs/operator.md)
 
 ## Custom Metrics Adapter
   
- * Deploy OAP server by referring to Operator Quick Start.
- * Apply the manifests for an adapter in release/adapter/config:
+* Deploy the OAP server by referring to Operator Quick Start.
+* Apply the manifests for an adapter in release/adapter/config:
  
  ```
- kubectl apply -f release/adapter/config
+ kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/adapter-bundle.yaml
  ```
 
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
