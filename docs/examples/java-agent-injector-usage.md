@@ -46,7 +46,7 @@ spec:
 
 ## Enable Injection for Namespace and Deployments/StatefulSets.
 
-At first, set the injection label in your namespace as below.
+Firstly, set the injection label in your namespace as below.
 
 ```shell
 kubectl label namespace default(your namespace) swck-injection=enabled
@@ -190,7 +190,7 @@ swagent-demo   38s
 
 Now the pod is still the old one, because pod could not load the SwAgent config automatically.
 
-So you need to recreate pod to load swagent config. For the pods created by Deployment/StatefulSet, you can just simply delete the old pod.
+So you need to recreate pod to load SwAgent config. For the pods created by Deployment/StatefulSet, you can just simply delete the old pod.
 
 ```shell
 # verify pods to be delete 
@@ -227,7 +227,8 @@ spec:
   initContainers:
   - args:
     - -c
-    - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
+    - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent && cd /sky/agent/optional-plugins/
+      && ls | grep -E "webflux|cloud-gateway-2.1.x"  | xargs -i cp {} /sky/agent/plugins/
     command:
     - sh
     image: apache/skywalking-java-agent:8.10.0-java8
@@ -242,7 +243,7 @@ spec:
 
 ## Use annotation to override sidecar configuration
 
-Suppose that injection label had been set for Namespace and Deployments/StatefulSets as [previous said](java-agent-injector-usage-draft.md#enable-injection-for-namespace-and-deploymentsstatefulsets).
+Suppose that injection label had been set for Namespace and Deployments/StatefulSets as [previous said](java-agent-injector-usage.md#enable-injection-for-namespace-and-deploymentsstatefulsets).
 
 Then add [agent configuration](../java-agent-injector.md#use-annotations-to-overlay-default-agent-configuration)
 and [sidecar configuration](../java-agent-injector.md#configure-sidecar) to annotations as below.
