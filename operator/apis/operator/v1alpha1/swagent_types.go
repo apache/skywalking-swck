@@ -22,9 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // SwAgentSpec defines the desired state of SwAgent
 type SwAgentSpec struct {
 	// Selector is the selector label of injected Object
@@ -35,7 +32,7 @@ type SwAgentSpec struct {
 	// +kubebuilder:validation:Optional
 	ContainerMatcher string `json:"containerMatcher,omitempty"`
 
-	// Java defines Java agent special configs.
+	// JavaSidecar defines Java agent special configs.
 	// +kubebuilder:validation:Optional
 	JavaSidecar JavaSidecar `json:"javaSidecar,omitempty"`
 

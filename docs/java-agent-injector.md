@@ -127,21 +127,23 @@ SwAgent CRD basic structure is like:
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: SwAgent
 metadata:
-  name: swagent
-  namespace: skywalking-system
+  name: swagent-demo
+  namespace: default
 spec:
   containerMatcher: ''
   selector:
-    app: demo
   javaSidecar:
-    name: swagent
-    image: apache/skywalking-java-agent:8.8.0-java8
+    name: swagent-demo
+    image: apache/skywalking-java-agent:8.10.0-java8
     env:
-      - name: SW_LOGGING_LEVEL
+      - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
-  sharedVolume:
-    name: "sky-agent"
-    mountPath: "/sky/agent"
+      - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
+        value: "skywalking-system-oap:11800"
+  sharedVolumeName: "sky-agent-demo"
+  optionalPlugins:
+    - "webflux"
+    - "cloud-gateway-2.1.x"
 ```
 
 There are three kind of configs in SwAgent CR.
@@ -165,10 +167,10 @@ injection configuration will affect on agent injection behaviour
 | javaSidecar            | javaSidecar is the configs for init container, which holds agent sdk and take agent sdk to the target containers. |                                          |
 | javaSidecar.name       | the name of the init container.                                                                                   | inject-skywalking-agent                  |
 | javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.8.0-java8 |
-| sharedVolume           | shareVolume is the configs for shared volume between init container and target container.                         |                                          |
-| sharedVolume.name      | the name of the shared volume.                                                                                    | sky-agent                                |
-| sharedVolume.mountPath | the mount path of the shared volume.                                                                              | /sky/agent                               |
-
+| SharedVolumeName           | SharedVolume is the name of an empty volume which shared by initContainer and target containers.                         |                    sky-agent                      |
+| SwConfigMapVolume      | SwConfigMapVolume defines the configmap which contains agent.config                                   | no default value                               | 
+| OptionalPlugins  | Select the optional plugin which needs to be moved to the directory(/plugins). Such as `trace`,`webflux`,`cloud-gateway-2.1.x`.                                                                              | no default value                               |
+| OptionalReporterPlugins  | Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.                                                                              | no default value                               |
 
 #### 3. skywalking agent configuration
 
