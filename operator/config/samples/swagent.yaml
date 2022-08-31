@@ -20,4 +20,21 @@ kind: SwAgent
 metadata:
   name: swagent-sample
 spec:
-  # TODO(user): Add fields here
+  containerMatcher: ''
+  selector:
+  javaSidecar:
+    name: swagent-sample
+    image: apache/skywalking-java-agent:8.8.0-java8
+    env:
+      - name: "SW_LOGGING_LEVEL"
+        value: "DEBUG"
+      - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
+        value: "skywalking-system-oap.skywalking-system.svc:11800"
+  sharedVolumeName: "sky-agent-test-001"
+  swConfigMapVolume:
+    name: "java-agent-configmap-test-001-volume"
+    configMapName: "java-agent-config"
+    configMapMountFile: "agent.config"
+  optionalPlugins:
+    - "webflux"
+    - "cloud-gateway-2.1.x"
