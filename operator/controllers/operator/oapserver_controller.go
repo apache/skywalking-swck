@@ -62,7 +62,7 @@ type OAPServerReconciler struct {
 
 func (r *OAPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================oapserver reconcile started================================")
 
 	oapServer := operatorv1alpha1.OAPServer{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &oapServer); err != nil {

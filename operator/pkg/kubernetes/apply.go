@@ -102,7 +102,7 @@ func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured,
 	key := client.ObjectKeyFromObject(obj)
 	current := &unstructured.Unstructured{}
 	current.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-	err := a.Get(ctx, key, current)
+	err := a.Client.Get(ctx, key, current)
 
 	if apierrors.IsNotFound(err) {
 		log.Info("could not find existing resource, creating one...")
@@ -114,7 +114,7 @@ func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured,
 			obj = curr
 		}
 
-		if err = a.Create(ctx, obj); err != nil {
+		if err = a.Client.Create(ctx, obj); err != nil {
 			return false, fmt.Errorf("failed to create: %w", err)
 		}
 
@@ -137,7 +137,7 @@ func (a *Application) apply(ctx context.Context, obj *unstructured.Unstructured,
 		log.Info("resource keeps the same as before")
 		return false, nil
 	}
-	if err := a.Update(ctx, obj); err != nil {
+	if err := a.Client.Update(ctx, obj); err != nil {
 		return false, fmt.Errorf("failed to update: %w", err)
 	}
 	log.Info("updated")

@@ -18,10 +18,9 @@ linters:
     - deadcode
     - errcheck
     - goconst
-    - golint
+    - revive
     - ineffassign
     - lll
-    - maligned
     - misspell
     - structcheck
     - unconvert

@@ -77,7 +77,7 @@ func (a SortByEnvName) Less(i, j int) bool {
 
 func (r *OAPServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================oapserverconfig reconcile started================================")
 
 	oapServerConfig := operatorv1alpha1.OAPServerConfig{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &oapServerConfig); err != nil {
