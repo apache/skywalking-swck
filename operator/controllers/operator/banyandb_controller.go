@@ -77,7 +77,12 @@ func (r *BanyanDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	if err := r.checkState(ctx, log, &banyanDB); err != nil {
+		log.Error(err, "failed to check sub resources state")
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
 func (r *BanyanDBReconciler) checkState(ctx context.Context, log logr.Logger, banyanDB *operatorv1alpha1.BanyanDB) error {
