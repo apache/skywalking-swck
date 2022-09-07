@@ -74,7 +74,7 @@ goimports: ## Download goimports locally if necessary.
 GOLANGCILINT= $(tool_bin)/golangci-lint
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
-	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0)
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2)
 	
 
 .PHONY: dependency-check

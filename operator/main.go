@@ -143,6 +143,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Satellite")
 		os.Exit(1)
 	}
+	if err = (&operatorcontrollers.SwAgentReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "SwAgent")
+		os.Exit(1)
+	}
 	if err = (&operatorcontrollers.OAPServerConfigReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -191,6 +198,10 @@ func main() {
 		}
 		if err = (&operatorv1alpha1.Satellite{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Satellite")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.SwAgent{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "SwAgent")
 			os.Exit(1)
 		}
 		if err = (&operatorv1alpha1.OAPServerConfig{}).SetupWebhookWithManager(mgr); err != nil {

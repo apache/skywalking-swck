@@ -1,0 +1,117 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+setup:
+  env: kind
+  file: ../kind.yaml
+  steps:
+    - name: prepare e2e.yaml
+      command: bash hack/prepare-e2e.sh
+    - name: install cert-manager
+      command: |
+        # kind k8s cluster is in $TMPDIR
+        export KUBECONFIG=${TMPDIR}/e2e-k8s.config
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+      wait:
+        - namespace: cert-manager
+          resource: pod
+          for: condition=Ready
+    - name: install operator
+      command: |
+        export OPERATOR_IMG=controller
+        make -C operator docker-build   
+        kind load docker-image controller
+        make -C operator install
+        make -C operator deploy
+      wait:
+        - namespace: skywalking-swck-system
+          resource: pod
+          for: condition=Ready
+    - name: setup oapserver and swagent cr
+      command: |
+        kubectl create namespace skywalking-system
+        kubectl apply -f test/e2e/skywalking-components-with-swagent-configmap.yaml
+      wait:
+        - namespace: skywalking-system
+          resource: OAPServer/skywalking-system
+          for: condition=Available
+        - namespace: skywalking-system
+          resource: UI/skywalking-system
+          for: condition=Available
+    - name: setup java agent demo
+      command: |
+        kubectl label namespace skywalking-system swck-injection=enabled
+        kubectl create -f test/e2e/demo-swagent.yaml
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/demo
+          for: condition=Available
+  kind:
+    expose-ports:
+      - namespace: skywalking-system
+        resource: service/demo
+        port: 8085
+      - namespace: skywalking-system
+        resource: service/skywalking-system-oap
+        port: 12800
+      - namespace: skywalking-system
+        resource: service/skywalking-system-ui
+        port: 80
+  timeout: 20m
+
+cleanup:
+  # always never success failure
+  on: always
+
+trigger:
+  action: http
+  interval: 30s
+  times: 30
+  url: http://${service_demo_host}:${service_demo_8085}/hello
+  method: GET
+
+verify:
+  # verify with retry strategy
+  retry:
+    # max retry count
+    count: 10
+    # the interval between two attempts, e.g. 10s, 1m.
+    interval: 10s
+  cases:
+    # test oapserver
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
+      expected: ../verify/service.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name service_cpm --service-name Your_ApplicationName | yq e 'to_entries' -
+      expected: ../verify/metrics.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+      expected: ../verify/endpoint.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
+      expected: ../verify/metrics.yaml
+    - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.volumes'''
+      expected: ../verify/swagent-configmap-volumemounts.yaml
+    - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.initContainers[0]'''
+      expected: ../verify/swagent-configmap-initcontainer.yaml
+    - query: 'kubectl get pods -l app=demo -o yaml | yq e ''.items[0].spec.containers[0]'''
+      expected: ../verify/swagent-configmap-target-container.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*webflux.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*webflux.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/optional-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*cloud-gateway-2\.1\.x.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*cloud-gateway-2\.1\.x.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/optional-plugin.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
+      expected: ../verify/service.yaml
+    - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
+      expected: ../verify/endpoint.yaml
+    - includes:
+        - ../ui-cases.yaml

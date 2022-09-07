@@ -1,26 +1,60 @@
 # Operator Usage Guide
-## Guides of Operator Deployment
-### Use kustomize to customise your deployment
 
-1. Clone the source code:
+In this guide, you will learn:
+
+* How to deploy the operator from a released package or scratch
+* The core CRDs the operator supports
+
+## Operator Deployment
+
+You could provision the operator from a binary package or build from sources.
+
+### Binary Package
+
+* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to
+a folder named `skywalking-swck-<SWCK_VERSION>-bin`
+* To install the operator in an existing cluster, make sure you have [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
+* Apply the manifests for the Controller and CRDs in `config`:
+
+```sh
+kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/operator-bundle.yaml
+```
+
+### Build from sources
+
+1.  Download released [source package](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) or clone the source code:
 
 ```sh
 git clone git@github.com:apache/skywalking-swck.git
 ```
 
-2. Edit file `operator/config/default/kustomization.yaml` file to change your preferences. If you prefer to your private
- docker image, a quick path to override `OPERATOR_IMG` environment variable : `export OPERATOR_IMG=<private registry>/controller:<tag>`
-
-3. Use `make` to generate the final manifests and deploy:
+1. Build docker image from scratch. If you prefer to your private
+docker image, a quick path to override `OPERATOR_IMG` environment variable : `export OPERATOR_IMG=<private registry>/controller:<tag>`
 
 ```sh
-make -C operator deploy
+export OPERATOR_IMG=controller
+make -C operator docker-build
 ```
 
-4. Deploy the CRDs:
+Then, push this image `controller:latest` to a repository where the operator's pod could pull from.
+If you use a local `KinD` cluster:
+
+```sh
+kind load docker-image controller
+```
+
+1. Customize resource configurations based the templates laid in `operator/config`. We use `kustomize` to build them, please refer to [kustomize](https://kustomize.io/) in case you don't familiar with its syntax.
+
+1. Install the CRDs to Kubernetes:
 
 ```sh
 make -C operator install
+```
+
+1. Use `make` to generate the final manifests and deploy:
+
+```sh
+make -C operator deploy
 ```
 
 ### Test your deployment
@@ -31,13 +65,13 @@ make -C operator install
 curl https://raw.githubusercontent.com/apache/skywalking-swck/master/operator/config/samples/default.yaml | kubectl apply -f -
 ```
 
-2. Check the OAP server in Kubernetes:
+1. Check the OAP server in Kubernetes:
 
 ```sh
 kubectl get oapserver
 ```
 
-2. Check the UI server in Kubernetes:
+1. Check the UI server in Kubernetes:
 
 ```sh
 kubectl get ui
@@ -54,13 +88,6 @@ kubectl --namespace skywalking-swck-system get pods
 # pull the logs
 kubectl --namespace skywalking-swck-system logs -f [name_of_the_controller_pod]
 ```
-
-## Custom manifests templates
-
-If you want to custom the manifests templates to generate dedicated Kubernetes resources,
-please edit YAMLs in `pkg/operator/manifests`.
-The last step is to rebuild `operator` by `make -C operator docker-build`.
-
 
 ## Custom Resource Define(CRD)
 
@@ -100,13 +127,12 @@ It provides options for how to connect an `OAP`.
 The `Fetcher` custom resource definition (CRD) declaratively defines a desired Fetcher setup to run in a Kubernetes cluster.
 It provides options to configure OpenTelemetry collector, which fetches metrics to the deployed `OAP`.
 
-
 ## Examples of the Operator
 
 There are some instant examples to represent the functions or features of the Operator.
 
-- [Deploy OAP server and UI with default settings](./examples/default-backend.md)
-- [Fetch metrics from the Istio control plane(istiod)](./examples/istio-controlplane.md)
-- [Inject the java agent to pods](./examples/java-agent-injector-usage.md)
-- [Deploy a storage](./examples/storage.md)
-- [Deploy a Satellite](./examples/satellite.md)
+* [Deploy OAP server and UI with default settings](./examples/default-backend.md)
+* [Fetch metrics from the Istio control plane(istiod)](./examples/istio-controlplane.md)
+* [Inject the java agent to pods](./examples/java-agent-injector-usage.md)
+* [Deploy a storage](./examples/storage.md)
+* [Deploy a Satellite](./examples/satellite.md)

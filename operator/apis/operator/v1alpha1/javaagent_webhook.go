@@ -24,12 +24,16 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 )
 
 // log is for logging in this package.
 var javaagentlog = logf.Log.WithName("javaagent-resource")
+
+const (
+	// the ServiceName and BackendService are important information that need to be printed
+	ServiceName    = "agent.service_name"
+	BackendService = "collector.backend_service"
+)
 
 func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
@@ -51,8 +55,8 @@ func (r *JavaAgent) Default() {
 		return
 	}
 
-	service := injector.GetServiceName(&config)
-	backend := injector.GetBackendService(&config)
+	service := GetServiceName(&config)
+	backend := GetBackendService(&config)
 
 	if r.Spec.ServiceName == "" && service != "" {
 		r.Spec.ServiceName = service
@@ -93,4 +97,20 @@ func (r *JavaAgent) validate() error {
 		return fmt.Errorf("backend service is absent")
 	}
 	return nil
+}
+
+func GetServiceName(configuration *map[string]string) string {
+	v, ok := (*configuration)[ServiceName]
+	if !ok {
+		return "Your_ApplicationName"
+	}
+	return v
+}
+
+func GetBackendService(configuration *map[string]string) string {
+	v, ok := (*configuration)[BackendService]
+	if !ok {
+		return "127.0.0.1:11800"
+	}
+	return v
 }

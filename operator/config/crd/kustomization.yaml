@@ -25,6 +25,7 @@ resources:
 - bases/operator.skywalking.apache.org_storages.yaml
 - bases/operator.skywalking.apache.org_javaagents.yaml
 - bases/operator.skywalking.apache.org_satellites.yaml
+- bases/operator.skywalking.apache.org_swagents.yaml
 - bases/operator.skywalking.apache.org_oapserverconfigs.yaml
 - bases/operator.skywalking.apache.org_oapserverdynamicconfigs.yaml
 - bases/operator.skywalking.apache.org_banyandbs.yaml
@@ -41,6 +42,7 @@ patchesStrategicMerge:
 - patches/webhook_in_satellites.yaml
 - patches/webhook_in_oapserverconfigs.yaml
 #- patches/webhook_in_oapserverdynamicconfigs.yaml
+#- patches/webhook_in_swagents.yaml
 #- patches/webhook_in_banyandbs.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
@@ -54,6 +56,7 @@ patchesStrategicMerge:
 - patches/cainjection_in_satellites.yaml
 - patches/cainjection_in_oapserverconfigs.yaml
 #- patches/cainjection_in_oapserverdynamicconfigs.yaml
+#- patches/cainjection_in_swagents.yaml
 #- patches/cainjection_in_banyandbs.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 

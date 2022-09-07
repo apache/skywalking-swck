@@ -70,7 +70,7 @@ func (r *OAPServerDynamicConfigReconciler) Reconcile(ctx context.Context, req ct
 	_ = log.FromContext(ctx)
 
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================oapserverdynamicconfig reconcile started================================")
 
 	config := operatorv1alpha1.OAPServerDynamicConfig{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &config); err != nil {

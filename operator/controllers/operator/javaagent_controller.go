@@ -55,7 +55,7 @@ type JavaAgentReconciler struct {
 
 func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================javaagent reconcile started================================")
 
 	pod := &core.Pod{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, pod)
@@ -80,14 +80,14 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	ownerReference := pod.OwnerReferences[0]
 
 	// get configmap from the volume of configmap
-	if configmapName == "" {
-		log.Error(err, "configmap is nil")
-		return ctrl.Result{}, err
-	}
-	err = r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: configmapName}, configmap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error(err, "failed to get configmap")
-		return ctrl.Result{}, err
+	if len(configmapName) > 0 {
+		err = r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: configmapName}, configmap)
+		if err != nil && !apierrors.IsNotFound(err) {
+			log.Error(err, "failed to get configmap")
+			return ctrl.Result{}, err
+		}
+	} else {
+		log.Info("No configmap mounted.")
 	}
 
 	// get configuration from configmap
@@ -97,6 +97,14 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	injector.GetInjectedAgentConfig(&pod.Annotations, &config)
+
+	swAgentList := &operatorv1alpha1.SwAgentList{}
+	var lastMatchedSwAgent *operatorv1alpha1.SwAgent
+	if lastMatchedSwAgent, err = r.getSwAgent(ctx, req, swAgentList, pod); err != nil {
+		log.Error(err, "get SwAgent error")
+		return ctrl.Result{}, err
+	}
+	r.injectConfigBySwAgent(lastMatchedSwAgent, config)
 
 	// only get the first selector label from labels as podselector
 	labels := pod.Labels
@@ -136,10 +144,10 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return podselector
 			},
 			"ServiceName": func() string {
-				return injector.GetServiceName(&config)
+				return operatorv1alpha1.GetServiceName(&config)
 			},
 			"BackendService": func() string {
-				return injector.GetBackendService(&config)
+				return operatorv1alpha1.GetBackendService(&config)
 			},
 		},
 	}
@@ -157,6 +165,42 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *JavaAgentReconciler) injectConfigBySwAgent(lastMatchedSwAgent *operatorv1alpha1.SwAgent, config map[string]string) {
+	if nil != lastMatchedSwAgent && len(lastMatchedSwAgent.Spec.JavaSidecar.Env) > 0 {
+		for _, env := range lastMatchedSwAgent.Spec.JavaSidecar.Env {
+			if strings.EqualFold(env.Name, "SW_AGENT_COLLECTOR_BACKEND_SERVICES") {
+				config[operatorv1alpha1.BackendService] = env.Value
+			} else if strings.EqualFold(env.Name, "SW_AGENT_NAME") {
+				config[operatorv1alpha1.ServiceName] = env.Value
+			}
+		}
+	}
+}
+
+func (r *JavaAgentReconciler) getSwAgent(ctx context.Context, req ctrl.Request,
+	swAgentList *operatorv1alpha1.SwAgentList, pod *core.Pod) (*operatorv1alpha1.SwAgent, error) {
+	if err := r.Client.List(ctx, swAgentList, client.InNamespace(req.Namespace)); err != nil {
+		return nil, err
+	}
+
+	// selector
+	var lastMatchedSwAgent *operatorv1alpha1.SwAgent
+	for _, swAgent := range swAgentList.Items {
+		isMatch := true
+		if len(swAgent.Spec.Selector) != 0 {
+			for k, v := range swAgent.Spec.Selector {
+				if !strings.EqualFold(v, pod.Labels[k]) {
+					isMatch = false
+				}
+			}
+		}
+		if isMatch {
+			lastMatchedSwAgent = &swAgent
+		}
+	}
+	return lastMatchedSwAgent, nil
 }
 
 func (r *JavaAgentReconciler) UpdateStatus(ctx context.Context, log logr.Logger, namespace, selectorname, podselector string) error {
@@ -183,7 +227,7 @@ func (r *JavaAgentReconciler) UpdateStatus(ctx context.Context, log logr.Logger,
 		client.MatchingLabels{label[0]: label[1]},
 	}
 
-	if err := r.List(ctx, podList, opts...); err != nil && !apierrors.IsNotFound(err) {
+	if err := r.Client.List(ctx, podList, opts...); err != nil && !apierrors.IsNotFound(err) {
 		errCol.Collect(fmt.Errorf("failed to list pod: %w", err))
 	}
 

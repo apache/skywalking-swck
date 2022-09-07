@@ -20,11 +20,14 @@ package injector
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 )
 
 // log is for logging in this package.
@@ -44,8 +47,7 @@ type JavaagentInjector struct {
 func (r *JavaagentInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 
-	err := r.decoder.Decode(req, pod)
-	if err != nil {
+	if err := r.decoder.Decode(req, pod); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
@@ -53,6 +55,9 @@ func (r *JavaagentInjector) Handle(ctx context.Context, req admission.Request) a
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
+
+	swAgentL := r.findMatchedSwAgentL(ctx, req, pod)
+
 	// initialize all annotation types that can be overridden
 	anno, err := NewAnnotations()
 	if err != nil {
@@ -63,9 +68,34 @@ func (r *JavaagentInjector) Handle(ctx context.Context, req admission.Request) a
 	// initialize SidecarInjectField and get injected strategy from annotations
 	s := NewSidecarInjectField()
 	// initialize InjectProcess as a call chain
-	ip := NewInjectProcess(ctx, s, anno, ao, pod, req, javaagentInjectorLog, r.Client)
+	ip := NewInjectProcess(ctx, s, anno, ao, swAgentL, pod, req, javaagentInjectorLog, r.Client)
 	// do real injection
 	return ip.Run()
+}
+
+func (r *JavaagentInjector) findMatchedSwAgentL(ctx context.Context, req admission.Request, pod *corev1.Pod) *v1alpha1.SwAgentList {
+	swAgentList := &v1alpha1.SwAgentList{}
+	if err := r.Client.List(ctx, swAgentList, client.InNamespace(req.Namespace)); err != nil {
+		javaagentInjectorLog.Error(err, "get SwAgent error")
+	}
+
+	// selector
+	var availableSwAgentL []v1alpha1.SwAgent
+	for _, swAgent := range swAgentList.Items {
+		isMatch := true
+		if len(swAgent.Spec.Selector) != 0 {
+			for k, v := range swAgent.Spec.Selector {
+				if !strings.EqualFold(v, pod.Labels[k]) {
+					isMatch = false
+				}
+			}
+		}
+		if isMatch {
+			availableSwAgentL = append(availableSwAgentL, swAgent)
+		}
+	}
+	swAgentList.Items = availableSwAgentL
+	return swAgentList
 }
 
 // Javaagent implements admission.DecoderInjector.

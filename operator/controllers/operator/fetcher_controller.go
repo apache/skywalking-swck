@@ -50,7 +50,7 @@ type FetcherReconciler struct {
 
 func (r *FetcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================reconcile started================================")
+	log.Info("=====================fetcher reconcile started================================")
 
 	fetcher := &operatorv1alpha1.Fetcher{}
 	if err := r.Client.Get(ctx, req.NamespacedName, fetcher); err != nil {
