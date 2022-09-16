@@ -78,6 +78,8 @@ Keys to verify the Release Candidate :
 
 Guide to build the release from source :
 
+ * https://github.com/apache/skywalking-swck/blob/$VERSION/docs/operator.md#build-from-sources
+ * https://github.com/apache/skywalking-swck/blob/$VERSION/docs/custom-metrics-adapter.md#use-kustomize-to-customise-your-deployment
  * https://github.com/apache/skywalking-swck/blob/$VERSION/docs/release.md
 
 A vote regarding the quality of this test build will be initiated
@@ -188,7 +190,7 @@ Vote result should follow these:
  
 1. Remove last released tar balls from `https://dist.apache.org/repos/dist/release/skywalking`
 
-1. Refer to the previous [PR](https://github.com/apache/skywalking-website/pull/118), update news and links on the website. There are seven files need to modify.
+1. Refer to the previous [PR](https://github.com/apache/skywalking-website/pull/508), update news and links on the website. There are seven files need to modify.
 
 1. Update [Github release page](https://github.com/apache/skywalking-swck/releases), follow the previous convention.
 
