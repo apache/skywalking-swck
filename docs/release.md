@@ -48,7 +48,7 @@ Subject: [ANNOUNCEMENT] SkyWalking Cloud on Kubernetes $VERSION test build avail
 
 Content:
 
-The test build of SkyWalking Could on Kubernetes $VERSION is now available.
+The test build of SkyWalking Cloud on Kubernetes $VERSION is now available.
 
 We welcome any comments you may have, and will take all feedback into
 account if a quality vote is called for this build.
@@ -96,12 +96,12 @@ Based on that, PMC will decide whether to start a vote or not.
 Call for vote in `dev@skywalking.apache.org`
 
 ```text
-Subject: [VOTE] Release Apache SkyWalking Could on Kubernetes version $VERSION
+Subject: [VOTE] Release Apache SkyWalking Cloud on Kubernetes version $VERSION
 
 Content:
 
 Hi the SkyWalking Community:
-This is a call for vote to release Apache SkyWalking Could on Kubernetes version $VERSION.
+This is a call for vote to release Apache SkyWalking Cloud on Kubernetes version $VERSION.
 
 Release notes:
 
@@ -164,7 +164,7 @@ Vote result should follow these:
 1. **Send the closing vote mail to announce the result**.  When count the binding and no binding votes, please list the names of voters. An example like this:
 
    ```
-   [RESULT][VOTE] Release Apache SkyWalking Could on Kubernetes version $VERSION
+   [RESULT][VOTE] Release Apache SkyWalking Cloud on Kubernetes version $VERSION
    
    3 days passed, we’ve got ($NUMBER) +1 bindings:
    xxx
@@ -197,15 +197,15 @@ Vote result should follow these:
 1. Send ANNOUNCE email to `dev@skywalking.apache.org` and `announce@apache.org`, the sender should use his/her Apache email account. You can get the permlink of vote thread at [here](https://lists.apache.org/list.html?dev@skywalking.apache.org).
 
     ```
-    Subject: [ANNOUNCEMENT] Apache SkyWalking Could on Kubernetes $VERSION Released
+    Subject: [ANNOUNCEMENT] Apache SkyWalking Cloud on Kubernetes $VERSION Released
 
     Content:
 
     Hi the SkyWalking Community
 
-    On behalf of the SkyWalking Team, I’m glad to announce that SkyWalking Could on Kubernetes $VERSION is now released.
+    On behalf of the SkyWalking Team, I’m glad to announce that SkyWalking Cloud on Kubernetes $VERSION is now released.
 
-    SkyWalking Could on Kubernetes: A bridge platform between Apache SkyWalking and Kubernetes.
+    SkyWalking Cloud on Kubernetes: A bridge platform between Apache SkyWalking and Kubernetes.
 
     SkyWalking: APM (application performance monitor) tool for distributed systems, especially designed for microservices, cloud native and container-based (Docker, Kubernetes, Mesos) architectures.
 
@@ -217,7 +217,7 @@ Vote result should follow these:
 
     Website: https://skywalking.apache.org/
 
-    SkyWalking Could on Kubernetes Resources:
+    SkyWalking Cloud on Kubernetes Resources:
     - Issue: https://github.com/apache/skywalking/issues
     - Mailing list: dev@skywalkiing.apache.org
     - Documents: https://github.com/apache/skywalking-swck/blob/$VERSION/README.md
