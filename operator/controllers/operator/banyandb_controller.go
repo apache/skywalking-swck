@@ -48,7 +48,7 @@ type BanyanDBReconciler struct {
 //+kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=banyandbs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=banyandbs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=banyandbs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=services;serviceaccounts;persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
 
 func (r *BanyanDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

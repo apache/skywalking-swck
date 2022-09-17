@@ -25,6 +25,19 @@ spec:
   image: apache/skywalking-banyandb:latest
   config:
     - "standalone"
+    - "--measure-root-path=/data/banyandb"
+    - "--metadata-root-path=/data/banyandb"
+  storages:
+    - name: banyandb-volume
+      path: "/data/banyandb"
+      persistentVolumeClaimSpec:
+        resources:
+          requests:
+            storage: 1Gi
+        volumeMode: Filesystem
+        accessModes:
+          - ReadWriteOnce
+
 
 ---
 apiVersion: v1
@@ -42,17 +55,3 @@ spec:
   persistentVolumeReclaimPolicy: Recycle
   hostPath:
     path: "/tmp/banyandb/data1"
-
----
-# This will match banyandb-pv
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: banyandb-pvc
-spec:
-  resources:
-    requests:
-      storage: 1Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce

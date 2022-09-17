@@ -52,7 +52,21 @@ type BanyanDBSpec struct {
 
 	// BanyanDB Storage
 	// +kubebuilder:validation:Optional
-	Storages []corev1.PersistentVolumeClaim `json:"storages,omitempty"`
+	Storages []StorageConfig `json:"storages,omitempty"`
+}
+
+type StorageConfig struct {
+	// the name of storage config
+	// +kubebuilder:validation:Optional
+	Name string `json:"name,omitempty"`
+
+	// mount path of the volume
+	// +kubebuilder:validation:Optional
+	Path string `json:"path,omitempty"`
+
+	// the persistent volume spec for the storage
+	// +kubebuilder:validation:Optional
+	PersistentVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"persistentVolumeClaimSpec,omitempty"`
 }
 
 // BanyanDBStatus defines the observed state of BanyanDB

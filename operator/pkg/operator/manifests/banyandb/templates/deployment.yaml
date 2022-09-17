@@ -40,6 +40,15 @@ spec:
         operator.skywalking.apache.org/component: pod
     spec:
       serviceAccountName: {{ .Name }}-banyandb
+
+      {{- if .Spec.Storages }}
+      volumes:
+        {{- range $storage := .Spec.Storages }}
+        - name: {{ $storage.Name }}
+          persistentVolumeClaim:
+            claimName: {{ $storage.Name }}-banyandb
+        {{- end }}
+      {{- end}}
       containers:
         - name: banyandb-container
           image: {{ .Spec.Image }}
@@ -55,6 +64,14 @@ spec:
               name: observability
             - containerPort: 6060
               name: pprof
+
+          {{- if .Spec.Storages }}
+          volumeMounts:
+            {{- range $storage := .Spec.Storages }}
+            - mountPath: {{ $storage.Path }}
+              name: {{ $storage.Name }}
+            {{- end }}
+          {{- end }}
 
       {{- if .Spec.Affinity }}
       {{- $affinity := .Spec.Affinity }}
