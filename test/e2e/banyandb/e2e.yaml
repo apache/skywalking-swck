@@ -78,7 +78,7 @@ setup:
   timeout: 20m
 
 cleanup:
-  on: never
+  on: always
 
 trigger:
   action: http

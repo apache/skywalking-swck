@@ -26,3 +26,33 @@ spec:
   config:
     - "standalone"
 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: banyandb-pv
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: "/tmp/banyandb/data1"
+
+---
+# This will match banyandb-pv
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: banyandb-pvc
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

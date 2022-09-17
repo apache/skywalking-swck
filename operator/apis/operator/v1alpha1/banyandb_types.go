@@ -37,6 +37,10 @@ type BanyanDBSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
 
+	// Pod affinity
+	// +kubebuilder:validation:Optional
+	Affinity corev1.Affinity `json:"affinity"`
+
 	// BanyanDB startup parameters
 	// +kubebuilder:validation:Optional
 	Config []string `json:"config"`

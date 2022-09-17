@@ -56,6 +56,42 @@ spec:
             - containerPort: 6060
               name: pprof
 
+      {{- if .Spec.Affinity }}
+      {{- $affinity := .Spec.Affinity }}
+      affinity:
+        {{- if $affinity.NodeAffinity }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              {{- range $expr := $affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms.MatchExpressions }}
+              - key: {{ $expr.Key }}
+                Operator: {{ $expr.Operator }}
+                Values:
+                  {{- range $v := $expr.Values }}
+                  - {{ $v }}
+                  {{- end}}
+              {{- end}}
+        {{- end}}
+
+        {{- if $affinity.PodAffinity }}
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- range $term := $affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution }}
+            - topologyKey: {{ $term.TopologyKey }}
+              namespaces:
+                {{- range $ns := $term.Namespaces }}
+                - {{ $ns }}
+                {{- end }}
+              labelSelector:
+                MatchLabels:
+                {{- range $key, $value := $term.LabelSelector.MatchLabels }}
+                  {{ $key }} : {{ $value }}
+                {{- end}}
+            {{- end}}
+
+        {{- end}}
+      {{- end}}
 
 
 
