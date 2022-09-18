@@ -39,6 +39,12 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
+    - name: label control plane for banyandb affinity test
+      command: |
+        kubectl label nodes kind-control-plane storage=banyandb
+    - name: remove taint on control plane and enable shedule
+      command: |
+        kubectl taint nodes kind-control-plane node-role.kubernetes.io/master-
     - name: setup banyandb
       command: |
         kubectl apply -f test/e2e/deploy-banyandb.yaml
@@ -98,3 +104,7 @@ verify:
     - includes:
         - ../oapserver-cases.yaml
         - ../ui-cases.yaml
+    
+    # verify the affinity works: banyandb is scheduled to control-plane
+    - query: kubectl get pods -l app=banyandb -o yaml | yq e ''.items[0].spec.nodeName''
+      expected: ../verify/affinity.yaml

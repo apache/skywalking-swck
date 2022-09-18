@@ -80,15 +80,17 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              {{- range $expr := $affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms.MatchExpressions }}
-              - key: {{ $expr.Key }}
-                Operator: {{ $expr.Operator }}
-                Values:
-                  {{- range $v := $expr.Values }}
-                  - {{ $v }}
-                  {{- end}}
+            {{- range $requirement := $affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms}}
+              {{- range $matchExpression := $requirement.MatchExpressions }}
+                - matchExpressions:
+                    - key: {{ $matchExpression.Key }}
+                      operator: {{ $matchExpression.Operator }}
+                      values:
+                        {{- range $v := $matchExpression.Values }}
+                        - {{ $v }}
+                        {{- end}}
               {{- end}}
+            {{- end}}
         {{- end}}
 
         {{- if $affinity.PodAffinity }}

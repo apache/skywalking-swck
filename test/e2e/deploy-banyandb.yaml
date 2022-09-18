@@ -37,6 +37,15 @@ spec:
         volumeMode: Filesystem
         accessModes:
           - ReadWriteOnce
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: storage
+            operator: In
+            values:
+            - banyandb
 
 
 ---
