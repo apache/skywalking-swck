@@ -12,13 +12,13 @@ SWCK is based on the [kubebuilder](https://github.com/kubernetes-sigs/kubebuilde
 
 #### 2. Create CRD and Controller
 
-Then we can use `kubebuilder create api` to add a new CRD and corresponding controller. There we use the `Demo` as an example, and you should replace it with your CRD.
+Then we can use `kubebuilder create api` to add a new CRD and corresponding controller. Here we use the `Demo` as an example, and you should replace it with your CRD.
 
 ```sh
 $ cd operator && kubebuilder create api --group operator --version v1alpha1 --kind Demo(Your CRD)
 ```
 
-Then you need to input two `y` to create the Resource and Controller, and here are some newly added files.
+Then you need to input twice `y` to create the Resource and Controller, and there will be some newly added files.
 
 ```sh
 $ git status
@@ -66,13 +66,13 @@ At last, the `suite_test.go` can be deleted as we don't need it.
 
 ### 3. Create webhook
 
-If you want to validate the field of your CRD, you need to create the webhook as follows.
+If you want to validate the field of your CRD, you need to create a webhook as follows.
 
 ```sh
 kubebuilder create webhook --group operator --version v1alpha1 --kind Demo --defaulting --programmatic-validation
 ```
 
-Below is the newly generated file.
+The newly generated files are as follows.
 
 ```sh
 $ git status
@@ -101,9 +101,9 @@ You can get more details through [webhook-overview](https://book.kubebuilder.io/
 
 ### 4. Create the template
 
-Generally, a CRD will be associated with a series of resources, such as [workload](https://kubernetes.io/docs/concepts/workloads/), [rbac](https://kubernetes.io/docs/reference/access-authn-authz/rbac/), [service](https://kubernetes.io/docs/concepts/services-networking/service/), etc. All template files are stored in the `./operator/pkg/operator/manifests`, you could create the directory there such as `demo`, and refer to the CRD templates in other folders to define your own template. What's more, we support defining your own template rendering function by setting up the [TmplFunc](https://github.com/apache/skywalking-swck/blob/master/operator/pkg/kubernetes/apply.go#L49).
+Generally, a CRD will be associated with a series of resources, such as [workload](https://kubernetes.io/docs/concepts/workloads/), [rbac](https://kubernetes.io/docs/reference/access-authn-authz/rbac/), [service](https://kubernetes.io/docs/concepts/services-networking/service/), etc. All template files are stored in the `./operator/pkg/operator/manifests`, you could create the directory there such as `demo`, and refer to the CRD templates in other folders to define your own template. What's more, we support defining your own template rendering function by setting up the [TmplFunc](https://github.com/apache/skywalking-swck/blob/master/operator/pkg/kubernetes/apply.go#L49). At last, you need to change the [comment](https://github.com/apache/skywalking-swck/blob/bf4d1346a9869f67187b9b9202bf14d190728c56/operator/pkg/operator/manifests/repo.go#L31) and add a field `demo` there to embed the template files into golang binaries.
 
->  Notice, every file under the template directory can only contain one resource and we can't use the `---` to create multiple resources.
+>  Notice, every file under the template directory can only contain one resource and we can't use the `---` to create multiple resources in a single file.
 
 
 
