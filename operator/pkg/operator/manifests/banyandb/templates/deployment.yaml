@@ -60,6 +60,8 @@ spec:
           ports:
             - containerPort: 17912
               name: grpc
+            - containerPort: 17913
+              name: http
             - containerPort: 2121
               name: observability
             - containerPort: 6060
