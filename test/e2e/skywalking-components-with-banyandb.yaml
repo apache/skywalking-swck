@@ -28,7 +28,7 @@ spec:
       type: ClusterIP
   config:
     - name: SW_STORAGE_BANYANDB_HOST
-      value: banyandb-test-banyandb.default.svc.cluster.local
+      value: banyandb-test-banyandb-grpc.default.svc.cluster.local
     - name: SW_STORAGE
       value: banyandb
 ---

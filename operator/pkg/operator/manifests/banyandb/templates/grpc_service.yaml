@@ -15,11 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- $svc := .Spec.Service.Template }}
+{{- if .Spec.GRPCSvc }}
+
+{{- $svc := .Spec.GRPCSvc.Template }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Name }}-banyandb
+  name: {{ .Name }}-banyandb-grpc
   namespace: {{ .Namespace }}
   labels:
     app: banyandb
@@ -34,10 +36,6 @@ spec:
   ports:
     - port: 17912
       name: grpc
-    - port: 2121
-      name: observability
-    - port: 6060
-      name: pprof
 
   {{- if $svc.ExternalIPs }}
   externalIPs:
@@ -57,4 +55,4 @@ spec:
     {{- end }}
   {{- end }}
 
-
+{{- end }}

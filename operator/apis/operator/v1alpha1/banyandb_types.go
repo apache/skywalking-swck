@@ -45,10 +45,13 @@ type BanyanDBSpec struct {
 	// +kubebuilder:validation:Optional
 	Config []string `json:"config"`
 
-	// TODO support TLS settings
-	// BanyanDB Service
+	// BanyanDB HTTP Service
 	// +kubebuilder:validation:Optional
-	Service Service `json:"service,omitempty"`
+	HTTPSvc Service `json:"httpService,omitempty"`
+
+	// BanyanDB gRPC Serice
+	// +kubebuilder:validation:Optional
+	GRPCSvc Service `json:"gRPCService,omitempty"`
 
 	// BanyanDB Storage
 	// +kubebuilder:validation:Optional

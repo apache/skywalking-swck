@@ -76,7 +76,7 @@ setup:
         resource: service/default-oap
         port: 12800
       - namespace: default
-        resource: service/banyandb-test-banyandb
+        resource: service/banyandb-test-banyandb-grpc
         port: 17912
       - namespace: skywalking-system
         resource: service/skywalking-system-ui

@@ -97,7 +97,8 @@ func (in *BanyanDBSpec) DeepCopyInto(out *BanyanDBSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	in.Service.DeepCopyInto(&out.Service)
+	in.HTTPSvc.DeepCopyInto(&out.HTTPSvc)
+	in.GRPCSvc.DeepCopyInto(&out.GRPCSvc)
 	if in.Storages != nil {
 		in, out := &in.Storages, &out.Storages
 		*out = make([]StorageConfig, len(*in))
