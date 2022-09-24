@@ -113,6 +113,7 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 	}
 	if apiequal.Semantic.DeepDerivative(overlay, oapServer.Status) {
 		log.Info("Status keeps the same as before")
+		return errCol.Error()
 	}
 
 	if err := r.updateStatus(ctx, oapServer, overlay, errCol); err != nil {

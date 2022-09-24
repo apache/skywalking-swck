@@ -110,6 +110,7 @@ func (r *UIReconciler) checkState(ctx context.Context, log logr.Logger, ui *uiv1
 	}
 	if apiequal.Semantic.DeepDerivative(overlay, ui.Status) {
 		log.Info("Status keeps the same as before")
+		return errCol.Error()
 	}
 	ui.Status = overlay
 	ui.Kind = "UI"
