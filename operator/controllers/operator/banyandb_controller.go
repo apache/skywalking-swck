@@ -97,6 +97,7 @@ func (r *BanyanDBReconciler) checkState(ctx context.Context, log logr.Logger, ba
 	}
 	if apiequal.Semantic.DeepDerivative(overlay, banyanDB.Status) {
 		log.Info("Status keeps the same as before")
+		return errCol.Error()
 	}
 
 	if err := r.updateStatus(ctx, banyanDB, overlay, errCol); err != nil {
