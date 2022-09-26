@@ -16,5 +16,4 @@
 # under the License.
 
 resources:
-#  - custom.yaml
   - external.yaml
