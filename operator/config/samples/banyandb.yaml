@@ -15,5 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resources:
-  - external.yaml
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: BanyanDB
+metadata:
+  name: banyandb-sample
+spec:
+  version: 1.0.9
+  counts: 1
+  image: apache/skywalking-banyandb:latest
+  config:
+    - "standalone"
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                  - banyandb

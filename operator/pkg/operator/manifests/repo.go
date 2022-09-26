@@ -28,7 +28,7 @@ import (
 
 var _ kubernetes.Repo = &AssetsRepo{}
 
-//go:embed fetcher injector oapserver satellite storage ui
+//go:embed fetcher injector oapserver satellite storage ui banyandb
 var manifests embed.FS
 
 // AssetsRepo provides templates through assets
