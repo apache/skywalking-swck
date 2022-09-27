@@ -1,18 +1,18 @@
 ## How to add CRD and Controller in SWCK?
 
-The doc is to help contributors who want to add CRD and Controller in SWCK focus on the coding and reduce the time overhead of configuring kubebuilder.
+The guide intends to help contributors who want to add CRDs and Controllers in SWCK.
 
 #### 1. Install the kubebuilder
 
-> Notice, SWCK is built by kubebuilder v3+, so you need to install the kubebuilder after v3.0.0
+> Notice, SWCK is built by kubebuilder v3.2.0, so you need to install it at first.
 
-SWCK is based on the [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder), and you could download the kubebuilder in the [releases](https://github.com/kubernetes-sigs/kubebuilder/releases). 
+SWCK is based on the [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder), and you could download the kubebuilder by the [script](../hack/install-kubebuilder.sh). 
 
 
 
 #### 2. Create CRD and Controller
 
-Then we can use `kubebuilder create api` to add a new CRD and corresponding controller. Here we use the `Demo` as an example, and you should replace it with your CRD.
+You can use `kubebuilder create api` to scaffold a new Kind and corresponding controller. Here we use the `Demo` as an example.
 
 ```sh
 $ cd operator && kubebuilder create api --group operator --version v1alpha1 --kind Demo(Your CRD)
@@ -60,13 +60,10 @@ Next, we need to focus on the file `apis/operator/v1alpha1/demo_types.go` which 
 
 * [Controller-overview](https://book.kubebuilder.io/cronjob-tutorial/controller-overview.html), where you can find more details about `oapserverconfig_controller.go`.
 
-At last, the `suite_test.go` can be deleted as we don't need it.
-
-
 
 ### 3. Create webhook
 
-If you want to validate the field of your CRD, you need to create a webhook as follows.
+If you want to fields or set defaults to CRs, creating webhooks is a good practice:
 
 ```sh
 kubebuilder create webhook --group operator --version v1alpha1 --kind Demo --defaulting --programmatic-validation
@@ -95,13 +92,13 @@ Untracked files:
 no changes added to commit (use "git add" and/or "git commit -a")
 ```
 
-You can get more details through [webhook-overview](https://book.kubebuilder.io/reference/webhook-overview.html), and you also need to delete the file `webhook_suite_test.go`.
+You can get more details through [webhook-overview](https://book.kubebuilder.io/reference/webhook-overview.html).
 
 
 
 ### 4. Create the template
 
-Generally, a CRD will be associated with a series of resources, such as [workload](https://kubernetes.io/docs/concepts/workloads/), [rbac](https://kubernetes.io/docs/reference/access-authn-authz/rbac/), [service](https://kubernetes.io/docs/concepts/services-networking/service/), etc. All template files are stored in the `./operator/pkg/operator/manifests`, you could create the directory there such as `demo`, and refer to the CRD templates in other folders to define your own template. What's more, we support defining your own template rendering function by setting up the [TmplFunc](https://github.com/apache/skywalking-swck/blob/master/operator/pkg/kubernetes/apply.go#L49). At last, you need to change the [comment](https://github.com/apache/skywalking-swck/blob/bf4d1346a9869f67187b9b9202bf14d190728c56/operator/pkg/operator/manifests/repo.go#L31) and add a field `demo` there to embed the template files into golang binaries.
+Generally, a controller would generate a series of resources, such as [workload](https://kubernetes.io/docs/concepts/workloads/), [rbac](https://kubernetes.io/docs/reference/access-authn-authz/rbac/), [service](https://kubernetes.io/docs/concepts/services-networking/service/), etc based on CRDs. SWCK is using the Go standard template engine to generate these resources. All template files are stored in the `./operator/pkg/operator/manifests`. You could create a directory there such as `demo` to hold templates. The framework would transfer the CR as the arguments to these templates. More than CR, it supports passing custom rendering functions by setting up the [TmplFunc](https://github.com/apache/skywalking-swck/blob/master/operator/pkg/kubernetes/apply.go#L49). At last, you need to change the [comment](https://github.com/apache/skywalking-swck/blob/bf4d1346a9869f67187b9b9202bf14d190728c56/operator/pkg/operator/manifests/repo.go#L31) and add a field `demo` there to embed the template files into golang binaries.
 
 >  Notice, every file under the template directory can only contain one resource and we can't use the `---` to create multiple resources in a single file.
 
@@ -109,7 +106,7 @@ Generally, a CRD will be associated with a series of resources, such as [workloa
 
 ### 5. Build and Test
 
-SWCK needs to run in the k8s environment, so we highly recommend using the [kind](https://kind.sigs.k8s.io/) as the test environment. There are currently two ways to test your implementation. 
+SWCK needs to run in the k8s environment, so we highly recommend using the [kind](https://kind.sigs.k8s.io/) if you don't have a cluster in hand. There are currently two ways to test your implementation. 
 
 >  Before testing, please make sure you have the kind installed. 
 
