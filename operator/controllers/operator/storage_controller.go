@@ -138,6 +138,7 @@ func (r *StorageReconciler) checkState(ctx context.Context, log logr.Logger, sto
 
 	if apiequal.Semantic.DeepDerivative(overlay, storage.Status) {
 		log.Info("Status keeps the same as before")
+		return errCol.Error()
 	}
 	storage.Status = overlay
 	storage.Kind = "Storage"
