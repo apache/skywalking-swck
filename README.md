@@ -60,7 +60,7 @@ For more details, please refer to [deploy operator](docs/operator.md)
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
 
 # Contributing
-For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md)
+For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md). What's more, we have a guide about how to add new CRDs and Controllers, see [How to add new CRD and Controller in SWCK](docs/how-to-add-new-crd-and-controller.md).
 
 # License
 [Apache 2.0 License.](/LICENSE)
