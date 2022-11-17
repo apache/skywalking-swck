@@ -57,7 +57,7 @@ spec:
                   which is to be injected.
                 type: string
               javaSidecar:
-                description: Java defines Java agent special configs.
+                description: JavaSidecar defines Java agent special configs.
                 properties:
                   args:
                     description: Args is the args for initContainer.

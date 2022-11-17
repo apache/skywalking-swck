@@ -52,6 +52,20 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - persistentvolumeclaims
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - pods
   verbs:
   - create
@@ -147,6 +161,32 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - banyandbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - banyandbs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.skywalking.apache.org
+  resources:
+  - banyandbs/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - operator.skywalking.apache.org
   resources:

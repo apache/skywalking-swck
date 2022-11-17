@@ -99,6 +99,7 @@ func (r *SatelliteReconciler) checkState(ctx context.Context, log logr.Logger, s
 	}
 	if apiequal.Semantic.DeepDerivative(overlay, satellite.Status) {
 		log.Info("Status keeps the same as before")
+		return errCol.Error()
 	}
 	satellite.Status = overlay
 	satellite.Kind = "Satellite"
