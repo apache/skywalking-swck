@@ -84,9 +84,9 @@ kind: OAPServer
 metadata:
   name: default
 spec:
-  version: 9.0.0
+  version: 9.2.0
   instances: 1
-  image: apache/skywalking-oap-server:9.0.0
+  image: apache/skywalking-oap-server:9.2.0
   service:
     template:
       type: ClusterIP

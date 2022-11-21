@@ -112,7 +112,7 @@ verify:
     # max retry count
     count: 20
     # the interval between two attempts, e.g. 10s, 1m.
-    interval: 10s
+    interval: 15s
   cases:
     # test oapserver
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql service ls
@@ -126,12 +126,6 @@ verify:
     - includes:
         - ../ui-cases.yaml
     # test oapsever's static configuration
-    - query: |
-        swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql logs list --service-name=agent::songs --tags level=INFO --trace-id=$( \
-            swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql trace ls \
-              | yq e '.traces | select(.[].endpointnames[0]=="HikariCP/Connection/getConnection") | .[0].traceids[0]' -
-        ) | yq e '.logs' -
-      expected: ../verify/logs.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name=log_count_info --instance-name=songs --service-name=agent::songs | yq e 'to_entries' -
       expected: ../verify/metrics.yaml
     # test oapsever's dynamic configuration

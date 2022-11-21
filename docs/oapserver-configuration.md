@@ -11,7 +11,7 @@ To configure the OAP Sever, we propose two CRDs:
 
 | Field Name | Description                                                  |
 | ---------- | ------------------------------------------------------------ |
-| Version    | The version of OAP server, the default value is 9.0.0        |
+| Version    | The version of OAP server, the default value is 9.2.0        |
 | Env        | The environment variable of OAP server                       |
 | File       | The static file in OAP Server, which contains three fields`file.path`、`file.name` and `file.data`.  The `file.path` plus the `file.name`  is the real file that needs to be replaced in the container image, and the `file.data` is the final data in the specific file. |
 
@@ -41,7 +41,7 @@ metadata:
   namespace: skywalking-system
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.2.0
   # The env configuration of OAPServer
   env:
     - name: JAVA_OPTS
@@ -110,7 +110,7 @@ spec:
 
 | Field Name    | Description                                            |
 | ------------- | ------------------------------------------------------ |
-| Version       | The version of the OAP server, the default value is 9.0.0      |
+| Version       | The version of the OAP server, the default value is 9.2.0      |
 | LabelSelector | The label selector of the specific configmap, the default value is "app=collector,release=skywalking"               |
 | Data          | All configurations' key and value                      |
 
@@ -143,7 +143,7 @@ metadata:
   name: oapserverdynamicconfig-sample
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.2.0
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:
@@ -250,7 +250,7 @@ metadata:
   name: agent-analyzer.default
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.2.0
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:
@@ -267,7 +267,7 @@ metadata:
   name: core.default.endpoint-name-grouping-openapi
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.2.0
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:

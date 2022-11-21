@@ -46,8 +46,6 @@ spec:
             operator: In
             values:
             - banyandb
-
-
 ---
 apiVersion: v1
 kind: PersistentVolume

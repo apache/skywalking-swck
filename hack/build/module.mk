@@ -23,6 +23,10 @@ tool_bin := $(root_dir)/bin
 
 include $(root_dir)/hack/build/base.mk
 
+CONTROLLER_GEN_VERSION := v0.7.0
+KUSTOMIZE_VERSION := v4.5.6
+GOLANGCI_LINT_VERSION := v1.50.0
+
 ##@ Code quality and integrity
 
 # The goimports tool does not arrange imports in 3 blocks if there are already more than three blocks.
@@ -53,12 +57,12 @@ lint: golangci-lint ## Lint codes
 CONTROLLER_GEN = $(tool_bin)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION))
 
 KUSTOMIZE = $(tool_bin)/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.4.1)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION))
 
 ENVTEST = $(tool_bin)/setup-envtest
 .PHONY: envtest
@@ -74,7 +78,7 @@ goimports: ## Download goimports locally if necessary.
 GOLANGCILINT= $(tool_bin)/golangci-lint
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
-	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2)
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@$GOLANGCI_LINT_VERSION))
 	
 
 .PHONY: dependency-check

@@ -24,7 +24,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-sample
-    image: apache/skywalking-java-agent:8.8.0-java8
+    image: apache/skywalking-java-agent:8.13.0-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"

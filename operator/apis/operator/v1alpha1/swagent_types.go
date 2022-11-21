@@ -57,7 +57,7 @@ type JavaSidecar struct {
 
 	// Image is the image for initContainer, which commonly contains SkyWalking java agent SDK.
 	// +optional
-	Image string `json:"image,omitempty" default:"apache/skywalking-java-agent:8.8.0-java8"`
+	Image string `json:"image,omitempty" default:"apache/skywalking-java-agent:8.13.0-java8"`
 
 	// Command is the command for initContainer.
 	// +optional

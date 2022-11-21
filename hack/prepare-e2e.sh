@@ -21,12 +21,16 @@ ARCH=$(go env GOHOSTARCH)
 
 INSTALL_DIR=/usr/local/bin
 
+KUBECTL_VERSION=v1.21.10
+SWCTL_VERSION=0.9.0
+YQ_VERSION=v4.11.1
+
 prepare_ok=true
 # install kubectl
 function install_kubectl()
 {
     if ! command -v kubectl &> /dev/null; then
-      curl -LO https://dl.k8s.io/release/v1.21.10/bin/${OS}/${ARCH}/kubectl && chmod +x ./kubectl && mv ./kubectl ${INSTALL_DIR}
+      curl -LO https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/${OS}/${ARCH}/kubectl && chmod +x ./kubectl && mv ./kubectl ${INSTALL_DIR}
       if [ $? -ne 0 ]; then
         echo "install kubectl error, please check"
         prepare_ok=false
@@ -37,9 +41,9 @@ function install_kubectl()
 function install_swctl()
 {
     if ! command -v swctl &> /dev/null; then
-      wget https://github.com/apache/skywalking-cli/archive/0.9.0.tar.gz -O - |\
-      tar xz && cd skywalking-cli-0.9.0 && make ${OS} && mv bin/swctl-*-${OS}-amd64 ${INSTALL_DIR}/swctl \
-      && cd .. && rm -r skywalking-cli-0.9.0
+      wget https://github.com/apache/skywalking-cli/archive/${SWCTL_VERSION}.tar.gz -O - |\
+      tar xz && cd skywalking-cli-${SWCTL_VERSION} && make install DESTDIR=${INSTALL_DIR}  \
+      && cd .. && rm -r skywalking-cli-${SWCTL_VERSION}
       if [ $? -ne 0 ]; then
         echo "install swctl error, please check"
         prepare_ok=false
@@ -51,7 +55,7 @@ function install_yq()
 {
     if ! command -v yq &> /dev/null; then
       echo "install yq..."
-      wget https://github.com/mikefarah/yq/releases/download/v4.11.1/yq_${OS}_${ARCH}.tar.gz -O - |\
+      wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_${OS}_${ARCH}.tar.gz -O - |\
       tar xz && mv yq_${OS}_${ARCH} ${INSTALL_DIR}/yq
       if [ $? -ne 0 ]; then
         echo "install yq error, please check"

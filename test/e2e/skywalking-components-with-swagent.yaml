@@ -21,9 +21,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 8.8.1
+  version: 9.2.0
   instances: 1
-  image: ghcr.io/apache/skywalking/oap:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
+  image: apache/skywalking-oap-server:9.2.0
   service:
     template:
       type: ClusterIP
@@ -35,9 +35,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 8.8.1
+  version: 9.2.0
   instances: 1
-  image: ghcr.io/apache/skywalking/ui:46ae1cfe1ea137577a6d191f4bda39ea82feb2ac
+  image: apache/skywalking-ui:9.2.0
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:
@@ -56,7 +56,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-001
-    image: ghcr.io/apache/skywalking-java/skywalking-java:f8deb7c30b931aae83ac1f438ce72b3f74414ae5-java8
+    image: apache/skywalking-java-agent:8.13.0-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
@@ -78,7 +78,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-002
-    image: ghcr.io/apache/skywalking-java/skywalking-java:438d2954232ee7b996ca0a7d961eddcd2da0c5e6-java8
+    image: apache/skywalking-java-agent:8.13.0-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"

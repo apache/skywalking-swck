@@ -30,7 +30,7 @@ annotations:
     envName: nil
 
   - name: sidecar.skywalking.apache.org/initcontainer.Image
-    defaultValue: apache/skywalking-java-agent:8.10.0-java8
+    defaultValue: apache/skywalking-java-agent:8.13.0-java8
     validateFunc: nil
     envName: nil
 
