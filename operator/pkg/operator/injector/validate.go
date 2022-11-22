@@ -77,7 +77,7 @@ func FindValidateFunc(funcName string) AnnotationValidateFunc {
 	return nil
 }
 
-//ValidateServiceName validates the ServiceName is nil or not
+// ValidateServiceName validates the ServiceName is nil or not
 func ValidateServiceName(annotation, value string) error {
 	if value == "" {
 		return fmt.Errorf("%s error:the service name is nil", annotation)
@@ -85,7 +85,7 @@ func ValidateServiceName(annotation, value string) error {
 	return nil
 }
 
-//ValidateBackendServices validates an annotation's value is valid backend services
+// ValidateBackendServices validates an annotation's value is valid backend services
 func ValidateBackendServices(annotation, value string) error {
 	services := []string{value}
 	if strings.Contains(value, ",") {
@@ -109,7 +109,7 @@ func ValidateBackendServices(annotation, value string) error {
 	return nil
 }
 
-//ValidateIPv4OrHostname validates an annotation's value is valid ipv4 or hostname
+// ValidateIPv4OrHostname validates an annotation's value is valid ipv4 or hostname
 func ValidateIPv4OrHostname(annotation, service string) error {
 	service = strings.TrimSpace(service)
 	colonIndex := strings.LastIndex(service, ":")
@@ -137,7 +137,7 @@ func ValidateIPv4OrHostname(annotation, service string) error {
 	return nil
 }
 
-//ValidateResourceRequirements validates the resource requirement
+// ValidateResourceRequirements validates the resource requirement
 func ValidateResourceRequirements(annotation, value string) error {
 	if value == "nil" {
 		return nil
