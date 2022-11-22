@@ -144,7 +144,7 @@ func (r *OAPServerReconciler) updateStatus(ctx context.Context, oapServer *opera
 	})
 }
 
-//InjectStorage Inject Storage
+// InjectStorage Inject Storage
 func (r *OAPServerReconciler) InjectStorage(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) {
 	if oapServer.Spec.StorageConfig.Name == "" {
 		return

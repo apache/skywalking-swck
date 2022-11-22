@@ -14,7 +14,7 @@
 # limitations under the License.
 
 {{- contains .}}
-- image: apache/skywalking-java-agent:8.9.0-java8
+- image: apache/skywalking-java-agent:8.13.0-java8
   name: swagent-002
   volumeMounts:
     - montPath: /sky/agent

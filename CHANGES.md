@@ -2,6 +2,21 @@ Changes by Version
 ==================
 Release Notes.
 
+0.8.0
+------------------
+
+#### Features
+
+#### Bugs
+- Fix errors in banyandb e2e test. 
+
+#### Chores
+- Bump up golang to v1.19.
+- Bump up golangci-lint to v1.50.0.
+- Bump up skywalking-java-agent to v8.13.0.
+- Bump up kustomize to v4.5.6.
+- Bump up SkyWalking OAP to 9.2.0.
+
 0.7.0
 ------------------
 

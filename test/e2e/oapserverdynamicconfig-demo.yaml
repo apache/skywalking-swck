@@ -23,7 +23,7 @@ metadata:
   namespace: skywalking-system
 spec:
   # The version of OAPServer
-  version: 9.0.0
+  version: 9.2.0
   # The labelselector of OAPServer's dynamic configuration, it should be the same as labelSelector of OAPServerConfig
   labelSelector: app=collector,release=skywalking
   data:

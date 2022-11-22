@@ -30,9 +30,9 @@ kind: OAPServer
 metadata:
   name: default
 spec:
-  version: 9.1.0
+  version: 9.2.0
   instances: 1
-  image: apache/skywalking-oap-server:9.1.0
+  image: apache/skywalking-oap-server:9.2.0
   config:
     - name: SW_OTEL_RECEIVER
       value: default
@@ -46,9 +46,9 @@ kind: UI
 metadata:
   name: default
 spec:
-  version: 9.1.0
+  version: 9.2.0
   instances: 1
-  image: apache/skywalking-ui:9.1.0
+  image: apache/skywalking-ui:9.2.0
   OAPServerAddress: default-oap:12800
   service:
     template:
