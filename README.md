@@ -21,9 +21,6 @@ SWCK is a platform for the SkyWalking user that provisions, upgrades, maintains 
 
 # Quick Start
 
-* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to
-a folder named `skywalking-swck-<SWCK_VERSION>-bin`
-
 ## Java Agent Injector
 
 * Install the [Operator](#operator)
@@ -40,10 +37,16 @@ For more details, please read [Java agent injector](/docs/java-agent-injector.md
 ## Operator
 
 * To install the operator in an existing cluster, ensure you have [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
-* Apply the manifests for the Controller and CRDs in release/config:
+* Apply the manifests for the Controller and CRDs based on **Master Branch** or **Stable Release**:
  
  ```
- kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/operator-bundle.yaml
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default"
+ ```
+
+or
+
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.7.0"
  ```
 
 For more details, please refer to [deploy operator](docs/operator.md)
@@ -51,10 +54,16 @@ For more details, please refer to [deploy operator](docs/operator.md)
 ## Custom Metrics Adapter
   
 * Deploy the OAP server by referring to Operator Quick Start.
-* Apply the manifests for an adapter in release/adapter/config:
+* Apply the manifests for an adapter based on **Master Branch** or **Stable Release**:
  
  ```
- kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/adapter-bundle.yaml
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config"
+ ```
+
+or
+
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.7.0"
  ```
 
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
