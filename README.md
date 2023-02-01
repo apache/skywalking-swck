@@ -21,8 +21,9 @@ SWCK is a platform for the SkyWalking user that provisions, upgrades, maintains 
 
 # Quick Start
 
-* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to
-a folder named `skywalking-swck-<SWCK_VERSION>-bin`
+There are two ways to install swck.
+* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to a folder named `skywalking-swck-<SWCK_VERSION>-bin`
+* Apply the kustomization directory from github.
 
 ## Java Agent Injector
 
@@ -41,9 +42,21 @@ For more details, please read [Java agent injector](/docs/java-agent-injector.md
 
 * To install the operator in an existing cluster, ensure you have [`cert-manager`](https://cert-manager.io/docs/installation/) installed.
 * Apply the manifests for the Controller and CRDs in release/config:
- 
+
  ```
  kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/operator-bundle.yaml
+ ```
+
+* Also, you could deploy the operator quickly based on **Master Branch** or **Stable Release**:
+ 
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default"
+ ```
+
+or
+
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.7.0"
  ```
 
 For more details, please refer to [deploy operator](docs/operator.md)
@@ -52,9 +65,20 @@ For more details, please refer to [deploy operator](docs/operator.md)
   
 * Deploy the OAP server by referring to Operator Quick Start.
 * Apply the manifests for an adapter in release/adapter/config:
- 
+
  ```
  kubectl apply -f skywalking-swck-<SWCK_VERSION>-bin/config/adapter-bundle.yaml
+ ```
+* Also, you could deploy the adapter quickly based on **Master Branch** or **Stable Release**:
+ 
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config"
+ ```
+
+or
+
+ ```
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.7.0"
  ```
 
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
