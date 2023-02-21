@@ -92,12 +92,12 @@ BSD-3-Clause licenses
     github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 BSD-3-Clause
     github.com/spf13/pflag v1.0.5 BSD-3-Clause
     golang.org/x/crypto v0.3.0 BSD-3-Clause
-    golang.org/x/net v0.2.0 BSD-3-Clause
+    golang.org/x/net v0.7.0 BSD-3-Clause
     golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 BSD-3-Clause
     golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 BSD-3-Clause
-    golang.org/x/sys v0.2.0 BSD-3-Clause
-    golang.org/x/term v0.2.0 BSD-3-Clause
-    golang.org/x/text v0.4.0 BSD-3-Clause
+    golang.org/x/sys v0.5.0 BSD-3-Clause
+    golang.org/x/term v0.5.0 BSD-3-Clause
+    golang.org/x/text v0.7.0 BSD-3-Clause
     golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 BSD-3-Clause
     google.golang.org/protobuf v1.27.1 BSD-3-Clause
     gopkg.in/inf.v0 v0.9.1 BSD-3-Clause
