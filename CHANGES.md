@@ -2,10 +2,11 @@ Changes by Version
 ==================
 Release Notes.
 
-0.7.1
+0.8.0
 ------------------
 
 #### Features
+- [Breaking Change] Remove the way to configure the agent through Configmap.
 
 #### Bugs
 - Fix errors in banyandb e2e test. 

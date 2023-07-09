@@ -37,40 +37,45 @@ type SwAgentSpec struct {
 	JavaSidecar JavaSidecar `json:"javaSidecar,omitempty"`
 
 	// SharedVolume is the name of an empty volume which shared by initContainer and target containers.
+	// +kubebuilder:validation:Optional
 	SharedVolumeName string `json:"sharedVolumeName,omitempty"`
 
-	// SwConfigMapVolume defines the configmap which contains agent.config
-	SwConfigMapVolume *SwConfigMap `json:"swConfigMapVolume,omitempty"`
-
 	// Select the optional plugin which needs to be moved to the directory(/plugins). Such as`trace`,`webflux`,`cloud-gateway-2.1.x`.
+	// +kubebuilder:validation:Optional
 	OptionalPlugins []string `json:"optionalPlugins,omitempty"`
 
 	// Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.
+	// +kubebuilder:validation:Optional
 	OptionalReporterPlugins []string `json:"optionalReporterPlugins,omitempty"`
 }
 
 // Java defines Java agent special configs.
 type JavaSidecar struct {
 	// Name is the name for initContainer.
-	// +optional
-	Name string `json:"name,omitempty" default:"inject-skywalking-agent"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="inject-skywalking-agent"
+	Name string `json:"name,omitempty"`
 
 	// Image is the image for initContainer, which commonly contains SkyWalking java agent SDK.
-	// +optional
-	Image string `json:"image,omitempty" default:"apache/skywalking-java-agent:8.16.0-java8"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="apache/skywalking-java-agent:8.16.0-java8"
+	Image string `json:"image,omitempty"`
 
 	// Command is the command for initContainer.
-	// +optional
-	Command []string `json:"command,omitempty" default:"mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default={"mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent"}
+	Command []string `json:"command,omitempty"`
 
 	// Args is the args for initContainer.
+	// +kubebuilder:validation:Optional
 	Args []string `json:"args,omitempty"`
 
 	// Resources is the resources for initContainer pod resources
+	// +kubebuilder:validation:Optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Env defines java specific env vars.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
@@ -84,18 +89,13 @@ type SwAgentStatus struct {
 
 type SharedVolume struct {
 	// The name of shared volume
-	Name string `json:"name,omitempty" default:"sky-agent"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="sky-agent"
+	Name string `json:"name,omitempty"`
 	// The mountPath of shared volume
-	MountPath string `json:"mountPath,omitempty" default:"/sky/agent"`
-}
-
-type SwConfigMap struct {
-	// The name pf configmap used in the injected container as agent.config
-	Name string `json:"name,omitempty" default:"java-agent-configmap-volume"`
-	// The name of configmap volume.
-	ConfigMapName string `json:"configMapName,omitempty" default:"skywalking-swck-java-agent-configmap"`
-	// Mount path of the configmap in the injected container
-	ConfigMapMountFile string `json:"configMapMountFile,omitempty" default:"agent.config"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="/sky/agent"
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 //+kubebuilder:object:root=true

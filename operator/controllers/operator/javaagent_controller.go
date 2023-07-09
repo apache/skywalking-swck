@@ -90,20 +90,13 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Info("No configmap mounted.")
 	}
 
-	// get configuration from configmap
-	config, err := injector.GetConfigmapConfiguration(configmap)
-	if err != nil {
-		log.Error(err, "failed to get configmap's configuration")
-		return ctrl.Result{}, err
-	}
-	injector.GetInjectedAgentConfig(&pod.Annotations, &config)
-
 	swAgentList := &operatorv1alpha1.SwAgentList{}
 	var lastMatchedSwAgent *operatorv1alpha1.SwAgent
 	if lastMatchedSwAgent, err = r.getSwAgent(ctx, req, swAgentList, pod); err != nil {
 		log.Error(err, "get SwAgent error")
 		return ctrl.Result{}, err
 	}
+	config := map[string]string{}
 	r.injectConfigBySwAgent(lastMatchedSwAgent, config)
 
 	// only get the first selector label from labels as podselector

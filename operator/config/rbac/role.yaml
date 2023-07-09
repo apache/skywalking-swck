@@ -37,14 +37,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
   - events
   verbs:
   - create

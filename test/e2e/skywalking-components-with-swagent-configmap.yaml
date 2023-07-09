@@ -46,27 +46,6 @@ spec:
       host: demo.ui.skywalking
 
 ---
-
-apiVersion: v1
-data:
-  agent.config: |-
-    # The service name in UI
-    agent.service_name=${SW_AGENT_NAME:Your_ApplicationName}
-
-    # Backend service addresses.
-    collector.backend_service=${SW_AGENT_COLLECTOR_BACKEND_SERVICES:oap:11800}
-
-    logging.level=debug
-    logging.output=CONSOLE
-
-    # Please refer to https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/configurations/#table-of-agent-configuration-properties to get more details.
-kind: ConfigMap
-metadata:
-  name: java-agent-config
-  namespace: skywalking-system
-
-
----
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: SwAgent
 metadata:
@@ -84,10 +63,6 @@ spec:
       - name: "SW_AGENT_COLLECTOR_BACKEND_SERVICES"
         value: "skywalking-system-oap.skywalking-system.svc:11800"
   sharedVolumeName: "sky-agent-test-001"
-  swConfigMapVolume:
-    name: "java-agent-configmap-test-001-volume"
-    configMapName: "java-agent-config"
-    configMapMountFile: "agent.config"
   optionalPlugins:
     - "webflux"
     - "cloud-gateway-2.1.x"

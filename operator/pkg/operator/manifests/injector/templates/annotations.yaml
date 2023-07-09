@@ -69,21 +69,6 @@ annotations:
     validateFunc: nil
     envName: nil
 
-  - name: sidecar.skywalking.apache.org/configmapVolume.ConfigMap.Name
-    defaultValue:
-    validateFunc: nil
-    envName: nil
-
-  - name: sidecar.skywalking.apache.org/configmapVolume.Name
-    defaultValue:
-    validateFunc: nil
-    envName: nil
-
-  - name: sidecar.skywalking.apache.org/configmapVolumeMount.MountPath
-    defaultValue:
-    validateFunc: nil
-    envName: nil
-
   - name: sidecar.skywalking.apache.org/env.Name
     defaultValue: JAVA_TOOL_OPTIONS
     validateFunc: nil

@@ -65,6 +65,8 @@ spec:
                       type: string
                     type: array
                   command:
+                    default:
+                    - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
                     description: Command is the command for initContainer.
                     items:
                       type: string
@@ -180,10 +182,12 @@ spec:
                       type: object
                     type: array
                   image:
+                    default: apache/skywalking-java-agent:8.16.0-java8
                     description: Image is the image for initContainer, which commonly
                       contains SkyWalking java agent SDK.
                     type: string
                   name:
+                    default: inject-skywalking-agent
                     description: Name is the name for initContainer.
                     type: string
                   resources:
@@ -235,21 +239,6 @@ spec:
                 description: SharedVolume is the name of an empty volume which shared
                   by initContainer and target containers.
                 type: string
-              swConfigMapVolume:
-                description: SwConfigMapVolume defines the configmap which contains
-                  agent.config
-                properties:
-                  configMapMountFile:
-                    description: Mount path of the configmap in the injected container
-                    type: string
-                  configMapName:
-                    description: The name of configmap volume.
-                    type: string
-                  name:
-                    description: The name pf configmap used in the injected container
-                      as agent.config
-                    type: string
-                type: object
             type: object
           status:
             description: SwAgentStatus defines the observed state of SwAgent

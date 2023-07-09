@@ -18,15 +18,12 @@
 package injector
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
@@ -75,12 +72,6 @@ type SidecarInjectField struct {
 	SidecarVolume corev1.Volume
 	// sidecarVolumeMount is a path that specifies a shared directory
 	SidecarVolumeMount corev1.VolumeMount
-	// configmapVolume is volume that provide user with configmap
-	ConfigmapVolume corev1.Volume
-	// configmapVolumeMount is the configmap's mountpath for user
-	// Notice : the mount path will overwrite the original agent/config/agent.config
-	// So the mount path must match the path of agent.config in the image
-	ConfigmapVolumeMount corev1.VolumeMount
 	// env is used to set java agent’s parameters
 	Env corev1.EnvVar
 	// envs is the envs pass to target containers
@@ -112,9 +103,6 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 		pod.Spec.Volumes = []corev1.Volume{}
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, s.SidecarVolume)
-	if len(s.ConfigmapVolume.Name) > 0 && len(s.ConfigmapVolume.ConfigMap.Name) > 0 {
-		pod.Spec.Volumes = append(pod.Spec.Volumes, s.ConfigmapVolume)
-	}
 
 	// choose a specific container to inject
 	targetContainers := s.findInjectContainer(pod.Spec.Containers)
@@ -127,9 +115,6 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 		}
 
 		(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts, s.SidecarVolumeMount)
-		if len(s.ConfigmapVolumeMount.Name) > 0 && len(s.ConfigmapVolumeMount.MountPath) > 0 {
-			(*targetContainers[i]).VolumeMounts = append((*targetContainers[i]).VolumeMounts, s.ConfigmapVolumeMount)
-		}
 
 		if (*targetContainers[i]).Env != nil {
 			(*targetContainers[i]).Env = append((*targetContainers[i]).Env, s.Env)
@@ -253,8 +238,6 @@ func (s *SidecarInjectField) setValue(config *string, ao *AnnotationOverlay, ann
 }
 
 func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, pod *corev1.Pod) bool {
-	s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
-
 	// chose the last matched SwAgent
 	if len(swAgentL.Items) > 0 {
 		swAgent := swAgentL.Items[len(swAgentL.Items)-1]
@@ -264,22 +247,6 @@ func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, po
 		s.SidecarVolume.VolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
 		s.SidecarVolumeMount.Name = swAgent.Spec.SharedVolumeName
 		s.SidecarVolumeMount.MountPath = mountPath
-
-		// agent configmap
-		if swAgent.Spec.SwConfigMapVolume != nil {
-			if len(swAgent.Spec.SwConfigMapVolume.Name) > 0 &&
-				len(swAgent.Spec.SwConfigMapVolume.ConfigMapName) > 0 &&
-				len(swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile) > 0 {
-				//s.ConfigmapVolume = corev1.Volume{}
-				s.ConfigmapVolume.Name = swAgent.Spec.SwConfigMapVolume.Name
-				s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
-				s.ConfigmapVolume.ConfigMap.Name = swAgent.Spec.SwConfigMapVolume.ConfigMapName
-				//s.ConfigmapVolumeMount = corev1.VolumeMount{}
-				s.ConfigmapVolumeMount.Name = swAgent.Spec.SwConfigMapVolume.Name
-				s.ConfigmapVolumeMount.MountPath = "/sky/agent/config/" + swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile
-				s.ConfigmapVolumeMount.SubPath = swAgent.Spec.SwConfigMapVolume.ConfigMapMountFile
-			}
-		}
 
 		// init container
 		s.Initcontainer.Name = swAgent.Spec.JavaSidecar.Name
@@ -303,9 +270,6 @@ func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, po
 func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay, annotation *map[string]string) bool {
 	s.Initcontainer.Command = make([]string, 1)
 	s.Initcontainer.Args = make([]string, 2)
-	if nil == s.ConfigmapVolume.ConfigMap {
-		s.ConfigmapVolume.ConfigMap = new(corev1.ConfigMapVolumeSource)
-	}
 
 	limitsStr := ""
 	requestStr := ""
@@ -320,9 +284,6 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 		"initcontainer.resources.requests": &requestStr,
 		"sidecarVolume.Name":               &s.SidecarVolume.Name,
 		"sidecarVolumeMount.MountPath":     &s.SidecarVolumeMount.MountPath,
-		"configmapVolume.ConfigMap.Name":   &s.ConfigmapVolume.ConfigMap.Name,
-		"configmapVolume.Name":             &s.ConfigmapVolume.Name,
-		"configmapVolumeMount.MountPath":   &s.ConfigmapVolumeMount.MountPath,
 		"env.Name":                         &s.Env.Name,
 		"env.Value":                        &s.Env.Value,
 	}
@@ -338,7 +299,6 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 	}
 
 	s.SidecarVolumeMount.Name = s.SidecarVolume.Name
-	s.ConfigmapVolumeMount.Name = s.ConfigmapVolume.Name
 	s.Initcontainer.VolumeMounts = []corev1.VolumeMount{s.SidecarVolumeMount}
 
 	// add requests and limits to initcontainer
@@ -476,32 +436,6 @@ func (s *SidecarInjectField) OverlayPlugins(annotation *map[string]string) {
 			}
 		}
 	}
-}
-
-// ValidateConfigmap will validate a configmap(if exists) to set java agent config.
-func (s *SidecarInjectField) ValidateConfigmap(ctx context.Context, kubeclient client.Client, namespace string,
-	annotation *map[string]string) bool {
-	if len(s.ConfigmapVolume.Name) == 0 || len(s.ConfigmapVolume.ConfigMap.Name) == 0 {
-		return true
-	}
-	configmap := &corev1.ConfigMap{}
-	configmapName := s.ConfigmapVolume.VolumeSource.ConfigMap.LocalObjectReference.Name
-	// check whether the configmap is existed
-	err := kubeclient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: configmapName}, configmap)
-	if err != nil && !errors.IsNotFound(err) {
-		log.Error(err, "Get Configmap failed", "configmapName", configmapName, "namespace", namespace)
-		return false
-	}
-	// if configmap exist , validate it
-	if !errors.IsNotFound(err) {
-		ok, errinfo := ValidateConfigmap(configmap)
-		if ok {
-			log.Info("the configmap validate true", "configmapName", configmapName)
-			return true
-		}
-		log.Error(errinfo, "the configmap validate false", "configmapName", configmapName)
-	}
-	return true
 }
 
 func GetInjectedAgentConfig(annotation *map[string]string, configuration *map[string]string) {
