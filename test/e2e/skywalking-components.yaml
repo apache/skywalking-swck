@@ -21,9 +21,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.2.0
+  version: 9.5.0
   instances: 1
-  image: apache/skywalking-oap-server:9.2.0
+  image: apache/skywalking-oap-server:9.5.0
   service:
     template:
       type: ClusterIP
@@ -35,9 +35,9 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.2.0
+  version: 9.5.0
   instances: 1
-  image: apache/skywalking-ui:9.2.0
+  image: apache/skywalking-ui:9.5.0
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:

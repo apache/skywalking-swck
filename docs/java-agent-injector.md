@@ -104,7 +104,7 @@ initContainers:
     - mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent
     command:
     - sh
-    image: apache/skywalking-java-agent:8.13.0-java8
+    image: apache/skywalking-java-agent:8.16.0-java8
     name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent
@@ -134,7 +134,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-demo
-    image: apache/skywalking-java-agent:8.13.0-java8
+    image: apache/skywalking-java-agent:8.16.0-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
@@ -166,7 +166,7 @@ injection configuration will affect on agent injection behaviour
 |------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------|
 | javaSidecar            | javaSidecar is the configs for init container, which holds agent sdk and take agent sdk to the target containers. |                                          |
 | javaSidecar.name       | the name of the init container.                                                                                   | inject-skywalking-agent                  |
-| javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.13.0-java8 |
+| javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.16.0-java8 |
 | SharedVolumeName           | SharedVolume is the name of an empty volume which shared by initContainer and target containers.                         |                    sky-agent                      |
 | SwConfigMapVolume      | SwConfigMapVolume defines the configmap which contains agent.config                                   | no default value                               | 
 | OptionalPlugins  | Select the optional plugin which needs to be moved to the directory(/plugins). Such as `trace`,`webflux`,`cloud-gateway-2.1.x`.                                                                              | no default value                               |
@@ -224,7 +224,7 @@ The injector can recognize the following annotations to configure the sidecar:
 | Annotation key                                               | Description                                                  | Annotation Default value                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | `sidecar.skywalking.apache.org/initcontainer.Name`           | The name of the injected java agent container.               | `inject-skywalking-agent`                                    |
-| `sidecar.skywalking.apache.org/initcontainer.Image`          | The container image of the injected java agent container.    | `apache/skywalking-java-agent:8.13.0-java8`                    |
+| `sidecar.skywalking.apache.org/initcontainer.Image`          | The container image of the injected java agent container.    | `apache/skywalking-java-agent:8.16.0-java8`                    |
 | `sidecar.skywalking.apache.org/initcontainer.Command`        | The command of the injected java agent container.            | `sh`                                                         |
 | `sidecar.skywalking.apache.org/initcontainer.args.Option`    | The args option of the injected java agent container.       | `-c`                                                         |
 | `sidecar.skywalking.apache.org/initcontainer.args.Command`   | The args command of the injected java agent container.       | `mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent` |

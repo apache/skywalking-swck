@@ -164,7 +164,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-demo
-    image: apache/skywalking-java-agent:8.13.0-java8
+    image: apache/skywalking-java-agent:8.16.0-java8
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"
@@ -231,7 +231,7 @@ spec:
       && ls | grep -E "webflux|cloud-gateway-2.1.x"  | xargs -i cp {} /sky/agent/plugins/
     command:
     - sh
-    image: apache/skywalking-java-agent:8.13.0-java8
+    image: apache/skywalking-java-agent:8.16.0-java8
     name: swagent-demo
     volumeMounts:
     - mountPath: /sky/agent
@@ -339,7 +339,7 @@ spec:
       -i cp {} /sky/agent/plugins/
     command:
     - sh
-    image: apache/skywalking-java-agent:8.13.0-java8
+    image: apache/skywalking-java-agent:8.16.0-java8
     name: inject-skywalking-agent
     volumeMounts:
     - mountPath: /sky/agent

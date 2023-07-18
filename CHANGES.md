@@ -2,7 +2,7 @@ Changes by Version
 ==================
 Release Notes.
 
-0.8.0
+0.7.1
 ------------------
 
 #### Features
@@ -13,9 +13,9 @@ Release Notes.
 #### Chores
 - Bump up golang to v1.19.
 - Bump up golangci-lint to v1.50.0.
-- Bump up skywalking-java-agent to v8.13.0.
+- Bump up skywalking-java-agent to v8.16.0.
 - Bump up kustomize to v4.5.6.
-- Bump up SkyWalking OAP to 9.2.0.
+- Bump up SkyWalking OAP to 9.5.0.
 
 0.7.0
 ------------------

@@ -92,7 +92,7 @@ func (r *SwAgent) setDefault() {
 			r.Spec.JavaSidecar.Name = "inject-skywalking-agent"
 		}
 		if len(r.Spec.JavaSidecar.Image) == 0 {
-			r.Spec.JavaSidecar.Image = "apache/skywalking-java-agent:8.13.0-java8"
+			r.Spec.JavaSidecar.Image = "apache/skywalking-java-agent:8.16.0-java8"
 		}
 		if len(r.Spec.JavaSidecar.Command) == 0 {
 			if r.Spec.JavaSidecar.Command == nil {

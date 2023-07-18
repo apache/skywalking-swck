@@ -15,5 +15,11 @@
 
 {{- contains . }}
 - key: {{ notEmpty .key }}
-  value: {{ gt .value 0 }}
+  value: 
+    value: {{ gt .value.value 0 }} 
+    isemptyvalue: false
+- key: {{ notEmpty .key }}
+  value: 
+    value: 0
+    isemptyvalue: true
 {{- end }}
