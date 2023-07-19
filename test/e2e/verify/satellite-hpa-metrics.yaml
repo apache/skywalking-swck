@@ -15,5 +15,11 @@
 
 {{- contains . }}
 - key: {{ notEmpty .key }}
-  value: {{ ge .value 4 }}
+  value: 
+    value: 0
+    isemptyvalue: true
+- key: {{ notEmpty .key }}
+  value: 
+    value: {{ ge .value.value 4 }} 
+    isemptyvalue: false
 {{- end }}

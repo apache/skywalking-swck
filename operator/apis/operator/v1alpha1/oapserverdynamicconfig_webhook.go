@@ -44,9 +44,9 @@ var _ webhook.Defaulter = &OAPServerDynamicConfig{}
 func (r *OAPServerDynamicConfig) Default() {
 	oapserverdynamicconfiglog.Info("default", "name", r.Name)
 
-	// Default version is "9.2.0"
+	// Default version is "9.5.0"
 	if r.Spec.Version == "" {
-		r.Spec.Version = "9.2.0"
+		r.Spec.Version = "9.5.0"
 	}
 
 	// Default labelselector is "app=collector,release=skywalking"

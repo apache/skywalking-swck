@@ -19,4 +19,8 @@
 - id: {{ b64enc "Your_ApplicationName" }}.1
   name: Your_ApplicationName
   group: ""
+  shortname: "Your_ApplicationName"
+  layers:
+    - GENERAL
+  normal: true
 {{- end }}
