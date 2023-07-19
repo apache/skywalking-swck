@@ -107,9 +107,9 @@ spec:
                 - -c
                 - |
                   #!/usr/bin/env bash -e
-                  # Exit if ELASTIC_PASSWORD in unset
-                  if [ -z "${ELASTIC_PASSWORD}" ]; then
-                    echo "ELASTIC_PASSWORD variable is missing, exiting"
+                  # Exit if SW_ES_PASSWORD in unset
+                  if [ -z "${SW_ES_PASSWORD}" ]; then
+                    echo "SW_ES_PASSWORD variable is missing, exiting"
                     exit 1
                   fi
                   # If the node is starting up wait for the cluster to be ready (request params: "wait_for_status=green&timeout=1s" )
@@ -122,7 +122,7 @@ spec:
                     if [ "$args" != "" ]; then
                       set -- "$@" $args
                     fi
-                    set -- "$@" -u "elastic:${ELASTIC_PASSWORD}"
+                    set -- "$@" -u "elastic:${SW_ES_PASSWORD}"
                     curl --output /dev/null -k "$@" "{{ getProtocol .Spec.Security.TLS }}://127.0.0.1:9200${path}"
                   }
                   if [ -f "${START_FILE}" ]; then
