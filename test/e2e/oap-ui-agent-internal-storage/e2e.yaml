@@ -92,13 +92,13 @@ cleanup:
 #  url: http://${service_demo_host}:${service_demo_8085}/hello
 #  method: GET
 
-#verify:
+verify:
   # verify with retry strategy
-#  retry:
+  retry:
     # max retry count
-#    count: 10
+    count: 10
     # the interval between two attempts, e.g. 10s, 1m.
-#    interval: 10s
+    interval: 10s
 #  cases:
 #    - includes:
 #        - ../oapserver-cases.yaml
