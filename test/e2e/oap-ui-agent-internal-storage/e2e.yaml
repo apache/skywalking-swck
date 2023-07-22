@@ -39,13 +39,13 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
-    #- name: setup storage(use the internal type)
-    #  command: |
-    #    kubectl apply -f test/e2e/internal-storage.yaml
-    #  wait:
-    #    - namespace: default
-    #      resource: Storage/sample
-    #      for: condition=Ready
+    - name: setup storage(use the internal type)
+      command: |
+        kubectl apply -f test/e2e/internal-storage.yaml
+      wait:
+        - namespace: default
+          resource: Storage/sample
+          for: condition=Ready
     #- name: setup oapserver and ui
     #  command: |
     #    kubectl create namespace skywalking-system
