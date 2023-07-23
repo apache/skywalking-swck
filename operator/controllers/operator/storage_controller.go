@@ -177,7 +177,9 @@ func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, 
 	if user.SecretName != "" {
 		if user.SecretName == "default" {
 			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_USER", Value: "elastic"})
+			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_USER", Value: "elastic"})
 			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_PASSWORD", Value: "changeme"})
+			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_PASSWORD", Value: "changeme"})
 		} else {
 			usersecret := core.Secret{}
 			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: s.Namespace, Name: user.SecretName}, &usersecret); err != nil && !apierrors.IsNotFound(err) {
@@ -186,8 +188,10 @@ func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, 
 			for k, v := range usersecret.Data {
 				if k == "username" {
 					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_USER", Value: string(v)})
+					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_USER", Value: string(v)})
 				} else if k == "password" {
 					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_PASSWORD", Value: string(v)})
+					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_PASSWORD", Value: string(v)})
 				}
 			}
 		}

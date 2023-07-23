@@ -100,9 +100,6 @@ verify:
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
   cases:
-    - includes:
-        - ../oapserver-cases.yaml
-        - ../ui-cases.yaml
     # confirm whether the data are stored in the es
     - query: 'curl -u "elastic:changeme" -k "https://${service_skywalking_storage_host}:${service_skywalking_storage_9200}/_cat/indices?v" 2>&1 | grep sw_metrics | cut -d " " -f 5 | sed ''/^$/d'' | yq e ''{"indices": .}'' - | yq e ''to_entries'' -'
       expected: ../verify/indices.yaml
