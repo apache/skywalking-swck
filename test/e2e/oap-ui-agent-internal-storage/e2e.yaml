@@ -46,51 +46,51 @@ setup:
         - namespace: default
           resource: Storage/sample
           for: condition=Ready
-    #- name: setup oapserver and ui
-    #  command: |
-    #    kubectl create namespace skywalking-system
-    #    kubectl apply -f test/e2e/skywalking-components-with-storage.yaml
-    #  wait:
-    #    - namespace: default
-    #      resource: OAPServer/default
-    #      for: condition=Available
-    #    - namespace: skywalking-system
-    #      resource: UI/skywalking-system
-    #      for: condition=Available
-    #- name: setup java agent demo
-    #  command: |
-    #    kubectl label namespace skywalking-system swck-injection=enabled
-    #    sed 's/oap-service/default-oap.default/' test/e2e/demo.yaml | kubectl create -f -
-    #  wait:
-    #    - namespace: skywalking-system
-    #      resource: deployment/demo
-    #      for: condition=Available 
-  #kind:
-    #expose-ports:
-    #  - namespace: skywalking-system
-    #    resource: service/demo 
-    #    port: 8085
-    #  - namespace: default
-    #    resource: service/default-oap
-    #    port: 12800
-    #  - namespace: skywalking-system
-    #    resource: service/skywalking-system-ui
-    #    port: 80
-    #  - namespace: default
-    #    resource: service/skywalking-storage
-    #    port: 9200
+    - name: setup oapserver and ui
+      command: |
+        kubectl create namespace skywalking-system
+        kubectl apply -f test/e2e/skywalking-components-with-storage.yaml
+      wait:
+        - namespace: default
+          resource: OAPServer/default
+          for: condition=Available
+        - namespace: skywalking-system
+          resource: UI/skywalking-system
+          for: condition=Available
+    - name: setup java agent demo
+      command: |
+        kubectl label namespace skywalking-system swck-injection=enabled
+        sed 's/oap-service/default-oap.default/' test/e2e/demo.yaml | kubectl create -f -
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/demo
+          for: condition=Available 
+  kind:
+    expose-ports:
+      - namespace: skywalking-system
+        resource: service/demo 
+        port: 8085
+      - namespace: default
+        resource: service/default-oap
+        port: 12800
+      - namespace: skywalking-system
+        resource: service/skywalking-system-ui
+        port: 80
+      - namespace: default
+        resource: service/skywalking-storage
+        port: 9200
   timeout: 20m
 
 cleanup:
   # always never success failure
   on: never
 
-#trigger:
-#  action: http
-#  interval: 10s
-#  times: 5
-#  url: http://${service_demo_host}:${service_demo_8085}/hello
-#  method: GET
+trigger:
+  action: http
+  interval: 10s
+  times: 5
+  url: http://${service_demo_host}:${service_demo_8085}/hello
+  method: GET
 
 verify:
   # verify with retry strategy
@@ -99,10 +99,10 @@ verify:
     count: 10
     # the interval between two attempts, e.g. 10s, 1m.
     interval: 10s
-#  cases:
-#    - includes:
-#        - ../oapserver-cases.yaml
-#        - ../ui-cases.yaml
+  cases:
+    - includes:
+        - ../oapserver-cases.yaml
+        - ../ui-cases.yaml
     # confirm whether the data are stored in the es
-#    - query: 'curl -u "elastic:changeme" -k "https://${service_skywalking_storage_host}:${service_skywalking_storage_9200}/_cat/indices?v" 2>&1 | grep sw_metrics | cut -d " " -f 5 | sed ''/^$/d'' | yq e ''{"indices": .}'' - | yq e ''to_entries'' -'
-#      expected: ../verify/indices.yaml
+    - query: 'curl -u "elastic:changeme" -k "https://${service_skywalking_storage_host}:${service_skywalking_storage_9200}/_cat/indices?v" 2>&1 | grep sw_metrics | cut -d " " -f 5 | sed ''/^$/d'' | yq e ''{"indices": .}'' - | yq e ''to_entries'' -'
+      expected: ../verify/indices.yaml

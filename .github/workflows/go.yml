@@ -131,11 +131,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205     
         with:
           e2e-file: test/e2e/oap-ui-agent-internal-storage/e2e.yaml
-      - name: check status
-        run: |
-          export KUBECONFIG=/tmp/e2e-k8s.config
-          kubectl get po
-          kubectl describe pod sample-elasticsearch-0
+      - uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        name: Upload internal Logs
+        with:
+          name: internal-storage-logs
+          path: "${{ env.SW_INFRA_E2E_LOG_DIR }}" 
   external-storage-e2e-tests:          
     name: e2e tests(oap+ui+agent+external-storage)
     runs-on: ubuntu-latest
@@ -150,7 +151,7 @@ jobs:
       - name: Run E2E Test
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
-          e2e-file: test/e2e/oap-ui-agent-external-storage/e2e.yaml     
+          e2e-file: test/e2e/oap-ui-agent-external-storage/e2e.yaml
   banyandb-e2e-tests:
     name: e2e tests(oap+ui+agent+banyandb)
     runs-on: ubuntu-latest
