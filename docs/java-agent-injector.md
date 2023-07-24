@@ -168,7 +168,6 @@ injection configuration will affect on agent injection behaviour
 | javaSidecar.name       | the name of the init container.                                                                                   | inject-skywalking-agent                  |
 | javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.16.0-java8 |
 | SharedVolumeName           | SharedVolume is the name of an empty volume which shared by initContainer and target containers.                         |                    sky-agent                      |
-| SwConfigMapVolume      | SwConfigMapVolume defines the configmap which contains agent.config                                   | no default value                               | 
 | OptionalPlugins  | Select the optional plugin which needs to be moved to the directory(/plugins). Such as `trace`,`webflux`,`cloud-gateway-2.1.x`.                                                                              | no default value                               |
 | OptionalReporterPlugins  | Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.                                                                              | no default value                               |
 
@@ -232,9 +231,6 @@ The injector can recognize the following annotations to configure the sidecar:
 | `sidecar.skywalking.apache.org/initcontainer.resources.requests`   | The resources requests of  the injected java agent container. You should use json type to define it such as `{"memory": "100Mi","cpu": "100m"}`      | `nil` |
 | `sidecar.skywalking.apache.org/sidecarVolume.Name`           | The name of sidecar Volume.                                  | `sky-agent`                                                  |
 | `sidecar.skywalking.apache.org/sidecarVolumeMount.MountPath` | Mount path of the agent directory in the injected container. | `/sky/agent`                                                 |
-| `sidecar.skywalking.apache.org/configmapVolume.Name`         | The name of configmap volume.                                | `java-agent-configmap-volume`                                |
-| `sidecar.skywalking.apache.org/configmapVolumeMount.MountPath` | Mount path of the configmap in the injected container        | `/sky/agent/config`                                          |
-| `sidecar.skywalking.apache.org/configmapVolume.ConfigMap.Name` | The name pf configmap used in the injected container as `agent.config ` | `skywalking-swck-java-agent-configmap`                       |
 | `sidecar.skywalking.apache.org/env.Name`                     | Environment Name used by the injected container (application container). | `JAVA_TOOL_OPTIONS`                                                 |
 | `sidecar.skywalking.apache.org/env.Value`                    | Environment variables used by the injected container (application container). | `-javaagent:/sky/agent/skywalking-agent.jar`                 |
 

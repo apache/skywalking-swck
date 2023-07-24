@@ -117,14 +117,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
 		os.Exit(1)
 	}
-	if err = (&operatorcontroller.ConfigMapReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		FileRepo: manifests.NewRepo("injector"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
-		os.Exit(1)
-	}
 	if err = (&operatorcontroller.JavaAgentReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),

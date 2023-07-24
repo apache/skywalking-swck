@@ -40,13 +40,12 @@ type Injection interface {
 }
 
 // InjectProcessData defines data that needs to be processed in the injection process
-// Divide the entire injection process into 6 steps
+// Divide the entire injection process into 5 steps
 // 1.Get injection strategy
 // 2.Overlay the sidecar info
 // 3.Overlay the agent by setting jvm string
 // 4.Overlay the plugins by setting jvm string and set the optional plugins
-// 5.Get the ConfigMap
-// 6.Inject fields into Pod
+// 5.Inject fields into Pod
 // After all steps are completed, return fully injected Pod, Or there is an error
 // in a certain step, inject error info into annotations and return incompletely injected Pod
 type InjectProcessData struct {
@@ -171,24 +170,6 @@ func (op *OverlayPlugins) setNext(next Injection) {
 	op.next = next
 }
 
-// GetConfigmap is the fifth step of injection process
-type GetConfigmap struct {
-	next Injection
-}
-
-// GetConfigmap will get the configmap specified in the annotation. if not exist ,
-// we will get data from default configmap and create configmap in the req's namespace
-func (gc *GetConfigmap) execute(ipd *InjectProcessData) admission.Response {
-	log.Info("=============== GetConfigmap ================")
-	if !ipd.injectFileds.ValidateConfigmap(ipd.ctx, ipd.kubeclient, ipd.req.Namespace, &ipd.pod.ObjectMeta.Annotations) {
-		return PatchReq(ipd.pod, ipd.req)
-	}
-	return gc.next.execute(ipd)
-}
-func (gc *GetConfigmap) setNext(next Injection) {
-	gc.next = next
-}
-
 // PodInject is the sixth step of injection process
 type PodInject struct {
 	next Injection
@@ -229,12 +210,8 @@ func (ipd *InjectProcessData) Run() admission.Response {
 	podInject := &PodInject{}
 
 	// set next step is PodInject
-	getConfigmap := &GetConfigmap{}
-	getConfigmap.setNext(podInject)
-
-	// set next step is GetConfigmap
 	overlayPlugins := &OverlayPlugins{}
-	overlayPlugins.setNext(getConfigmap)
+	overlayPlugins.setNext(podInject)
 
 	// set next step is OverlayPlugins
 	overlayAgent := &OverlayAgent{}
