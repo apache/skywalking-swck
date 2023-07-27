@@ -73,7 +73,7 @@ func (r *Satellite) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateUpdate(old runtime.Object) error {
+func (r *Satellite) ValidateUpdate(_ runtime.Object) error {
 	satellitelog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

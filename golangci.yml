@@ -15,16 +15,13 @@
 
 linters:
   enable:
-    - deadcode
     - errcheck
     - goconst
     - revive
     - ineffassign
     - lll
     - misspell
-    - structcheck
     - unconvert
-    - varcheck
     - govet
     - goimports
     - prealloc
@@ -49,6 +46,5 @@ run:
     - dist
 issues:
   exclude:
-    # staticcheck
     - 'SA1019: Package github.com/golang/protobuf/proto is deprecated: Use the "google.golang.org/protobuf/proto" package instead.'
     - 'SA1019: Package github.com/golang/protobuf/jsonpb is deprecated: Use the "google.golang.org/protobuf/encoding/protojson" package instead.'

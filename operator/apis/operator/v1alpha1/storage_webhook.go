@@ -66,7 +66,7 @@ func (r *Storage) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateUpdate(old runtime.Object) error {
+func (r *Storage) ValidateUpdate(_ runtime.Object) error {
 	storagelog.Info("validate update", "name", r.Name)
 	return r.valid()
 }

@@ -245,7 +245,7 @@ BSD-3-Clause licenses
     golang.org/x/crypto v0.6.0 BSD-3-Clause
     golang.org/x/net v0.7.0 BSD-3-Clause
     golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 BSD-3-Clause
-    golang.org/x/sys v0.5.0 BSD-3-Clause
+    golang.org/x/sys v0.10.0 BSD-3-Clause
     golang.org/x/term v0.5.0 BSD-3-Clause
     golang.org/x/text v0.7.0 BSD-3-Clause
     golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 BSD-3-Clause
@@ -275,7 +275,7 @@ MIT licenses
     github.com/mailru/easyjson v0.7.6 MIT
     github.com/mitchellh/copystructure v1.0.0 MIT
     github.com/mitchellh/reflectwalk v1.0.0 MIT
-    github.com/sirupsen/logrus v1.8.1 MIT
+    github.com/sirupsen/logrus v1.9.3 MIT
     github.com/spf13/cast v1.3.1 MIT
     go.uber.org/atomic v1.7.0 MIT
     go.uber.org/multierr v1.6.0 MIT

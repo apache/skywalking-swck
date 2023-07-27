@@ -161,7 +161,7 @@ func bufferEntity(buff []string, index int, requirement labels.Requirement, dec 
 	return buff, nil
 }
 
-func (p *externalMetricsProvider) GetExternalMetric(ctx context.Context, namespace string, metricSelector labels.Selector,
+func (p *externalMetricsProvider) GetExternalMetric(_ context.Context, namespace string, metricSelector labels.Selector,
 	info apiprovider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
 	var md *swctlapi.MetricDefinition
 	for _, m := range p.metricDefines {

@@ -60,7 +60,7 @@ func (r *SwAgent) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateUpdate(old runtime.Object) error {
+func (r *SwAgent) ValidateUpdate(_ runtime.Object) error {
 	swagentlog.Info("validate update", "name", r.Name)
 	return nil
 }

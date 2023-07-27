@@ -102,7 +102,7 @@ func (r *OAPServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 				return ctrl.Result{}, fmt.Errorf("failed to get the deployment of OAPServer: %w", err)
 			}
 			// overlay the env configuration
-			envChanged, err := r.OverlayEnv(ctx, log, &oapServer, &oapServerConfig, &deployment)
+			envChanged, err := r.OverlayEnv(log, &oapServerConfig, &deployment)
 			if err != nil {
 				log.Error(err, "failed to overlay the env configuration")
 			}
@@ -128,8 +128,8 @@ func (r *OAPServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
 }
 
-func (r *OAPServerConfigReconciler) OverlayEnv(ctx context.Context, log logr.Logger,
-	oapServer *operatorv1alpha1.OAPServer, oapServerConfig *operatorv1alpha1.OAPServerConfig, deployment *apps.Deployment) (bool, error) {
+func (r *OAPServerConfigReconciler) OverlayEnv(log logr.Logger,
+	oapServerConfig *operatorv1alpha1.OAPServerConfig, deployment *apps.Deployment) (bool, error) {
 	changed := false
 
 	sort.Sort(SortByEnvName(oapServerConfig.Spec.Env))
