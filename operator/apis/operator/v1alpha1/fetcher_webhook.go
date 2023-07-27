@@ -60,7 +60,7 @@ func (r *Fetcher) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Fetcher) ValidateUpdate(old runtime.Object) error {
+func (r *Fetcher) ValidateUpdate(_ runtime.Object) error {
 	fetcherlog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

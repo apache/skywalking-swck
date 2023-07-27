@@ -56,7 +56,7 @@ For more details, please read [Java agent injector](/docs/java-agent-injector.md
 or
 
  ```
- kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.7.0"
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.8.0"
  ```
 
 For more details, please refer to [deploy operator](docs/operator.md)
@@ -78,7 +78,7 @@ For more details, please refer to [deploy operator](docs/operator.md)
 or
 
  ```
- kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.7.0"
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.8.0"
  ```
 
 For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)

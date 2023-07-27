@@ -143,8 +143,7 @@ func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 }
 
 // GetInjectStrategy gets user's injection strategy
-func (s *SidecarInjectField) GetInjectStrategy(a Annotations, labels,
-	annotation *map[string]string) {
+func (s *SidecarInjectField) GetInjectStrategy(labels, annotation *map[string]string) {
 	// set default value
 	s.NeedInject = false
 
@@ -237,7 +236,7 @@ func (s *SidecarInjectField) setValue(config *string, ao *AnnotationOverlay, ann
 	return false
 }
 
-func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList, pod *corev1.Pod) bool {
+func (s *SidecarInjectField) OverlaySwAgentCR(swAgentL *v1alpha1.SwAgentList) bool {
 	// chose the last matched SwAgent
 	if len(swAgentL.Items) > 0 {
 		swAgent := swAgentL.Items[len(swAgentL.Items)-1]

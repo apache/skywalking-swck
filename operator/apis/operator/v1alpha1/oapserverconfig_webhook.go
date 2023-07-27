@@ -62,7 +62,7 @@ func (r *OAPServerConfig) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerConfig) ValidateUpdate(old runtime.Object) error {
+func (r *OAPServerConfig) ValidateUpdate(_ runtime.Object) error {
 	oapserverconfiglog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

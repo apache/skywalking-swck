@@ -67,7 +67,7 @@ func (r *OAPServerDynamicConfig) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateUpdate(old runtime.Object) error {
+func (r *OAPServerDynamicConfig) ValidateUpdate(_ runtime.Object) error {
 	oapserverdynamicconfiglog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

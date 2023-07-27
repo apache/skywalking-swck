@@ -38,7 +38,7 @@ type SwAgentReconciler struct {
 //+kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=swagents/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=swagents/finalizers,verbs=update
 
-func (r *SwAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SwAgentReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
 	log.Info("===================== SwAgent Reconcile (do nothing) ================================\n")
 	return ctrl.Result{}, nil

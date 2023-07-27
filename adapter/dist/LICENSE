@@ -95,7 +95,7 @@ BSD-3-Clause licenses
     golang.org/x/net v0.7.0 BSD-3-Clause
     golang.org/x/oauth2 v0.4.0 BSD-3-Clause
     golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 BSD-3-Clause
-    golang.org/x/sys v0.5.0 BSD-3-Clause
+    golang.org/x/sys v0.10.0 BSD-3-Clause
     golang.org/x/term v0.5.0 BSD-3-Clause
     golang.org/x/text v0.7.0 BSD-3-Clause
     golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 BSD-3-Clause
@@ -122,7 +122,7 @@ MIT licenses
     github.com/josharian/intern v1.0.0 MIT
     github.com/json-iterator/go v1.1.12 MIT
     github.com/mailru/easyjson v0.7.6 MIT
-    github.com/sirupsen/logrus v1.8.1 MIT
+    github.com/sirupsen/logrus v1.9.3 MIT
     github.com/urfave/cli v1.22.1 MIT
     go.uber.org/atomic v1.7.0 MIT
     go.uber.org/multierr v1.6.0 MIT

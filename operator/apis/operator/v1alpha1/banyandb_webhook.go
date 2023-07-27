@@ -67,7 +67,7 @@ func (r *BanyanDB) ValidateCreate() error {
 	return r.validate()
 }
 
-func (r *BanyanDB) ValidateUpdate(old runtime.Object) error {
+func (r *BanyanDB) ValidateUpdate(_ runtime.Object) error {
 	banyandbLog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

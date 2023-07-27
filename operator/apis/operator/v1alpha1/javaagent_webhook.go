@@ -78,7 +78,7 @@ func (r *JavaAgent) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateUpdate(old runtime.Object) error {
+func (r *JavaAgent) ValidateUpdate(_ runtime.Object) error {
 	javaagentlog.Info("validate update", "name", r.Name)
 	return r.validate()
 }

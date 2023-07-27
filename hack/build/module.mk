@@ -25,7 +25,7 @@ include $(root_dir)/hack/build/base.mk
 
 CONTROLLER_GEN_VERSION := v0.7.0
 KUSTOMIZE_VERSION := v4.5.6
-GOLANGCI_LINT_VERSION := v1.50.0
+GOLANGCI_LINT_VERSION := v1.53.3
 
 ##@ Code quality and integrity
 
@@ -52,7 +52,7 @@ check: ## Check that the status
 
 .PHONY: lint
 lint: golangci-lint ## Lint codes
-	$(GOLANGCILINT) run --config $(root_dir)/golangci.yml 
+	$(GOLANGCILINT) -v run --config $(root_dir)/golangci.yml 
 
 CONTROLLER_GEN = $(tool_bin)/controller-gen
 .PHONY: controller-gen

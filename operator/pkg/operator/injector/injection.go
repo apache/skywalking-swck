@@ -79,7 +79,7 @@ type GetStrategy struct {
 // if don't need to inject, then return the original pod, otherwise go to the next step
 func (gs *GetStrategy) execute(ipd *InjectProcessData) admission.Response {
 	log.Info("=============== GetStrategy ================")
-	ipd.injectFileds.GetInjectStrategy(*ipd.annotation, &ipd.pod.ObjectMeta.Labels, &ipd.pod.ObjectMeta.Annotations)
+	ipd.injectFileds.GetInjectStrategy(&ipd.pod.ObjectMeta.Labels, &ipd.pod.ObjectMeta.Annotations)
 	if !ipd.injectFileds.NeedInject {
 		log.Info("don't inject agent")
 		return admission.Allowed("ok")
@@ -99,7 +99,7 @@ type OverlaySwAgentCR struct {
 // get configs from SwAgent CR
 func (gs *OverlaySwAgentCR) execute(ipd *InjectProcessData) admission.Response {
 	log.Info(fmt.Sprintf("=============== OverlaySwAgentCR(%d) ================ ", len(ipd.swAgentL.Items)))
-	if !ipd.injectFileds.OverlaySwAgentCR(ipd.swAgentL, ipd.pod) {
+	if !ipd.injectFileds.OverlaySwAgentCR(ipd.swAgentL) {
 		log.Info("overlay SwAgent cr config error.")
 		return PatchReq(ipd.pod, ipd.req)
 	}
