@@ -98,7 +98,7 @@ spec:
               value: "1000"
             {{ range .Spec.Config }}
             - name: {{ .Name }}
-              value: {{ .Value }}
+              value: "{{ .Value }}"
             {{end}}
           readinessProbe:
             exec:

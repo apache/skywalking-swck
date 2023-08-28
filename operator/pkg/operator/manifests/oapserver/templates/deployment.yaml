@@ -107,7 +107,7 @@ spec:
               value: default
           {{range .Spec.Config}}
             - name: {{ .Name }}
-              value: {{ .Value }}
+              value: "{{ .Value }}"
           {{end}}
       {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
       volumes:
