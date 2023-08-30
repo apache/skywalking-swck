@@ -52,6 +52,12 @@ spec:
           spec:
             description: SwAgentSpec defines the desired state of SwAgent
             properties:
+              bootstrapPlugins:
+                description: Select the bootstrap plugin which needs to be moved to
+                  the directory(/plugins). such as `jdk-threading`.
+                items:
+                  type: string
+                type: array
               containerMatcher:
                 description: ContainerMatcher is the regular expression to match pods
                   which is to be injected.

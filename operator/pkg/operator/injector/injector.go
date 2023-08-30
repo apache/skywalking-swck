@@ -49,12 +49,15 @@ const (
 	pluginsAnnotationPrefix = "plugins.skywalking.apache.org/"
 	// If user want to use optional-plugins , the annotation must match a optinal plugin
 	// such as optional.skywalking.apache.org: "trace|webflux|cloud-gateway-2.1.x"
-	// Notice , If the injected container's image don't has the optional plugin ,
+	// Notice , If the injected container's image don't hava the optional plugin ,
 	// the container will panic
 	optionsAnnotation = "optional.skywalking.apache.org"
-	// If user want to use optional-reporter-plugins , the annotation must match a optinal-reporter plugin
-	// such as optional-exporter.skywalking.apache.org: "kafka"
+	// If user want to use optional-reporter-plugins , the annotation must match an optional-reporter plugin
+	// such as optional-reporter.skywalking.apache.org: "kafka"
 	optionsReporterAnnotation = "optional-reporter.skywalking.apache.org"
+	// If user want to use bootstrap-plugins , the annotation must match a bootstrap plugin
+	// such as bootstrap.skywalking.apache.org: "jdk-threading"
+	bootstrapAnnotation = "bootstrap.skywalking.apache.org"
 	// the mount path of empty volume, which shared by init container and target container.
 	mountPath = "/sky/agent"
 )
@@ -377,11 +380,13 @@ func (s *SidecarInjectField) OverlayAgent(a Annotations, ao *AnnotationOverlay, 
 func (s *SidecarInjectField) OverlayOptional(swAgentL []v1alpha1.SwAgent, annotation *map[string]string) {
 	sourceOptionalPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-plugins/"}, "/")
 	sourceOptionalReporterPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "optional-reporter-plugins/"}, "/")
+	sourceBootstrapPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "bootstrap-plugins/"}, "/")
 	targetPath := strings.Join([]string{s.SidecarVolumeMount.MountPath, "plugins/"}, "/")
 
 	command := ""
 	optionalPlugin := ""
-	optinalReporterPlugins := ""
+	optionalReporterPlugins := ""
+	bootstrapPlugins := ""
 
 	// chose the last matched SwAgent
 	if len(swAgentL) > 0 {
@@ -391,7 +396,10 @@ func (s *SidecarInjectField) OverlayOptional(swAgentL []v1alpha1.SwAgent, annota
 			optionalPlugin = strings.Join(swAgent.Spec.OptionalPlugins, "|")
 		}
 		if len(swAgent.Spec.OptionalReporterPlugins) > 0 {
-			optinalReporterPlugins = strings.Join(swAgent.Spec.OptionalReporterPlugins, "|")
+			optionalReporterPlugins = strings.Join(swAgent.Spec.OptionalReporterPlugins, "|")
+		}
+		if len(swAgent.Spec.BootstrapPlugins) > 0 {
+			bootstrapPlugins = strings.Join(swAgent.Spec.BootstrapPlugins, "|")
 		}
 	}
 
@@ -399,7 +407,9 @@ func (s *SidecarInjectField) OverlayOptional(swAgentL []v1alpha1.SwAgent, annota
 		if strings.EqualFold(k, optionsAnnotation) {
 			optionalPlugin = v
 		} else if strings.EqualFold(k, optionsReporterAnnotation) {
-			optinalReporterPlugins = v
+			optionalReporterPlugins = v
+		} else if strings.EqualFold(k, bootstrapAnnotation) {
+			bootstrapPlugins = v
 		}
 		if command != "" {
 			s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
@@ -411,8 +421,13 @@ func (s *SidecarInjectField) OverlayOptional(swAgentL []v1alpha1.SwAgent, annota
 		s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
 	}
 
-	if len(optinalReporterPlugins) > 0 {
-		command = "cd " + sourceOptionalReporterPath + " && ls | grep -E \"" + optinalReporterPlugins + "\"  | xargs -i cp {} " + targetPath
+	if len(optionalReporterPlugins) > 0 {
+		command = "cd " + sourceOptionalReporterPath + " && ls | grep -E \"" + optionalReporterPlugins + "\"  | xargs -i cp {} " + targetPath
+		s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
+	}
+
+	if len(bootstrapPlugins) > 0 {
+		command = "cd " + sourceBootstrapPath + " && ls | grep -E \"" + bootstrapPlugins + "\"  | xargs -i cp {} " + targetPath
 		s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
 	}
 
