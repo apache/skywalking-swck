@@ -31,6 +31,8 @@ spec:
         sidecar.skywalking.apache.org/initcontainer.resources.limits: '{"memory": "100Mi","cpu": "100m"}'
         sidecar.skywalking.apache.org/initcontainer.resources.requests: '{"memory": "100Mi","cpu": "100m"}'
         agent.skywalking.apache.org/collector.backend_service: "oap-service:11800"
+        optional.skywalking.apache.org: "webflux|cloud-gateway-2.1.x"
+        bootstrap.skywalking.apache.org: "jdk-http|jdk-threading"
     spec:
       containers:
       - name: demo1

@@ -99,5 +99,13 @@ verify:
       expected: ../verify/endpoint.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_oap_host}:${service_skywalking_system_oap_12800}/graphql metrics linear --name endpoint_cpm --endpoint-name GET:/hello --service-name Your_ApplicationName | yq e 'to_entries' -
       expected: ../verify/metrics.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*webflux.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*webflux.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/optional-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*cloud-gateway-2\.1\.x.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*cloud-gateway-2\.1\.x.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/optional-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*jdk-http.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*jdk-http.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/bootstrap-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*jdk-threading.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*jdk-threading.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/bootstrap-plugin.yaml
     - includes:
         - ../ui-cases.yaml
