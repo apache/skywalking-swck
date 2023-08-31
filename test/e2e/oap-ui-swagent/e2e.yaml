@@ -109,6 +109,10 @@ verify:
       expected: ../verify/optional-plugin.yaml
     - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*cloud-gateway-2\.1\.x.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*cloud-gateway-2\.1\.x.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
       expected: ../verify/optional-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*jdk-http.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*jdk-http.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/bootstrap-plugin.yaml
+    - query: 'kubectl logs -l app=demo -n skywalking-system --tail=-1 | grep -Eo "AgentClassLoader.*jdk-threading.*\.jar loaded" | grep -Eo "/sky/agent/plugins/.*jdk-threading.*\.jar" | jq -R -s -c "split(\"\n\")[:-1]" |  yq e ''to_entries'''
+      expected: ../verify/bootstrap-plugin.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
       expected: ../verify/service.yaml
     - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName

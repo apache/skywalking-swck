@@ -47,6 +47,10 @@ type SwAgentSpec struct {
 	// Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.
 	// +kubebuilder:validation:Optional
 	OptionalReporterPlugins []string `json:"optionalReporterPlugins,omitempty"`
+
+	// Select the bootstrap plugin which needs to be moved to the directory(/plugins). such as `jdk-threading`.
+	// +kubebuilder:validation:Optional
+	BootstrapPlugins []string `json:"bootstrapPlugins,omitempty"`
 }
 
 // Java defines Java agent special configs.

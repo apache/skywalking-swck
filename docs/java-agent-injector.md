@@ -144,6 +144,8 @@ spec:
   optionalPlugins:
     - "webflux"
     - "cloud-gateway-2.1.x"
+  bootstrapPlugins:
+    - "jdk-threading"
 ```
 
 There are three kind of configs in SwAgent CR.
@@ -162,14 +164,15 @@ label selector and container matcher decides which pod and container should be i
 
 injection configuration will affect on agent injection behaviour
 
-| key path               | description                                                                                                       | default value                            |
-|------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------|
-| javaSidecar            | javaSidecar is the configs for init container, which holds agent sdk and take agent sdk to the target containers. |                                          |
-| javaSidecar.name       | the name of the init container.                                                                                   | inject-skywalking-agent                  |
-| javaSidecar.image      | the image of the init container.                                                                                  | apache/skywalking-java-agent:8.16.0-java8 |
-| SharedVolumeName           | SharedVolume is the name of an empty volume which shared by initContainer and target containers.                         |                    sky-agent                      |
-| OptionalPlugins  | Select the optional plugin which needs to be moved to the directory(/plugins). Such as `trace`,`webflux`,`cloud-gateway-2.1.x`.                                                                              | no default value                               |
-| OptionalReporterPlugins  | Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.                                                                              | no default value                               |
+| key path                | description                                                                                                                     | default value                             |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|
+| javaSidecar             | javaSidecar is the configs for init container, which holds agent sdk and take agent sdk to the target containers.               |                                           |
+| javaSidecar.name        | the name of the init container.                                                                                                 | inject-skywalking-agent                   |
+| javaSidecar.image       | the image of the init container.                                                                                                | apache/skywalking-java-agent:8.16.0-java8 |
+| SharedVolumeName        | SharedVolume is the name of an empty volume which shared by initContainer and target containers.                                | sky-agent                                 |
+| OptionalPlugins         | Select the optional plugin which needs to be moved to the directory(/plugins). Such as `trace`,`webflux`,`cloud-gateway-2.1.x`. | no default value                          |
+| OptionalReporterPlugins | Select the optional reporter plugin which needs to be moved to the directory(/plugins). such as `kafka`.                        | no default value                          |
+| BootstrapPlugins        | Select the bootstrap plugin which needs to be moved to the directory(/plugins). such as `jdk-threading`.                        | no default value                          |
 
 #### 3. skywalking agent configuration
 
@@ -215,6 +218,14 @@ The optional reporter plugin configuration is the annotation as below.
 | Annotation key                            | Description                                                  | Annotation value |
 | ----------------------------------------- | ------------------------------------------------------------ | ---------------- |
 | `optional-reporter.skywalking.apache.org` | Select the optional reporter plugin which needs to be moved to the directory(/plugins). Users can select several optional reporter plugins by separating from `｜`, such as `kafka`. | not set          |
+
+#### 6. bootstrap plugin configuration
+
+The bootstrap plugin configuration is the annotation as below.
+
+| Annotation key                    | Description                                                                                                                                                                 | Annotation value |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
+| `bootstrap.skywalking.apache.org` | Select the bootstrap plugin which needs to be moved to the directory(/plugins). Users can select several bootstrap plugins by separating from `｜`, such as `jdk-threading`. | not set          |
 
 ## Configure sidecar
 

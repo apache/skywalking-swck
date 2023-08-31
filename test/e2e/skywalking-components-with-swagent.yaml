@@ -66,6 +66,9 @@ spec:
   optionalPlugins:
     - "webflux"
     - "cloud-gateway-2.1.x"
+  bootstrapPlugins:
+    - "jdk-http"
+    - "jdk-threading"
 
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
@@ -88,3 +91,6 @@ spec:
   optionalPlugins:
     - "webflux"
     - "cloud-gateway-2.1.x"
+  bootstrapPlugins:
+    - "jdk-http"
+    - "jdk-threading"
