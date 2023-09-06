@@ -25,7 +25,6 @@ metadata:
     operator.skywalking.apache.org/oap-server-name: {{ .Name }}
     operator.skywalking.apache.org/application: oapserver
     operator.skywalking.apache.org/component: deployment
-
 spec:
   replicas: {{ .Spec.Instances }}
   minReadySeconds: 5
@@ -64,25 +63,23 @@ spec:
             - containerPort: 1234
               name: http-monitoring
           livenessProbe:
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-            periodSeconds: 30
+            tcpSocket:
+              port: 12800
+            initialDelaySeconds: 5
+            periodSeconds: 10
             failureThreshold: 10
-            successThreshold: 1
-            exec:
-              command:
-                - /skywalking/bin/swctl
-                - ch
+          startupProbe:
+            tcpSocket:
+              port: 12800
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 10
           readinessProbe:
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-            periodSeconds: 30
+            tcpSocket:
+              port: 12800
+            initialDelaySeconds: 5
+            periodSeconds: 10
             failureThreshold: 10
-            successThreshold: 1
-            exec:
-              command:
-                - /skywalking/bin/swctl
-                - ch
           {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
           volumeMounts:
             - name: cert
