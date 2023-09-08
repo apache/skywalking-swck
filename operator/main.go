@@ -113,6 +113,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		FileRepo:   manifests.NewRepo("storage"),
 		RestConfig: mgr.GetConfig(),
+		Recorder:   mgr.GetEventRecorderFor("storage-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
 		os.Exit(1)
