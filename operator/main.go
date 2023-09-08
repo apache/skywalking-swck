@@ -94,7 +94,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("ui"),
-		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
+		Recorder: mgr.GetEventRecorderFor("ui-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
 		os.Exit(1)
