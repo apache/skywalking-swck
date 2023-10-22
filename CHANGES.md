@@ -2,6 +2,13 @@ Changes by Version
 ==================
 Release Notes.
 
+0.9.0
+------------------
+
+#### Bugs
+
+- Fix the bug that the java agent is duplicated injected when update the pod.
+
 0.8.0
 ------------------
 

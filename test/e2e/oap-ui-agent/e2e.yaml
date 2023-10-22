@@ -58,6 +58,10 @@ setup:
         - namespace: skywalking-system
           resource: deployment/demo
           for: condition=Available 
+    - name: patch test annotation
+      command: |
+        kubectl annotate pod $(kubectl get pod -lapp=demo -n skywalking-system -oname | awk -F '/' '{print $2}') \
+          test-depulicate-injection=true -n skywalking-system
   kind:
     expose-ports:
       - namespace: skywalking-system
