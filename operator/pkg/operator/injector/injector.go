@@ -94,6 +94,7 @@ func NewSidecarInjectField() *SidecarInjectField {
 // Inject will do real injection
 func (s *SidecarInjectField) Inject(pod *corev1.Pod) {
 	log.Info(fmt.Sprintf("inject pod : %s", pod.GenerateName))
+
 	// add initcontrainers to spec
 	if pod.Spec.InitContainers != nil {
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, s.Initcontainer)
@@ -150,8 +151,13 @@ func (s *SidecarInjectField) GetInjectStrategy(labels, annotation *map[string]st
 	// set default value
 	s.NeedInject = false
 
-	// set NeedInject's value , if the pod has the label "swck-java-agent-injected=true", means need inject
+	// set NeedInject's value, if the pod has the label "swck-java-agent-injected=true", means need inject
 	if *labels == nil {
+		return
+	}
+
+	// if the pod is injected, then return
+	if strings.EqualFold((*annotation)[SidecarInjectSucceedAnno], "true") {
 		return
 	}
 
