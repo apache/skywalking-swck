@@ -27,7 +27,6 @@ spec:
   service:
     template:
       type: ClusterIP
-  
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: UI 

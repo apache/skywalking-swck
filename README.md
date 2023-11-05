@@ -21,9 +21,7 @@ SWCK is a platform for the SkyWalking user that provisions, upgrades, maintains 
 
 # Quick Start
 
-There are two ways to install swck.
-* Go to the [download page](https://skywalking.apache.org/downloads/#SkyWalkingCloudonKubernetes) to download the latest release binary, `skywalking-swck-<SWCK_VERSION>-bin.tgz`. Unarchive the package to a folder named `skywalking-swck-<SWCK_VERSION>-bin`
-* Apply the kustomization directory from github.
+You can follow the [Getting Started](docs/getting-started.md) to deploy swck on a testing Kubernetes cluster quickly and try out the skywalking components end to end.
 
 ## Java Agent Injector
 
