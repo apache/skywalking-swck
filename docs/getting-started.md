@@ -308,7 +308,7 @@ Open the skywalking UI in your browser and navigate to `http://127.0.0.1:8080` t
 <details>
   <summary>Expected output</summary>
 
-![ui](./images/ui.png)
+![ui](https://skywalking.apache.org/doc-graph/swck/demo-ui.png)
 </details>
 
 
