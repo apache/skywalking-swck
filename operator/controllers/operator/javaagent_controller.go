@@ -98,6 +98,7 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	config := map[string]string{}
 	r.injectConfigBySwAgent(lastMatchedSwAgent, config)
+	injector.GetInjectedAgentConfig(&pod.Annotations, &config)
 
 	// only get the first selector label from labels as podselector
 	labels := pod.Labels
