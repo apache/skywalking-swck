@@ -125,6 +125,12 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			"config": func() map[string]string {
 				return config
 			},
+			"labelKey": func() string {
+				return keys[0]
+			},
+			"labelValue": func() string {
+				return labels[keys[0]]
+			},
 			"ownerReference": func() metav1.OwnerReference {
 				return ownerReference
 			},

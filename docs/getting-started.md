@@ -3,14 +3,14 @@
 This document introduces how to create a kubernetes cluster locally using kind and how to deploy the basic skywalking components to the cluster.
 
 ### Prerequisites
-- [docker](https://docs.docker.com/get-docker/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
-- [swctl](https://github.com/apache/skywalking-cli?tab=readme-ov-file#install)
+- [docker](https://docs.docker.com/get-docker/) >= v20.10.6
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) >= v1.21.0
+- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) >= v0.20.0
+- [swctl](https://github.com/apache/skywalking-cli?tab=readme-ov-file#install) >= v0.10.0
 
 ### Step1: Create a kubernetes cluster locally using kind
 
-> Note: If you have a kubernetes cluster already, you can skip this step.
+> Note: If you have a kubernetes cluster (> v1.21.10) already, you can skip this step.
 
 Here we create a kubernetes cluster with 1 control-plane node and 1 worker nodes.
 
@@ -281,6 +281,61 @@ $ kubectl get pod -n skywalking-system -l app=demo -ojsonpath='{.items[0].spec.i
 {"args":["-c","mkdir -p /sky/agent \u0026\u0026 cp -r /skywalking/agent/* /sky/agent"],"command":["sh"],"image":"apache/skywalking-java-agent:8.16.0-java8","imagePullPolicy":"IfNotPresent","name":"inject-skywalking-agent","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/sky/agent","name":"sky-agent"},{"mountPath":"/var/run/secrets/kubernetes.io/serviceaccount","name":"kube-api-access-4qk26","readOnly":true}]}
 ```
 </details>
+
+Also, you could check the final java agent configurations with the following command.
+
+```shell
+$ kubectl get javaagent -n skywalking-system -l app=demo -oyaml
+```
+
+<details>
+  <summary>Expected output</summary>
+
+```shell
+apiVersion: v1
+items:
+- apiVersion: operator.skywalking.apache.org/v1alpha1
+  kind: JavaAgent
+  metadata:
+    creationTimestamp: "2023-11-19T05:34:03Z"
+    generation: 1
+    labels:
+      app: demo
+    name: app-demo-javaagent
+    namespace: skywalking-system
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: demo-75d8d995cc
+      uid: 8cb64abc-9b50-4f67-9304-2e09de476168
+    resourceVersion: "21515"
+    uid: 6cbafb3d-9f43-4448-95e8-bda1f7c72bc3
+  spec:
+    agentConfiguration:
+      collector.backend_service: skywalking-system-oap.skywalking-system:11800
+      optional-plugin: webflux|cloud-gateway-2.1.x
+    backendService: skywalking-system-oap.skywalking-system:11800
+    podSelector: app=demo
+    serviceName: Your_ApplicationName
+  status:
+    creationTime: "2023-11-19T05:34:03Z"
+    expectedInjectiedNum: 1
+    lastUpdateTime: "2023-11-19T05:34:46Z"
+    realInjectedNum: 1
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
+```
+</details>
+
+If you want to check the logs of the java agent, you can run the following command.
+
+```shell
+$ kubectl logs -f -n skywalking-system -l app=demo -c inject-skywalking-agent
+```
 
 
 ### Step6: Check the application metrics in the skywalking UI
