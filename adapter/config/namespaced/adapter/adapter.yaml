@@ -58,11 +58,11 @@ spec:
             - mountPath: /var/run/serving-cert
               name: volume-serving-cert
               readOnly: false
-          volumes:
-          - name: temp-vol
-            emptyDir: {}
-          - name: volume-serving-cert
-            emptyDir: {}
+      volumes:
+      - name: temp-vol
+        emptyDir: {}
+      - name: volume-serving-cert
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
