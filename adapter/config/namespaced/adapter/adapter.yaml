@@ -45,7 +45,6 @@ spec:
           command: ["/adapter"]
           args:
             - --secure-port=6443
-            - --v=10
             - --oap-addr=http://skywalking-system-oap.skywalking-system:12800/graphql  #the address is used for testing, please use your oap address
             - --cert-dir=/var/run/serving-cert
           ports:
