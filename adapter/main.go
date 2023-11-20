@@ -27,10 +27,11 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
+	customexternalmetrics "sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
 	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
-	generatedopenapi "sigs.k8s.io/custom-metrics-apiserver/test-adapter/generated/openapi"
+	"sigs.k8s.io/metrics-server/pkg/api"
 
+	generatedopenapi "github.com/apache/skywalking-swck/adapter/pkg/api/generated/openapi"
 	swckprov "github.com/apache/skywalking-swck/adapter/pkg/provider"
 )
 
@@ -51,11 +52,12 @@ type Adapter struct {
 func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
-	klog.InitFlags(nil)
 
 	cmd := &Adapter{}
+	cmd.Name = "apache-skywalking-adapter"
 
-	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(generatedopenapi.GetOpenAPIDefinitions, openapinamer.NewDefinitionNamer(apiserver.Scheme))
+	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIV3Config(generatedopenapi.GetOpenAPIDefinitions,
+		openapinamer.NewDefinitionNamer(api.Scheme, customexternalmetrics.Scheme))
 	cmd.OpenAPIConfig.Info.Title = "apache-skywalking-adapter"
 	cmd.OpenAPIConfig.Info.Version = "1.0.0"
 
