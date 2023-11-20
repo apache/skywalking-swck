@@ -47,6 +47,7 @@ spec:
             - --secure-port=6443
             - --oap-addr=http://skywalking-system-oap.skywalking-system:12800/graphql  #the address is used for testing, please use your oap address
             - --cert-dir=/var/run/serving-cert
+            - --v=10
           ports:
             - containerPort: 6443
               name: https
