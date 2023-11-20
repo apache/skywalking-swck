@@ -30,6 +30,8 @@ SHELL = /usr/bin/env bash -o pipefail
 module_path  := $(abspath $(lastword $(MAKEFILE_LIST)))
 module_dir   := $(dir $(module_path))
 
+GOPATH:=$(shell go env GOPATH)
+
 include ../hack/build/module.mk
 
 .PHONY: all
@@ -66,3 +68,16 @@ deploy: kustomize ## Deploy adapter controller to the K8s cluster specified in ~
 release-build: ## Build binary for release
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/adapter-linux-amd64
 	
+# Generation
+# ----------
+
+generated_files=pkg/api/generated/openapi/zz_generated.openapi.go
+
+.PHONY: verify-generated
+verify-generated: update-generated
+	@git diff --exit-code -- $(generated_files)
+
+.PHONY: update-generated
+update-generated:
+	go install -mod=readonly k8s.io/kube-openapi/cmd/openapi-gen
+	$(GOPATH)/bin/openapi-gen --logtostderr -i k8s.io/metrics/pkg/apis/custom_metrics,k8s.io/metrics/pkg/apis/custom_metrics/v1beta1,k8s.io/metrics/pkg/apis/custom_metrics/v1beta2,k8s.io/metrics/pkg/apis/external_metrics,k8s.io/metrics/pkg/apis/external_metrics/v1beta1,k8s.io/metrics/pkg/apis/metrics,k8s.io/metrics/pkg/apis/metrics/v1beta1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1 -h ../hack/boilerplate.go.txt -p ./pkg/api/generated/openapi -O zz_generated.openapi -o ./ -r /dev/null
