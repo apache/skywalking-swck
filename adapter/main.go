@@ -23,13 +23,9 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
-	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
 	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
-	generatedopenapi "sigs.k8s.io/custom-metrics-apiserver/test-adapter/generated/openapi"
 
 	swckprov "github.com/apache/skywalking-swck/adapter/pkg/provider"
 )
@@ -51,13 +47,9 @@ type Adapter struct {
 func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
-	klog.InitFlags(nil)
 
 	cmd := &Adapter{}
-
-	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(generatedopenapi.GetOpenAPIDefinitions, openapinamer.NewDefinitionNamer(apiserver.Scheme))
-	cmd.OpenAPIConfig.Info.Title = "apache-skywalking-adapter"
-	cmd.OpenAPIConfig.Info.Version = "1.0.0"
+	cmd.Name = "skywalking-adapter"
 
 	cmd.Flags().StringVar(&cmd.Message, "msg", "starting adapter...", "startup message")
 	cmd.Flags().StringVar(&cmd.BaseURL, "oap-addr", "http://oap:12800/graphql", "the address of OAP cluster")

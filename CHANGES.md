@@ -9,6 +9,10 @@ Release Notes.
 
 - Fix the bug that the java agent is duplicated injected when update the pod.
 
+#### Chores
+
+- Bump up custom-metrics-apiserver
+
 0.8.0
 ------------------
 
