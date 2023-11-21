@@ -18,7 +18,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"time"
 
@@ -67,7 +66,7 @@ func main() {
 	cmd.Flags().StringVar(&cmd.Namespace, "namespace", "skywalking.apache.org", "a prefix to which metrics are appended. The format is 'namespace|metric_name'")
 	cmd.Flags().DurationVar(&cmd.RefreshRegistryInterval, "refresh-interval", 10*time.Second,
 		"the interval at which to update the cache of available metrics from OAP cluster")
-	cmd.Flags().AddGoFlagSet(flag.CommandLine) // make sure we get the klog flags
+	logs.AddFlags(cmd.Flags())
 	if err := cmd.Flags().Parse(os.Args); err != nil {
 		klog.Fatalf("failed to parse arguments: %v", err)
 	}
