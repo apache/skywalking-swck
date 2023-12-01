@@ -98,6 +98,7 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	config := map[string]string{}
 	r.injectConfigBySwAgent(lastMatchedSwAgent, config)
+	r.injectConfigByPodAnnotations(pod.ObjectMeta.Annotations, config)
 
 	// only get the first selector label from labels as podselector
 	labels := pod.Labels
@@ -169,6 +170,19 @@ func (r *JavaAgentReconciler) injectConfigBySwAgent(lastMatchedSwAgent *operator
 				config[operatorv1alpha1.ServiceName] = env.Value
 			}
 		}
+	}
+}
+
+func (r *JavaAgentReconciler) injectConfigByPodAnnotations(podAnnotations map[string]string, config map[string]string) {
+	if podAnnotations == nil {
+		return
+	}
+
+	if v, ok := podAnnotations["agent.skywalking.apache.org/collector.backend_service"]; ok {
+		config[operatorv1alpha1.BackendService] = v
+	}
+	if v, ok := podAnnotations["agent.skywalking.apache.org/agent.service_name"]; ok {
+		config[operatorv1alpha1.ServiceName] = v
 	}
 }
 
