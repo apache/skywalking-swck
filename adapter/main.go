@@ -18,7 +18,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"time"
 
@@ -27,10 +26,11 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
+	customexternalmetrics "sigs.k8s.io/custom-metrics-apiserver/pkg/apiserver"
 	basecmd "sigs.k8s.io/custom-metrics-apiserver/pkg/cmd"
-	generatedopenapi "sigs.k8s.io/custom-metrics-apiserver/test-adapter/generated/openapi"
+	"sigs.k8s.io/metrics-server/pkg/api"
 
+	generatedopenapi "github.com/apache/skywalking-swck/adapter/pkg/api/generated/openapi"
 	swckprov "github.com/apache/skywalking-swck/adapter/pkg/provider"
 )
 
@@ -51,11 +51,12 @@ type Adapter struct {
 func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
-	klog.InitFlags(nil)
 
 	cmd := &Adapter{}
+	cmd.Name = "apache-skywalking-adapter"
 
-	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(generatedopenapi.GetOpenAPIDefinitions, openapinamer.NewDefinitionNamer(apiserver.Scheme))
+	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIV3Config(generatedopenapi.GetOpenAPIDefinitions,
+		openapinamer.NewDefinitionNamer(api.Scheme, customexternalmetrics.Scheme))
 	cmd.OpenAPIConfig.Info.Title = "apache-skywalking-adapter"
 	cmd.OpenAPIConfig.Info.Version = "1.0.0"
 
@@ -65,7 +66,7 @@ func main() {
 	cmd.Flags().StringVar(&cmd.Namespace, "namespace", "skywalking.apache.org", "a prefix to which metrics are appended. The format is 'namespace|metric_name'")
 	cmd.Flags().DurationVar(&cmd.RefreshRegistryInterval, "refresh-interval", 10*time.Second,
 		"the interval at which to update the cache of available metrics from OAP cluster")
-	cmd.Flags().AddGoFlagSet(flag.CommandLine) // make sure we get the klog flags
+	logs.AddFlags(cmd.Flags())
 	if err := cmd.Flags().Parse(os.Args); err != nil {
 		klog.Fatalf("failed to parse arguments: %v", err)
 	}

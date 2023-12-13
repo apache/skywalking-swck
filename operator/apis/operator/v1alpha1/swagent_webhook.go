@@ -107,7 +107,7 @@ func (r *SwAgent) setDefault() {
 			r.Spec.JavaSidecar.Args = append(r.Spec.JavaSidecar.Args, "-c")
 			r.Spec.JavaSidecar.Args = append(r.Spec.JavaSidecar.Args, "mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent")
 		}
-		r.setOrAddEnv("JAVA_TOOL_OPTIONS", " -javaagent:/sky/agent/skywalking-agent.jar")
+		r.setOrAppendEnv("JAVA_TOOL_OPTIONS", " -javaagent:/sky/agent/skywalking-agent.jar")
 
 		// default values for shared volume
 		if len(r.Spec.SharedVolumeName) == 0 {
@@ -117,8 +117,8 @@ func (r *SwAgent) setDefault() {
 	}
 }
 
-func (r *SwAgent) setOrAddEnv(envKey string, envValue string) {
-	if !r.setEnvIfExists(&r.Spec.JavaSidecar.Env, envKey, envValue) {
+func (r *SwAgent) setOrAppendEnv(envKey string, envValue string) {
+	if !r.appendEnvIfExists(&r.Spec.JavaSidecar.Env, envKey, envValue) {
 		javaToolOptionsEnv := corev1.EnvVar{
 			Name:  envKey,
 			Value: envValue,
@@ -127,10 +127,10 @@ func (r *SwAgent) setOrAddEnv(envKey string, envValue string) {
 	}
 }
 
-func (r *SwAgent) setEnvIfExists(envs *[]corev1.EnvVar, envKey string, envValue string) bool {
+func (r *SwAgent) appendEnvIfExists(envs *[]corev1.EnvVar, envKey string, envValue string) bool {
 	for _, env := range *envs {
 		if strings.EqualFold(env.Name, envKey) {
-			env.Value = envValue
+			env.Value += envValue
 			return true
 		}
 	}
