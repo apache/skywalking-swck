@@ -25,6 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -60,21 +61,21 @@ func (r *Storage) Default() {
 var _ webhook.Validator = &Storage{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateCreate() error {
+func (r *Storage) ValidateCreate() (admission.Warnings, error) {
 	storagelog.Info("validate create", "name", r.Name)
-	return r.valid()
+	return nil, r.valid()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateUpdate(_ runtime.Object) error {
+func (r *Storage) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	storagelog.Info("validate update", "name", r.Name)
-	return r.valid()
+	return nil, r.valid()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateDelete() error {
+func (r *Storage) ValidateDelete() (admission.Warnings, error) {
 	storagelog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 func (r *Storage) valid() error {

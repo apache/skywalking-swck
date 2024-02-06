@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const annotationKeyIstioSetup = "istio-setup-command"
@@ -66,21 +67,21 @@ func (r *OAPServer) Default() {
 var _ webhook.Validator = &OAPServer{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateCreate() error {
+func (r *OAPServer) ValidateCreate() (admission.Warnings, error) {
 	oapserverlog.Info("validate create", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateUpdate(_ runtime.Object) error {
+func (r *OAPServer) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	oapserverlog.Info("validate update", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateDelete() error {
+func (r *OAPServer) ValidateDelete() (admission.Warnings, error) {
 	oapserverlog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 func (r *OAPServer) validate() error {

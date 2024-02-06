@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -60,21 +61,21 @@ func (r *UI) Default() {
 var _ webhook.Validator = &UI{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateCreate() error {
+func (r *UI) ValidateCreate() (admission.Warnings, error) {
 	uilog.Info("validate create", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateUpdate(_ runtime.Object) error {
+func (r *UI) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	uilog.Info("validate update", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateDelete() error {
+func (r *UI) ValidateDelete() (admission.Warnings, error) {
 	uilog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 func (r *UI) validate() error {
