@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -67,21 +68,21 @@ func (r *Satellite) Default() {
 var _ webhook.Validator = &Satellite{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateCreate() error {
+func (r *Satellite) ValidateCreate() (admission.Warnings, error) {
 	satellitelog.Info("validate create", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateUpdate(_ runtime.Object) error {
+func (r *Satellite) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	satellitelog.Info("validate update", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateDelete() error {
+func (r *Satellite) ValidateDelete() (admission.Warnings, error) {
 	satellitelog.Info("validate delete", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 func (r *Satellite) validate() error {

@@ -25,6 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -53,22 +54,22 @@ func (r *SwAgent) Default() {
 var _ webhook.Validator = &SwAgent{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateCreate() error {
+func (r *SwAgent) ValidateCreate() (admission.Warnings, error) {
 	swagentlog.Info("validate create", "name", r.Name)
 	r.setDefault()
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateUpdate(_ runtime.Object) error {
+func (r *SwAgent) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	swagentlog.Info("validate update", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateDelete() error {
+func (r *SwAgent) ValidateDelete() (admission.Warnings, error) {
 	swagentlog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 const (

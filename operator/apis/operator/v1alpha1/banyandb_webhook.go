@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var banyandbLog = logf.Log.WithName("banyandb-resource")
@@ -62,19 +63,19 @@ func (r *BanyanDB) Default() {
 
 var _ webhook.Validator = &BanyanDB{}
 
-func (r *BanyanDB) ValidateCreate() error {
+func (r *BanyanDB) ValidateCreate() (admission.Warnings, error) {
 	banyandbLog.Info("validate create", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
-func (r *BanyanDB) ValidateUpdate(_ runtime.Object) error {
+func (r *BanyanDB) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	banyandbLog.Info("validate update", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
-func (r *BanyanDB) ValidateDelete() error {
+func (r *BanyanDB) ValidateDelete() (admission.Warnings, error) {
 	banyandbLog.Info("validate delete", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 func (r *BanyanDB) validate() error {
