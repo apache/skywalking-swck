@@ -21,6 +21,8 @@ kind: JavaAgent
 metadata:
   name: {{SelectorName}}-javaagent
   namespace: {{Namespace}}
+  labels:
+    {{labelKey}}: {{labelValue}}
   ownerReferences:
   - apiVersion: {{ownerReference.APIVersion}}
     blockOwnerDeletion: {{ownerReference.BlockOwnerDeletion}}

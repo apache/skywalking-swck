@@ -98,6 +98,7 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	config := map[string]string{}
 	r.injectConfigBySwAgent(lastMatchedSwAgent, config)
+	injector.GetInjectedAgentConfig(&pod.Annotations, &config)
 
 	// only get the first selector label from labels as podselector
 	labels := pod.Labels
@@ -123,6 +124,12 @@ func (r *JavaAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		TmplFunc: map[string]interface{}{
 			"config": func() map[string]string {
 				return config
+			},
+			"labelKey": func() string {
+				return keys[0]
+			},
+			"labelValue": func() string {
+				return labels[keys[0]]
 			},
 			"ownerReference": func() metav1.OwnerReference {
 				return ownerReference
