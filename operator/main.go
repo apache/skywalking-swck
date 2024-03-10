@@ -36,6 +36,7 @@ import (
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	operatorcontroller "github.com/apache/skywalking-swck/operator/controllers/operator"
 	operatorcontrollers "github.com/apache/skywalking-swck/operator/controllers/operator"
+	"github.com/apache/skywalking-swck/operator/pkg/config"
 	"github.com/apache/skywalking-swck/operator/pkg/operator/injector"
 	"github.com/apache/skywalking-swck/operator/pkg/operator/manifests"
 	//+kubebuilder:scaffold:imports
@@ -68,15 +69,17 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var err error
-	options := ctrl.Options{Scheme: scheme}
+	options := &config.Config{}
 	if configFile != "" {
-		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile))
+		options, err = config.ParseFile(configFile)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
 		}
 	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
+	o := options.ManagerOptions()
+	o.Scheme = scheme
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), *o)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -213,7 +216,7 @@ func main() {
 		setupLog.Info("registering /mutate-v1-pod webhook")
 		mgr.GetWebhookServer().Register("/mutate-v1-pod",
 			&webhook.Admission{
-				Handler: &injector.JavaagentInjector{Client: mgr.GetClient()}})
+				Handler: injector.NewJavaagentInjector(mgr.GetClient(), scheme)})
 		setupLog.Info("/mutate-v1-pod webhook is registered")
 
 		if err := mgr.AddHealthzCheck("healthz", mgr.GetWebhookServer().StartedChecker()); err != nil {
