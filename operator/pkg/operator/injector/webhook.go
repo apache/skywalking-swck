@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -40,6 +41,13 @@ var javaagentInjectorLog = logf.Log.WithName("javaagent_injector")
 type JavaagentInjector struct {
 	Client  client.Client
 	decoder *admission.Decoder
+}
+
+func NewJavaagentInjector(client client.Client, schema *runtime.Scheme) *JavaagentInjector {
+	return &JavaagentInjector{
+		Client:  client,
+		decoder: admission.NewDecoder(schema),
+	}
 }
 
 // Handle will process every coming pod under the
@@ -96,13 +104,4 @@ func (r *JavaagentInjector) findMatchedSwAgentL(ctx context.Context, req admissi
 	}
 	swAgentList.Items = availableSwAgentL
 	return swAgentList
-}
-
-// Javaagent implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (r *JavaagentInjector) InjectDecoder(d *admission.Decoder) error {
-	r.decoder = d
-	return nil
 }

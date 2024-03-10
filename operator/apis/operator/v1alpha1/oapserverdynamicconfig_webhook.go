@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -61,21 +62,21 @@ func (r *OAPServerDynamicConfig) Default() {
 var _ webhook.Validator = &OAPServerDynamicConfig{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateCreate() error {
+func (r *OAPServerDynamicConfig) ValidateCreate() (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate create", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateUpdate(_ runtime.Object) error {
+func (r *OAPServerDynamicConfig) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate update", "name", r.Name)
-	return r.validate()
+	return nil, r.validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateDelete() error {
+func (r *OAPServerDynamicConfig) ValidateDelete() (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 func (r *OAPServerDynamicConfig) validate() error {

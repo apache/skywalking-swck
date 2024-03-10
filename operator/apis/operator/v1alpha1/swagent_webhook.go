@@ -18,13 +18,11 @@
 package v1alpha1
 
 import (
-	"strings"
-
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -53,22 +51,22 @@ func (r *SwAgent) Default() {
 var _ webhook.Validator = &SwAgent{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateCreate() error {
+func (r *SwAgent) ValidateCreate() (admission.Warnings, error) {
 	swagentlog.Info("validate create", "name", r.Name)
 	r.setDefault()
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateUpdate(_ runtime.Object) error {
+func (r *SwAgent) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
 	swagentlog.Info("validate update", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateDelete() error {
+func (r *SwAgent) ValidateDelete() (admission.Warnings, error) {
 	swagentlog.Info("validate delete", "name", r.Name)
-	return nil
+	return nil, nil
 }
 
 const (
@@ -107,7 +105,6 @@ func (r *SwAgent) setDefault() {
 			r.Spec.JavaSidecar.Args = append(r.Spec.JavaSidecar.Args, "-c")
 			r.Spec.JavaSidecar.Args = append(r.Spec.JavaSidecar.Args, "mkdir -p /sky/agent && cp -r /skywalking/agent/* /sky/agent")
 		}
-		r.setOrAppendEnv("JAVA_TOOL_OPTIONS", " -javaagent:/sky/agent/skywalking-agent.jar")
 
 		// default values for shared volume
 		if len(r.Spec.SharedVolumeName) == 0 {
@@ -115,24 +112,4 @@ func (r *SwAgent) setDefault() {
 		}
 
 	}
-}
-
-func (r *SwAgent) setOrAppendEnv(envKey string, envValue string) {
-	if !r.appendEnvIfExists(&r.Spec.JavaSidecar.Env, envKey, envValue) {
-		javaToolOptionsEnv := corev1.EnvVar{
-			Name:  envKey,
-			Value: envValue,
-		}
-		r.Spec.JavaSidecar.Env = append(r.Spec.JavaSidecar.Env, javaToolOptionsEnv)
-	}
-}
-
-func (r *SwAgent) appendEnvIfExists(envs *[]corev1.EnvVar, envKey string, envValue string) bool {
-	for _, env := range *envs {
-		if strings.EqualFold(env.Name, envKey) {
-			env.Value += envValue
-			return true
-		}
-	}
-	return false
 }
