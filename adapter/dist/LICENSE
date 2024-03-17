@@ -105,7 +105,7 @@ BSD-3-Clause licenses
     golang.org/x/text v0.14.0 BSD-3-Clause
     golang.org/x/time v0.5.0 BSD-3-Clause
     golang.org/x/tools v0.17.0 BSD-3-Clause
-    google.golang.org/protobuf v1.32.0 BSD-3-Clause
+    google.golang.org/protobuf v1.33.0 BSD-3-Clause
     gopkg.in/inf.v0 v0.9.1 BSD-3-Clause
 
 ========================================================================
