@@ -23,7 +23,7 @@ tool_bin := $(root_dir)/bin
 
 include $(root_dir)/hack/build/base.mk
 
-CONTROLLER_GEN_VERSION := v0.7.0
+CONTROLLER_GEN_VERSION := v0.14.0
 KUSTOMIZE_VERSION := v4.5.6
 GOLANGCI_LINT_VERSION := v1.53.3
 

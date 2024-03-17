@@ -16,6 +16,7 @@ Release Notes.
 
 - Bump up custom-metrics-apiserver
 - Bump up golang to v1.22
+- Bump up controller-gen to v0.14.0
 
 0.8.0
 ------------------
