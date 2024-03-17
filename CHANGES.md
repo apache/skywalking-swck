@@ -15,6 +15,7 @@ Release Notes.
 #### Chores
 
 - Bump up custom-metrics-apiserver
+- Bump up golang to v1.22
 
 0.8.0
 ------------------
