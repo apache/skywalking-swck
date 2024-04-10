@@ -170,6 +170,20 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "BanyanDB")
 		os.Exit(1)
 	}
+	if err = (&operatorcontrollers.EventExporterReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventExporter")
+		os.Exit(1)
+	}
+	if err = (&operatorcontrollers.EventExporterConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventExporterConfig")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&operatorv1alpha1.OAPServer{}).SetupWebhookWithManager(mgr); err != nil {
@@ -210,6 +224,10 @@ func main() {
 		}
 		if err = (&operatorv1alpha1.BanyanDB{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "BanyanDB")
+			os.Exit(1)
+		}
+		if err = (&operatorv1alpha1.EventExporter{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "EventExporter")
 			os.Exit(1)
 		}
 		// register a webhook to enable the java agent injector
