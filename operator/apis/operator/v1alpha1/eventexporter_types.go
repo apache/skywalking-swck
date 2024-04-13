@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ExporterConfig map[string]interface{}
+
 // EventExporterSpec defines the desired state of EventExporter
 type EventExporterSpec struct {
 	// Version of EventExporter.
@@ -32,6 +34,9 @@ type EventExporterSpec struct {
 	// Instances is the number of event exporter pods
 	// +kubebuilder:validation:Required
 	Instances int32 `json:"instances,omitempty"`
+	// Data of filters and exporters
+	// +kubebuilder:validation:Optional
+	Data string `json:"data,omitempty"`
 }
 
 // Important: Run "make" to regenerate code after modifying this file
@@ -50,8 +55,7 @@ type EventExporterStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Version",type="string",priority=1,JSONPath=".spec.version",description="The version"
 // +kubebuilder:printcolumn:name="Image",type="string",priority=1,JSONPath=".spec.image"
-// +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instance"
-// +kubebuilder:printcolumn:name="Running",type="string",JSONPath=".status.availableReplicas",description="The number of running"
+// +kubebuilder:printcolumn:name="Instances",type="string",JSONPath=".spec.instances",description="The number of expected instances"
 
 // EventExporter is the Schema for the eventexporters API
 type EventExporter struct {

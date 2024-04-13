@@ -21,11 +21,6 @@ metadata:
   name: eventexporter-sample
 spec:
   instances: 1
-
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: EventExporterConfig
-spec:
   data: |
     filters:
       - reason: ""     
@@ -39,7 +34,6 @@ spec:
         service: "[^\\s]{1,}"  
         exporters:     
           - skywalking
-    
     exporters:         
       skywalking:      
         template:      

@@ -24,7 +24,7 @@ metadata:
     operator.skywalking.apache.org/component: rbac
 rules:
   - apiGroups: [""]
-    resources: ["pods", "endpoints", "configmaps"]
+    resources: ["pods", "endpoints", "configmaps", "events", "services"]
     verbs: ["get", "watch", "list"]
   - apiGroups: ["extensions"]
     resources: ["deployments", "replicasets"]

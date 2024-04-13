@@ -49,7 +49,7 @@ func (r *EventExporter) Default() {
 	}
 
 	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-event-exporter:%s", r.Spec.Version)
+		r.Spec.Image = fmt.Sprintf("apache/skywalking-kubernetes-event-exporter:%s", r.Spec.Version)
 	}
 
 	if r.Spec.Instances == 0 {

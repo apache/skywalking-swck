@@ -171,17 +171,12 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&operatorcontrollers.EventExporterReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		FileRepo: manifests.NewRepo("eventexporter"),
+		Recorder: mgr.GetEventRecorderFor("eventexporter-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "EventExporter")
-		os.Exit(1)
-	}
-	if err = (&operatorcontrollers.EventExporterConfigReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "EventExporterConfig")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

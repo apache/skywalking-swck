@@ -41,13 +41,9 @@ spec:
       name: Image
       priority: 1
       type: string
-    - description: The number of expected instance
+    - description: The number of expected instances
       jsonPath: .spec.instances
       name: Instances
-      type: string
-    - description: The number of running
-      jsonPath: .status.availableReplicas
-      name: Running
       type: string
     name: v1alpha1
     schema:
@@ -74,6 +70,9 @@ spec:
           spec:
             description: EventExporterSpec defines the desired state of EventExporter
             properties:
+              data:
+                description: Data of filters and exporters
+                type: string
               image:
                 description: Image is the event exporter Docker image to deploy.
                 type: string

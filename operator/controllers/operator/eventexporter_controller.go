@@ -20,18 +20,20 @@ package operator
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
+	"text/template"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
@@ -61,6 +63,11 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if _, err := r.overlayData(ctx, log, &eventExporter); err != nil {
+		l.Error(err, "failed to overlay eventexporter's configMap")
+		return ctrl.Result{}, err
+	}
+
 	ff, err := r.FileRepo.GetFilesRecursive("templates")
 	if err != nil {
 		log.Error(err, "failed to load resource templates")
@@ -73,6 +80,9 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		CR:       &eventExporter,
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("EventExporter"),
 		Recorder: r.Recorder,
+		TmplFunc: template.FuncMap{
+			"md5Data": func() string { return MD5Hash(eventExporter.Spec.Data) },
+		},
 	}
 
 	if err := app.ApplyAll(ctx, ff, log); err != nil {
@@ -86,6 +96,61 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	return ctrl.Result{RequeueAfter: schedDuration}, nil
 
+}
+
+func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logger, eventExporter *operatorv1alpha1.EventExporter) (bool, error) {
+
+	configmap := core.ConfigMap{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: eventExporter.Name}, &configmap)
+	if err != nil && !apierrors.IsNotFound(err) {
+		log.Error(err, "failed to get the eventexporter's configmap")
+		return false, err
+	}
+
+	newMd5 := MD5Hash(eventExporter.Spec.Data)
+	oldMd5 := MD5Hash("")
+	if !apierrors.IsNotFound(err) {
+		oldMd5 = configmap.Labels["md5-data"]
+	}
+
+	if newMd5 == oldMd5 {
+		log.Info("eventexporter configuration keeps the same as before")
+		return false, nil
+	}
+
+	if !apierrors.IsNotFound(err) {
+		if err := r.Client.Delete(ctx, &configmap); err != nil {
+			log.Error(err, "failed to delete eventexporter's configmap")
+			return true, nil
+		}
+	}
+
+	configmap = core.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      eventExporter.Name,
+			Namespace: eventExporter.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: eventExporter.APIVersion,
+					Kind:       eventExporter.Kind,
+					Name:       eventExporter.Name,
+					UID:        eventExporter.UID,
+				},
+			},
+			Labels: map[string]string{
+				"version":  eventExporter.Spec.Version,
+				"md5-data": newMd5,
+			},
+		},
+		Data: map[string]string{"config.yaml": eventExporter.Spec.Data},
+	}
+
+	if err := r.Client.Create(ctx, &configmap); err != nil {
+		log.Error(err, "failed to create eventexporter's configmap")
+		return true, err
+	}
+
+	return true, nil
 }
 
 func (r *EventExporterReconciler) checkState(ctx context.Context, log logr.Logger, eventExporter *operatorv1alpha1.EventExporter) error {
@@ -140,5 +205,6 @@ func (r *EventExporterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.EventExporter{}).
 		Owns(&apps.Deployment{}).
+		Owns(&core.ConfigMap{}).
 		Complete(r)
 }
