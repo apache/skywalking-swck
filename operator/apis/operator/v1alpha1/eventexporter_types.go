@@ -29,12 +29,12 @@ type EventExporterSpec struct {
 	Version string `json:"version,omitempty"`
 	// Image is the event exporter Docker image to deploy.
 	Image string `json:"image,omitempty"`
-	// Instances is the number of event exporter pods
+	// Replicas is the number of event exporter pods
 	// +kubebuilder:validation:Required
-	Instances int32 `json:"instances,omitempty"`
-	// Data of filters and exporters
+	Replicas int32 `json:"replicas,omitempty"`
+	// Config of filters and exporters
 	// +kubebuilder:validation:Optional
-	Data string `json:"data,omitempty"`
+	Config string `json:"config,omitempty"`
 }
 
 // Important: Run "make" to regenerate code after modifying this file

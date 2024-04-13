@@ -27,6 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+const latestVersion = "latest"
+const image = "apache/skywalking-kubernetes-event-exporter"
+
 // log is for logging in this package.
 var eventexporterlog = logf.Log.WithName("eventexporter-resource")
 
@@ -46,16 +49,15 @@ func (r *EventExporter) Default() {
 	eventexporterlog.Info("default", "name", r.Name)
 
 	if r.Spec.Version == "" {
-		// use the latest version by default
-		r.Spec.Version = "latest"
+		r.Spec.Version = latestVersion
 	}
 
 	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-kubernetes-event-exporter:%s", r.Spec.Version)
+		r.Spec.Image = fmt.Sprintf("%s:%s", image, r.Spec.Version)
 	}
 
-	if r.Spec.Instances == 0 {
-		r.Spec.Instances = 1
+	if r.Spec.Replicas == 0 {
+		r.Spec.Replicas = 1
 	}
 }
 

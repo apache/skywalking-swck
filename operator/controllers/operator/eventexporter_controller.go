@@ -57,7 +57,7 @@ type EventExporterReconciler struct {
 
 func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
-	log.Info("=====================eventexporter reconcile started================================")
+	log.Info(fmt.Sprintf("===============eventexporter reconcile started (ns: %s, name: %s)===============", req.Namespace, req.Name))
 
 	eventExporter := operatorv1alpha1.EventExporter{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &eventExporter); err != nil {
@@ -82,7 +82,7 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("EventExporter"),
 		Recorder: r.Recorder,
 		TmplFunc: template.FuncMap{
-			"md5Data": func() string { return MD5Hash(eventExporter.Spec.Data) },
+			"md5Data": func() string { return MD5Hash(eventExporter.Spec.Config) },
 		},
 	}
 
@@ -99,16 +99,16 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 }
 
-func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logger, eventExporter *operatorv1alpha1.EventExporter) (bool, error) {
+func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logger, eventExporter *operatorv1alpha1.EventExporter) (changed bool, err error) {
 
 	configmap := core.ConfigMap{}
-	err := r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: eventExporter.Name}, &configmap)
+	err = r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: eventExporter.Name}, &configmap)
 	if err != nil && !apierrors.IsNotFound(err) {
 		log.Error(err, "failed to get the eventexporter's configmap")
 		return false, err
 	}
 
-	newMd5 := MD5Hash(eventExporter.Spec.Data)
+	newMd5 := MD5Hash(eventExporter.Spec.Config)
 	oldMd5 := MD5Hash("")
 	if !apierrors.IsNotFound(err) {
 		oldMd5 = configmap.Labels["md5-data"]
@@ -120,9 +120,9 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 	}
 
 	if !apierrors.IsNotFound(err) {
-		if err := r.Client.Delete(ctx, &configmap); err != nil {
+		if err = r.Client.Delete(ctx, &configmap); err != nil {
 			log.Error(err, "failed to delete eventexporter's configmap")
-			return true, nil
+			return true, err
 		}
 	}
 
@@ -143,10 +143,10 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 				"md5-data": newMd5,
 			},
 		},
-		Data: map[string]string{"config.yaml": eventExporter.Spec.Data},
+		Data: map[string]string{"config.yaml": eventExporter.Spec.Config},
 	}
 
-	if err := r.Client.Create(ctx, &configmap); err != nil {
+	if err = r.Client.Create(ctx, &configmap); err != nil {
 		log.Error(err, "failed to create eventexporter's configmap")
 		return true, err
 	}
@@ -206,7 +206,5 @@ func (r *EventExporterReconciler) updateStatus(ctx context.Context, eventExporte
 func (r *EventExporterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.EventExporter{}).
-		Owns(&apps.Deployment{}).
-		Owns(&core.ConfigMap{}).
 		Complete(r)
 }

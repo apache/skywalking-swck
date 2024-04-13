@@ -70,14 +70,14 @@ spec:
           spec:
             description: EventExporterSpec defines the desired state of EventExporter
             properties:
-              data:
-                description: Data of filters and exporters
+              config:
+                description: Config of filters and exporters
                 type: string
               image:
                 description: Image is the event exporter Docker image to deploy.
                 type: string
-              instances:
-                description: Instances is the number of event exporter pods
+              replicas:
+                description: Replicas is the number of event exporter pods
                 format: int32
                 type: integer
               version:
