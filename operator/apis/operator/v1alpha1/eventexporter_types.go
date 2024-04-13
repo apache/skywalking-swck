@@ -22,8 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ExporterConfig map[string]interface{}
-
 // EventExporterSpec defines the desired state of EventExporter
 type EventExporterSpec struct {
 	// Version of EventExporter.
