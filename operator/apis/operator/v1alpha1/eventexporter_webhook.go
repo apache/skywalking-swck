@@ -19,6 +19,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,6 +36,7 @@ func (r *EventExporter) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+// nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-eventexporter,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=eventexporters,verbs=create;update,versions=v1alpha1,name=meventexporter.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &EventExporter{}

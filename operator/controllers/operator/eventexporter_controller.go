@@ -20,6 +20,8 @@ package operator
 import (
 	"context"
 	"fmt"
+	"text/template"
+
 	"github.com/go-logr/logr"
 	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
@@ -33,7 +35,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
-	"text/template"
 
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
@@ -158,7 +159,8 @@ func (r *EventExporterReconciler) checkState(ctx context.Context, log logr.Logge
 	deployment := apps.Deployment{}
 	errCol := new(kubernetes.ErrorCollector)
 
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: eventExporter.Name + "-eventexporter"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace,
+		Name: eventExporter.Name + "-eventexporter"}, &deployment); err != nil && !apierrors.IsNotFound(err) {
 		errCol.Collect(fmt.Errorf("failed to get deployment: %w", err))
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
