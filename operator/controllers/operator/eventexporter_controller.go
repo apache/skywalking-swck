@@ -22,13 +22,14 @@ import (
 	"fmt"
 	"text/template"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/go-logr/logr"
 	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -39,6 +40,8 @@ import (
 	operatorv1alpha1 "github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1"
 	"github.com/apache/skywalking-swck/operator/pkg/kubernetes"
 )
+
+var useImmutableConfigMap = true
 
 // EventExporterReconciler reconciles a EventExporter object
 type EventExporterReconciler struct {
@@ -52,7 +55,7 @@ type EventExporterReconciler struct {
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=eventexporters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.skywalking.apache.org,resources=eventexporters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -64,8 +67,9 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if _, err := r.overlayData(ctx, log, &eventExporter); err != nil {
-		l.Error(err, "failed to overlay eventexporter's configMap")
+	newConfigMapName := configMapName(&eventExporter)
+	if _, err := r.overlayData(ctx, log, &eventExporter, newConfigMapName); err != nil {
+		log.Error(err, "failed to delete eventexporter's configMap")
 		return ctrl.Result{}, err
 	}
 
@@ -82,7 +86,7 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		GVK:      operatorv1alpha1.GroupVersion.WithKind("EventExporter"),
 		Recorder: r.Recorder,
 		TmplFunc: template.FuncMap{
-			"md5Data": func() string { return MD5Hash(eventExporter.Spec.Config) },
+			"configMapName": func() string { return newConfigMapName },
 		},
 	}
 
@@ -99,24 +103,20 @@ func (r *EventExporterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 }
 
-func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logger, eventExporter *operatorv1alpha1.EventExporter) (changed bool, err error) {
+func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logger,
+	eventExporter *operatorv1alpha1.EventExporter, newConfigMapName string) (changed bool, err error) {
 
-	configmap := core.ConfigMap{}
-	err = r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: eventExporter.Name}, &configmap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error(err, "failed to get the eventexporter's configmap")
-		return false, err
-	}
-
-	newMd5 := MD5Hash(eventExporter.Spec.Config)
-	oldMd5 := MD5Hash("")
-	if !apierrors.IsNotFound(err) {
-		oldMd5 = configmap.Labels["md5-data"]
-	}
-
-	if newMd5 == oldMd5 {
+	oldConfigMapName := eventExporter.Status.ConfigMapName
+	if oldConfigMapName == newConfigMapName {
 		log.Info("eventexporter configuration keeps the same as before")
 		return false, nil
+	}
+
+	configmap := core.ConfigMap{}
+	err = r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: oldConfigMapName}, &configmap)
+	if err != nil && !apierrors.IsNotFound(err) {
+		log.Error(err, "failed to get the eventexporter's configmap")
+		return true, err
 	}
 
 	if !apierrors.IsNotFound(err) {
@@ -128,8 +128,8 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 
 	configmap = core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      eventExporter.Name,
 			Namespace: eventExporter.Namespace,
+			Name:      newConfigMapName,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: eventExporter.APIVersion,
@@ -139,11 +139,14 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 				},
 			},
 			Labels: map[string]string{
-				"version":  eventExporter.Spec.Version,
-				"md5-data": newMd5,
+				"app": "eventexporter",
+				"operator.skywalking.apache.org/eventexporter-name": eventExporter.Name,
+				"operator.skywalking.apache.org/application":        "eventexporter",
+				"operator.skywalking.apache.org/component":          "configmap",
 			},
 		},
-		Data: map[string]string{"config.yaml": eventExporter.Spec.Config},
+		Immutable: &useImmutableConfigMap,
+		Data:      map[string]string{"config.yaml": eventExporter.Spec.Config},
 	}
 
 	if err = r.Client.Create(ctx, &configmap); err != nil {
@@ -165,6 +168,7 @@ func (r *EventExporterReconciler) checkState(ctx context.Context, log logr.Logge
 	} else {
 		overlay.Conditions = deployment.Status.Conditions
 		overlay.AvailableReplicas = deployment.Status.AvailableReplicas
+		overlay.ConfigMapName = configMapName(eventExporter)
 	}
 
 	if apiequal.Semantic.DeepDerivative(overlay, eventExporter.Status) {
@@ -200,6 +204,10 @@ func (r *EventExporterReconciler) updateStatus(ctx context.Context, eventExporte
 		}
 		return errCol.Error()
 	})
+}
+
+func configMapName(eventExporter *operatorv1alpha1.EventExporter) string {
+	return fmt.Sprintf("%s-eventexporter-cm-%s", eventExporter.Name, MD5Hash(eventExporter.Spec.Config))
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -37,8 +37,6 @@ type EventExporterSpec struct {
 	Config string `json:"config,omitempty"`
 }
 
-// Important: Run "make" to regenerate code after modifying this file
-
 // EventExporterStatus defines the observed state of EventExporter
 type EventExporterStatus struct {
 	// Total number of available pods targeted by this deployment.
@@ -47,6 +45,9 @@ type EventExporterStatus struct {
 	// Represents the latest available observations of the underlying deployment's current state.
 	// +kubebuilder:validation:Optional
 	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
+	// Name of the configMap.
+	// +kubebuilder:validation:Optional
+	ConfigMapName string `json:"configMapName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -36,7 +36,6 @@ spec:
         operator.skywalking.apache.org/eventexporter-name: {{ .Name }}
         operator.skywalking.apache.org/application: eventexporter
         operator.skywalking.apache.org/component: pod
-        md5-data: {{ md5Data }}
     spec:
       serviceAccountName: {{ .Name }}-eventexporter
       affinity:
@@ -56,7 +55,6 @@ spec:
           args:
             - start
             - -v=debug
-      {{ if .Spec.Config }}
             - -c=/data/config.yaml
           volumeMounts:
             - mountPath: /data
@@ -64,5 +62,4 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ .Name }}
-      {{ end }}
+            name: {{ configMapName }}
