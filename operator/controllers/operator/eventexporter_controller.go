@@ -22,14 +22,13 @@ import (
 	"fmt"
 	"text/template"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/go-logr/logr"
 	l "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -112,21 +111,7 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 		return false, nil
 	}
 
-	configmap := core.ConfigMap{}
-	err = r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: oldConfigMapName}, &configmap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error(err, "failed to get the eventexporter's configmap")
-		return true, err
-	}
-
-	if !apierrors.IsNotFound(err) {
-		if err = r.Client.Delete(ctx, &configmap); err != nil {
-			log.Error(err, "failed to delete eventexporter's configmap")
-			return true, err
-		}
-	}
-
-	configmap = core.ConfigMap{
+	newConfigMap := core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: eventExporter.Namespace,
 			Name:      newConfigMapName,
@@ -149,9 +134,23 @@ func (r *EventExporterReconciler) overlayData(ctx context.Context, log logr.Logg
 		Data:      map[string]string{"config.yaml": eventExporter.Spec.Config},
 	}
 
-	if err = r.Client.Create(ctx, &configmap); err != nil {
+	if err = r.Client.Create(ctx, &newConfigMap); err != nil {
 		log.Error(err, "failed to create eventexporter's configmap")
 		return true, err
+	}
+
+	oldConfigMap := core.ConfigMap{}
+	err = r.Client.Get(ctx, client.ObjectKey{Namespace: eventExporter.Namespace, Name: oldConfigMapName}, &oldConfigMap)
+	if err != nil && !apierrors.IsNotFound(err) {
+		log.Error(err, "failed to get the eventexporter's configmap")
+		return true, err
+	}
+
+	if !apierrors.IsNotFound(err) {
+		if err = r.Client.Delete(ctx, &oldConfigMap); err != nil {
+			log.Error(err, "failed to delete eventexporter's configmap")
+			return true, err
+		}
 	}
 
 	return true, nil
@@ -207,7 +206,8 @@ func (r *EventExporterReconciler) updateStatus(ctx context.Context, eventExporte
 }
 
 func configMapName(eventExporter *operatorv1alpha1.EventExporter) string {
-	return fmt.Sprintf("%s-eventexporter-cm-%s", eventExporter.Name, MD5Hash(eventExporter.Spec.Config))
+	md5 := MD5Hash(eventExporter.Name + eventExporter.Spec.Config)
+	return fmt.Sprintf("eventexporter-cm-%s", md5)
 }
 
 // SetupWithManager sets up the controller with the Manager.
