@@ -131,4 +131,17 @@ resources:
   kind: BanyanDB
   path: github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: skywalking.apache.org
+  group: operator
+  kind: EventExporter
+  path: github.com/apache/skywalking-swck/operator/apis/operator/v1alpha1
+  version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"
