@@ -48,9 +48,6 @@ setup:
           resource: OAPServer/skywalking-system
           for: condition=Available
         - namespace: skywalking-system
-          resource: UI/skywalking-system
-          for: condition=Available
-        - namespace: skywalking-system
           resource: EventExporter/skywalking-system
           for: condition=Available
     - name: setup java agent demo

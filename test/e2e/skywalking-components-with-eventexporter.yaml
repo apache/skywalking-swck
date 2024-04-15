@@ -59,20 +59,4 @@ spec:
           message: "{{ .Event.Message }}" 
         address: "skywalking-system-oap.skywalking-system:11800"
 
----
-apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI
-metadata:
-  name: skywalking-system
-  namespace: skywalking-system
-spec:
-  version: 9.5.0
-  instances: 1
-  image: apache/skywalking-ui:9.5.0
-  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
-  service:
-    template:
-      type: ClusterIP
-    ingress:
-      host: demo.ui.skywalking
     
