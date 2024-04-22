@@ -172,7 +172,7 @@ DEBUG done: rendered event is: uuid:"8d8c2bd1-1812-4b0c-8237-560688366280" sourc
 
 | name     | description                                            | default value                                        |
 |----------|--------------------------------------------------------|------------------------------------------------------|
-| image    | Docker image of the event exporter.                    | `apache/skywalking-kubernetes-event-exporter:latest` |.                                                                                                           | `"127.0.0.1:11800"`                       |
+| image    | Docker image of the event exporter.                    | `apache/skywalking-kubernetes-event-exporter:latest` |.                                                                                                           | `"skywalking-system-oap.skywalking-system:11800"`                       |
 | replicas | Number of event exporter pods.                         | `1`                                                  |
 | config   | Configuration of filters and exporters in YAML format. | `""`                                                 |
 
@@ -220,14 +220,14 @@ exporters:
         serviceInstance: "{{ .Pod.Name }}"
         endpoint: ""
       message: "{{ .Event.Message }}"
-    address: "127.0.0.1:11800" 
+    address: "skywalking-system-oap.skywalking-system:11800" 
 ```
 
 ### Filter Config
 
 | name      | description                                                                                                                         | example          |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------|------------------|
-| reason    | Filter events of the specified reason, regular expression like `"Killing\|Killed"` is supported.                                    | `""`             |.                                                                                                           | `"127.0.0.1:11800"`                       |
+| reason    | Filter events of the specified reason, regular expression like `"Killing\|Killed"` is supported.                                    | `""`             |.                                                                                                           | `"skywalking-system-oap.skywalking-system:11800"`                       |
 | message   | Filter events of the specified message, regular expression like `"Pulling container.*"` is supported.                               | `""`             |
 | minCount  | Filter events whose count is >= the specified value.                                                                                | `1`              |
 | type      | Filter events of the specified type, regular expression like `"Normal\|Error"` is supported.                                        | `""`             |
@@ -242,20 +242,20 @@ exporters:
 
 SkyWalking exporter exports the events into Apache SkyWalking OAP server using grpc.
 
-| name                            | description                                                                                                                                                                  | example                                   |
-|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|
-| address                         | The SkyWalking backend address where this exporter will export to.                                                                                                           | `"127.0.0.1:11800"`                       |
-| enableTLS                       | Whether to use TLS for grpc server connection validation. <br/> If TLS is enabled, the `trustedCertPath` is required, but `clientCertPath` and `clientKeyPath` are optional. | `false`                                   |
-| clientCertPath                  | Path of the X.509 certificate file.                                                                                                                                          | `""`                                      |
-| clientKeyPath                   | Path of the X.509 private key file.                                                                                                                                          | `""`                                      |
-| trustedCertPath                 | Path of the root certificate file.                                                                                                                                           | `""`                                      |
-| insecureSkipVerify              | Whether a client verifies the server's certificate chain and host name. Check [`tls.Config`](https://pkg.go.dev/crypto/tls#Config) for more details.                         | `false`                                   |
-| template                        | The event template of SkyWalking exporter, it can be composed of metadata like Event, Pod, and Service.                                                                      | An instance with fields of default values |
-| template.source                 | Event source information.                                                                                                                                                    | An instance with fields of default values |
-| template.source.service         | Service name, can be a [template string](https://pkg.go.dev/text/template).                                                                                                  | `"{{ .Service.Name }}"`                   |
-| template.source.serviceInstance | Service instance name, can be a [template string](https://pkg.go.dev/text/template).                                                                                         | `"{{ .Pod.Name }}"`                       |
-| template.source.endpoint        | Endpoint, can be a [template string](https://pkg.go.dev/text/template).                                                                                                      | `""`                                      |
-| template.message                | Message format, can be a [template string](https://pkg.go.dev/text/template).                                                                                                | `"{{ .Event.Message }}"`                  |
+| name                            | description                                                                                                                                                                  | example                                           |
+|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| address                         | The SkyWalking backend address where this exporter will export to.                                                                                                           | `"skywalking-system-oap.skywalking-system:11800"` |
+| enableTLS                       | Whether to use TLS for grpc server connection validation. <br/> If TLS is enabled, the `trustedCertPath` is required, but `clientCertPath` and `clientKeyPath` are optional. | `false`                                           |
+| clientCertPath                  | Path of the X.509 certificate file.                                                                                                                                          | `""`                                              |
+| clientKeyPath                   | Path of the X.509 private key file.                                                                                                                                          | `""`                                              |
+| trustedCertPath                 | Path of the root certificate file.                                                                                                                                           | `""`                                              |
+| insecureSkipVerify              | Whether a client verifies the server's certificate chain and host name. Check [`tls.Config`](https://pkg.go.dev/crypto/tls#Config) for more details.                         | `false`                                           |
+| template                        | The event template of SkyWalking exporter, it can be composed of metadata like Event, Pod, and Service.                                                                      | An instance with fields of default values         |
+| template.source                 | Event source information.                                                                                                                                                    | An instance with fields of default values         |
+| template.source.service         | Service name, can be a [template string](https://pkg.go.dev/text/template).                                                                                                  | `"{{ .Service.Name }}"`                           |
+| template.source.serviceInstance | Service instance name, can be a [template string](https://pkg.go.dev/text/template).                                                                                         | `"{{ .Pod.Name }}"`                               |
+| template.source.endpoint        | Endpoint, can be a [template string](https://pkg.go.dev/text/template).                                                                                                      | `""`                                              |
+| template.message                | Message format, can be a [template string](https://pkg.go.dev/text/template).                                                                                                | `"{{ .Event.Message }}"`                          |
 
 ### Console Exporter Config
 
