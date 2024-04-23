@@ -172,7 +172,7 @@ DEBUG done: rendered event is: uuid:"8d8c2bd1-1812-4b0c-8237-560688366280" sourc
 
 | name     | description                                            | default value                                        |
 |----------|--------------------------------------------------------|------------------------------------------------------|
-| image    | Docker image of the event exporter.                    | `apache/skywalking-kubernetes-event-exporter:latest` |                                                                                                           | `"skywalking-system-oap.skywalking-system:11800"`                       |
+| image    | Docker image of the event exporter.                    | `apache/skywalking-kubernetes-event-exporter:latest` |                                                                                                          
 | replicas | Number of event exporter pods.                         | `1`                                                  |
 | config   | Configuration of filters and exporters in YAML format. | `""`                                                 |
 
@@ -227,7 +227,7 @@ exporters:
 
 | name      | description                                                                                                                         | example          |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------|------------------|
-| reason    | Filter events of the specified reason, regular expression like `"Killing\|Killed"` is supported.                                    | `""`             |                                                                                                           | `"skywalking-system-oap.skywalking-system:11800"`                       |
+| reason    | Filter events of the specified reason, regular expression like `"Killing\|Killed"` is supported.                                    | `""`             |                                                                                                       
 | message   | Filter events of the specified message, regular expression like `"Pulling container.*"` is supported.                               | `""`             |
 | minCount  | Filter events whose count is >= the specified value.                                                                                | `1`              |
 | type      | Filter events of the specified type, regular expression like `"Normal\|Error"` is supported.                                        | `""`             |
