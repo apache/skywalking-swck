@@ -180,7 +180,7 @@ Please note: if you ignore the `config` field, no filters or exporter will be cr
 
 This is because the EventExporter controller creates a configMap for all `config` values and
 attach the configMap to the event exporter container as configuration file.
-Ignoring the `config` field means an **empty** configuration file (with value `"""`) is provided to the event exporter.
+Ignoring the `config` field means an **empty** configuration file (with content `""`) is provided to the event exporter.
 
 ## Status
 
