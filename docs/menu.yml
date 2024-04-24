@@ -42,6 +42,8 @@ catalog:
         path: "/examples/istio-controlplane"
       - name: "Install Satellite"
         path: "/examples/satellite"
+      - name: "Deploy Event Exporter"
+        path: "/examples/event-exporter"
   - name: "Contributing Guides"
     catalog:
       - name: "Contribute"
