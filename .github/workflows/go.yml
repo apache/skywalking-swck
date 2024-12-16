@@ -131,7 +131,7 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205     
         with:
           e2e-file: test/e2e/oap-ui-agent-internal-storage/e2e.yaml
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         name: Upload internal Logs
         with:
