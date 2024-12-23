@@ -1,6 +1,7 @@
 module github.com/apache/skywalking-swck/adapter
 
-go 1.22
+go 1.23.0
+
 toolchain go1.23.4
 
 require (
