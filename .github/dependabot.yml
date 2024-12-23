@@ -22,9 +22,17 @@ updates:
       interval: "daily"
     assignees:
       - "kezhenxu94"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
   - package-ecosystem: "gomod"
     directory: "/operator"
     schedule:
       interval: "daily"
     assignees:
       - "kezhenxu94"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
