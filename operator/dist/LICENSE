@@ -236,7 +236,7 @@ BSD-3-Clause licenses
     github.com/spf13/pflag v1.0.5 BSD-3-Clause
     golang.org/x/crypto v0.31.0 BSD-3-Clause
     golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e BSD-3-Clause
-    golang.org/x/net v0.21.0 BSD-3-Clause
+    golang.org/x/net v0.33.0 BSD-3-Clause
     golang.org/x/oauth2 v0.12.0 BSD-3-Clause
     golang.org/x/sys v0.28.0 BSD-3-Clause
     golang.org/x/term v0.27.0 BSD-3-Clause
