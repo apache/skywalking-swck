@@ -176,7 +176,6 @@ func (s *SidecarInjectField) GetInjectStrategy(labels, annotation *map[string]st
 }
 
 func (s *SidecarInjectField) findInjectContainer(containers []corev1.Container) []*corev1.Container {
-
 	var targetContainers []*corev1.Container
 
 	if len(containers) == 0 {
@@ -217,7 +216,8 @@ func (s *SidecarInjectField) injectSucceedAnnotation(annotation *map[string]stri
 
 // SidecarOverlayandGetValue get final value of sidecar
 func (s *SidecarInjectField) SidecarOverlayandGetValue(ao *AnnotationOverlay, annotation *map[string]string,
-	a Annotation) (string, bool) {
+	a Annotation,
+) (string, bool) {
 	if _, ok := (*annotation)[a.Name]; ok {
 		err := ao.SetOverlay(annotation, a)
 		if err != nil {
@@ -230,17 +230,17 @@ func (s *SidecarInjectField) SidecarOverlayandGetValue(ao *AnnotationOverlay, an
 
 // annotation > swAgent > default
 func (s *SidecarInjectField) setValue(config *string, ao *AnnotationOverlay, annotation *map[string]string,
-	a Annotation) bool {
+	a Annotation,
+) bool {
 	if v, ok := s.SidecarOverlayandGetValue(ao, annotation, a); ok {
 		if len(v) > 0 {
 			*config = v
 			return true
 		} else if len(*config) > 0 {
 			return true
-		} else {
-			*config = a.DefaultValue
-			return true
 		}
+		*config = a.DefaultValue
+		return true
 	}
 	return false
 }
@@ -338,7 +338,8 @@ func (s *SidecarInjectField) OverlaySidecar(a Annotations, ao *AnnotationOverlay
 
 // AgentOverlayandGetValue will do real annotation overlay
 func (s *SidecarInjectField) AgentOverlayandGetValue(ao *AnnotationOverlay, annotation *map[string]string,
-	a Annotation) bool {
+	a Annotation,
+) bool {
 	if _, ok := (*annotation)[a.Name]; ok {
 		err := ao.SetOverlay(annotation, a)
 		if err != nil {
@@ -436,7 +437,6 @@ func (s *SidecarInjectField) OverlayOptional(swAgentL []v1alpha1.SwAgent, annota
 		command = "cd " + sourceBootstrapPath + " && ls | grep -E \"" + bootstrapPlugins + "\"  | xargs -i cp {} " + targetPath
 		s.Initcontainer.Args[1] = strings.Join([]string{s.Initcontainer.Args[1], command}, " && ")
 	}
-
 }
 
 // OverlayPlugins will add Plugins' config to JvmAgentStr without verification

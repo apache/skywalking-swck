@@ -129,5 +129,5 @@ func (c *ErrorCollector) Error() error {
 	for i, e := range *c {
 		err += fmt.Sprintf("\tError %d: %s\n", i, e.Error())
 	}
-	return fmt.Errorf(err)
+	return errors.New(err)
 }

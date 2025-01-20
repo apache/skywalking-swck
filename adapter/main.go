@@ -77,7 +77,7 @@ func main() {
 	}
 	cmd.WithExternalMetrics(p)
 
-	klog.Infof(cmd.Message)
+	klog.Info(cmd.Message)
 	if err := cmd.Run(wait.NeverStop); err != nil {
 		klog.Fatalf("unable to run custom metrics adapter: %v", err)
 	}

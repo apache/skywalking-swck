@@ -154,7 +154,8 @@ func (r *StorageReconciler) checkState(ctx context.Context, log logr.Logger, sto
 }
 
 func (r *StorageReconciler) updateStatus(ctx context.Context, storage *operatorv1alpha1.Storage,
-	overlay operatorv1alpha1.StorageStatus, errCol *kubernetes.ErrorCollector) error {
+	overlay operatorv1alpha1.StorageStatus, errCol *kubernetes.ErrorCollector,
+) error {
 	// avoid resource conflict
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := r.Client.Get(ctx, client.ObjectKey{Name: storage.Name, Namespace: storage.Namespace}, storage); err != nil {
@@ -325,13 +326,11 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 	}
 	block, _ := pem.Decode(csr.Status.Certificate)
 	cert, err := x509.ParseCertificate(block.Bytes)
-
 	if err != nil {
 		log.Info("fail parse certificate")
 		return
 	}
-	p12, err := pkcs12.Encode(rand.Reader, key, cert, nil, "skywalking")
-
+	p12, err := pkcs12.Legacy.Encode(key, cert, nil, "skywalking")
 	if err != nil {
 		log.Info("fail encode pkcs12")
 		return
