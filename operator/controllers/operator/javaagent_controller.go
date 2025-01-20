@@ -180,7 +180,8 @@ func (r *JavaAgentReconciler) injectConfigBySwAgent(lastMatchedSwAgent *operator
 }
 
 func (r *JavaAgentReconciler) getSwAgent(ctx context.Context, req ctrl.Request,
-	swAgentList *operatorv1alpha1.SwAgentList, pod *core.Pod) (*operatorv1alpha1.SwAgent, error) {
+	swAgentList *operatorv1alpha1.SwAgentList, pod *core.Pod,
+) (*operatorv1alpha1.SwAgent, error) {
 	if err := r.Client.List(ctx, swAgentList, client.InNamespace(req.Namespace)); err != nil {
 		return nil, err
 	}
@@ -268,7 +269,8 @@ func (r *JavaAgentReconciler) UpdateStatus(ctx context.Context, log logr.Logger,
 }
 
 func (r *JavaAgentReconciler) updateStatus(ctx context.Context, javaagent *operatorv1alpha1.JavaAgent,
-	overlay operatorv1alpha1.JavaAgentStatus, errCol *kubernetes.ErrorCollector) error {
+	overlay operatorv1alpha1.JavaAgentStatus, errCol *kubernetes.ErrorCollector,
+) error {
 	// avoid resource conflict
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := r.Client.Get(ctx, client.ObjectKey{Name: javaagent.Name, Namespace: javaagent.Namespace}, javaagent); err != nil {
@@ -305,7 +307,7 @@ func (r *JavaAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				}
 				return false
 			},
-			DeleteFunc: func(e event.DeleteEvent) bool {
+			DeleteFunc: func(_ event.DeleteEvent) bool {
 				return false
 			},
 		}).

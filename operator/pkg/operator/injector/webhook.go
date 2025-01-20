@@ -40,7 +40,7 @@ var javaagentInjectorLog = logf.Log.WithName("javaagent_injector")
 // JavaagentInjector injects java agent into Pods
 type JavaagentInjector struct {
 	Client  client.Client
-	decoder *admission.Decoder
+	decoder admission.Decoder
 }
 
 func NewJavaagentInjector(client client.Client, schema *runtime.Scheme) *JavaagentInjector {

@@ -80,7 +80,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 10
-          {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
+          {{if (((.Spec.StorageConfig | default dict).Storage.Spec | default dict).Security | default dict).TLS}}
           volumeMounts:
             - name: cert
               mountPath: /skywalking/p12
@@ -106,7 +106,7 @@ spec:
             - name: {{ .Name }}
               value: "{{ .Value }}"
           {{end}}
-      {{if .Spec.StorageConfig.Storage.Spec.Security.TLS}}
+      {{if (((.Spec.StorageConfig | default dict).Storage.Spec | default dict).Security | default dict).TLS}}
       volumes:
         - name: cert
           secret:

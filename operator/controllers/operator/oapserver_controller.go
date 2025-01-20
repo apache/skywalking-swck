@@ -126,7 +126,8 @@ func (r *OAPServerReconciler) checkState(ctx context.Context, log logr.Logger, o
 }
 
 func (r *OAPServerReconciler) updateStatus(ctx context.Context, oapServer *operatorv1alpha1.OAPServer,
-	overlay operatorv1alpha1.OAPServerStatus, errCol *kubernetes.ErrorCollector) error {
+	overlay operatorv1alpha1.OAPServerStatus, errCol *kubernetes.ErrorCollector,
+) error {
 	// avoid resource conflict
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := r.Client.Get(ctx, client.ObjectKey{Name: oapServer.Name, Namespace: oapServer.Namespace}, oapServer); err != nil {
@@ -146,7 +147,7 @@ func (r *OAPServerReconciler) updateStatus(ctx context.Context, oapServer *opera
 
 // InjectStorage Inject Storage
 func (r *OAPServerReconciler) InjectStorage(ctx context.Context, log logr.Logger, oapServer *operatorv1alpha1.OAPServer) {
-	if oapServer.Spec.StorageConfig.Name == "" {
+	if oapServer.Spec.StorageConfig == nil || oapServer.Spec.StorageConfig.Name == "" {
 		return
 	}
 	storage := &operatorv1alpha1.Storage{}
@@ -167,7 +168,7 @@ func (r *OAPServerReconciler) ConfigStorage(ctx context.Context, log logr.Logger
 	SwStorageEsSslJksPath := ""
 	SwStorageEsSslJksPass := "skywalking"
 	SwStorageEsClusterNodes := ""
-	o.Spec.StorageConfig.Storage = *s
+	o.Spec.StorageConfig.Storage = s
 	if user.SecretName != "" {
 		if user.SecretName == "default" {
 			SwEsUser = "elastic"

@@ -36,6 +36,7 @@ metadata:
   namespace: skywalking-system
 spec:
   replicas: 1
+  version: latest
   config: |
     filters:
       - reason: ""     
@@ -59,4 +60,3 @@ spec:
           message: "{{ .Event.Message }}" 
         address: "skywalking-system-oap.skywalking-system:11800"
 
-    

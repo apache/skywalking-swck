@@ -52,7 +52,7 @@ metadata:
   name: swagent-001
   namespace: skywalking-system
 spec:
-  containerMatcher: ''
+  containerMatcher: ""
   selector:
   javaSidecar:
     name: swagent-001
@@ -77,7 +77,7 @@ metadata:
   name: swagent-002
   namespace: skywalking-system
 spec:
-  containerMatcher: ''
+  containerMatcher: ""
   selector:
   javaSidecar:
     name: swagent-002
@@ -94,3 +94,4 @@ spec:
   bootstrapPlugins:
     - "jdk-http"
     - "jdk-threading"
+
