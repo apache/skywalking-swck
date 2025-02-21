@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,9 +39,9 @@ func (r *BanyanDB) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-banyandb,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=banyandbs,verbs=create;update,versions=v1alpha1,name=mbanyandb.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &BanyanDB{}
+var _ webhook.CustomDefaulter = &BanyanDB{}
 
-func (r *BanyanDB) Default() {
+func (r *BanyanDB) Default(_ context.Context, _ runtime.Object) error {
 	banyandbLog.Info("default", "name", r.Name)
 
 	if r.Spec.Version == "" {
@@ -56,24 +57,26 @@ func (r *BanyanDB) Default() {
 		// currently only support one data copy
 		r.Spec.Counts = 1
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-banyandb,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=banyandbs,versions=v1alpha1,name=vbanyandb.kb.io
 
-var _ webhook.Validator = &BanyanDB{}
+var _ webhook.CustomValidator = &BanyanDB{}
 
-func (r *BanyanDB) ValidateCreate() (admission.Warnings, error) {
+func (r *BanyanDB) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	banyandbLog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-func (r *BanyanDB) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+func (r *BanyanDB) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	banyandbLog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-func (r *BanyanDB) ValidateDelete() (admission.Warnings, error) {
+func (r *BanyanDB) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	banyandbLog.Info("validate delete", "name", r.Name)
 	return nil, r.validate()
 }

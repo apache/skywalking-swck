@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,10 +40,10 @@ func (r *Satellite) SetupWebhookWithManager(mgr ctrl.Manager) error {
 //nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-satellite,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=satellites,verbs=create;update,versions=v1alpha1,name=msatellite.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &Satellite{}
+var _ webhook.CustomDefaulter = &Satellite{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Satellite) Default() {
+func (r *Satellite) Default(_ context.Context, _ runtime.Object) error {
 	satellitelog.Info("default", "name", r.Name)
 
 	image := r.Spec.Image
@@ -60,27 +61,29 @@ func (r *Satellite) Default() {
 			"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
 			"--set meshConfig.enableEnvoyAccessLogService=true", r.Name, r.Namespace)
 	}
+
+	return nil
 }
 
 //nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-satellite,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=satellites,verbs=create;update,versions=v1alpha1,name=vsatellite.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Satellite{}
+var _ webhook.CustomValidator = &Satellite{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Satellite) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	satellitelog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Satellite) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	satellitelog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Satellite) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Satellite) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	satellitelog.Info("validate delete", "name", r.Name)
 	return nil, r.validate()
 }

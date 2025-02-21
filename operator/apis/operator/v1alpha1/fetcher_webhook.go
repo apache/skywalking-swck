@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,35 +40,36 @@ func (r *Fetcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,verbs=create;update,versions=v1alpha1,name=mfetcher.kb.io
 
-var _ webhook.Defaulter = &Fetcher{}
+var _ webhook.CustomDefaulter = &Fetcher{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Fetcher) Default() {
+func (r *Fetcher) Default(_ context.Context, _ runtime.Object) error {
 	fetcherlog.Info("default", "name", r.Name)
 	if r.Spec.ClusterName == "" {
 		r.Spec.ClusterName = r.Name
 	}
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,versions=v1alpha1,name=vfetcher.kb.io
 
-var _ webhook.Validator = &Fetcher{}
+var _ webhook.CustomValidator = &Fetcher{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Fetcher) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Fetcher) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	fetcherlog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Fetcher) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Fetcher) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	fetcherlog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Fetcher) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Fetcher) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	fetcherlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

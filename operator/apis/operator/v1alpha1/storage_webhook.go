@@ -18,6 +18,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,10 +42,10 @@ func (r *Storage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-storage,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,verbs=create;update,versions=v1alpha1,name=mstorage.kb.io
 
-var _ webhook.Defaulter = &Storage{}
+var _ webhook.CustomDefaulter = &Storage{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Storage) Default() {
+func (r *Storage) Default(_ context.Context, _ runtime.Object) error {
 	storagelog.Info("default", "name", r.Name)
 	if r.Spec.ConnectType == "internal" {
 		if r.Spec.Image == "" {
@@ -53,27 +55,28 @@ func (r *Storage) Default() {
 			r.Spec.Instances = 3
 		}
 	}
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-storage,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=storages,versions=v1alpha1,name=vstorage.kb.io
 
-var _ webhook.Validator = &Storage{}
+var _ webhook.CustomValidator = &Storage{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Storage) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	storagelog.Info("validate create", "name", r.Name)
 	return nil, r.valid()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Storage) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	storagelog.Info("validate update", "name", r.Name)
 	return nil, r.valid()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Storage) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *Storage) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	storagelog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,10 +40,10 @@ func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-ui,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,verbs=create;update,versions=v1alpha1,name=mui.kb.io
 
-var _ webhook.Defaulter = &UI{}
+var _ webhook.CustomDefaulter = &UI{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *UI) Default() {
+func (r *UI) Default(_ context.Context, _ runtime.Object) error {
 	uilog.Info("default", "name", r.Name)
 
 	if r.Spec.Image == "" {
@@ -53,27 +54,29 @@ func (r *UI) Default() {
 	if r.Spec.OAPServerAddress == "" {
 		r.Spec.OAPServerAddress = fmt.Sprintf("http://%s-oap.%s:12800", r.Name, r.Namespace)
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-ui,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,versions=v1alpha1,name=vui.kb.io
 
-var _ webhook.Validator = &UI{}
+var _ webhook.CustomValidator = &UI{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *UI) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	uilog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *UI) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	uilog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *UI) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *UI) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	uilog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,10 +40,10 @@ func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverdynamicconfigs,verbs=create;update,versions=v1alpha1,name=moapserverdynamicconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &OAPServerDynamicConfig{}
+var _ webhook.CustomDefaulter = &OAPServerDynamicConfig{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) Default() {
+func (r *OAPServerDynamicConfig) Default(_ context.Context, _ runtime.Object) error {
 	oapserverdynamicconfiglog.Info("default", "name", r.Name)
 
 	// Default version is "9.5.0"
@@ -54,27 +55,28 @@ func (r *OAPServerDynamicConfig) Default() {
 	if r.Spec.LabelSelector == "" {
 		r.Spec.LabelSelector = "app=collector,release=skywalking"
 	}
+	return nil
 }
 
 // nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverdynamicconfigs,verbs=create;update,versions=v1alpha1,name=voapserverdynamicconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &OAPServerDynamicConfig{}
+var _ webhook.CustomValidator = &OAPServerDynamicConfig{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServerDynamicConfig) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServerDynamicConfig) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServerDynamicConfig) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,10 +42,10 @@ func (r *OAPServer) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-oapserver,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=oapservers,verbs=create;update,versions=v1alpha1,name=moapserver.kb.io
 
-var _ webhook.Defaulter = &OAPServer{}
+var _ webhook.CustomDefaulter = &OAPServer{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *OAPServer) Default() {
+func (r *OAPServer) Default(_ context.Context, _ runtime.Object) error {
 	oapserverlog.Info("default", "name", r.Name)
 
 	image := r.Spec.Image
@@ -59,27 +60,29 @@ func (r *OAPServer) Default() {
 				"--set meshConfig.enableEnvoyAccessLogService=true", r.Name, r.Namespace)
 		}
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-oapserver,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=oapservers,versions=v1alpha1,name=voapserver.kb.io
 
-var _ webhook.Validator = &OAPServer{}
+var _ webhook.CustomValidator = &OAPServer{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	oapserverlog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	oapserverlog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	oapserverlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

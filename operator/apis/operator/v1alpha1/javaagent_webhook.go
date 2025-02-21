@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,15 +46,15 @@ func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,verbs=create;update,versions=v1alpha1,name=mjavaagent.kb.io
 
-var _ webhook.Defaulter = &JavaAgent{}
+var _ webhook.CustomDefaulter = &JavaAgent{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *JavaAgent) Default() {
+func (r *JavaAgent) Default(_ context.Context, _ runtime.Object) error {
 	javaagentlog.Info("default", "name", r.Name)
 
 	config := r.Spec.AgentConfiguration
 	if config == nil {
-		return
+		return nil
 	}
 
 	service := GetServiceName(&config)
@@ -65,27 +66,29 @@ func (r *JavaAgent) Default() {
 	if r.Spec.BackendService == "" && backend != "" {
 		r.Spec.BackendService = backend
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,versions=v1alpha1,name=vjavaagent.kb.io
 
-var _ webhook.Validator = &JavaAgent{}
+var _ webhook.CustomValidator = &JavaAgent{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	javaagentlog.Info("validate create", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
 	javaagentlog.Info("validate update", "name", r.Name)
 	return nil, r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	javaagentlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }
