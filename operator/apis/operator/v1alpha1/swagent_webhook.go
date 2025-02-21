@@ -33,6 +33,8 @@ var swagentlog = logf.Log.WithName("swagent-resource")
 func (r *SwAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

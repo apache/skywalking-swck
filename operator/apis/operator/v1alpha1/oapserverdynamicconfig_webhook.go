@@ -34,6 +34,8 @@ var oapserverdynamicconfiglog = logf.Log.WithName("oapserverdynamicconfig-resour
 func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

@@ -36,6 +36,8 @@ var storagelog = logf.Log.WithName("storage-resource")
 func (r *Storage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

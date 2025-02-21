@@ -34,6 +34,8 @@ var satellitelog = logf.Log.WithName("satellite-resource")
 func (r *Satellite) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

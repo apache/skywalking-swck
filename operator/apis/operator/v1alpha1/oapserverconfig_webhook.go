@@ -34,6 +34,8 @@ var oapserverconfiglog = logf.Log.WithName("oapserverconfig-resource")
 func (r *OAPServerConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

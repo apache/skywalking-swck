@@ -39,6 +39,8 @@ var eventexporterlog = logf.Log.WithName("eventexporter-resource")
 func (r *EventExporter) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
