@@ -40,6 +40,9 @@ all: build docker-build
 
 ##@ Development
 
+binary-licenses: ## Generate licenses for binary
+	$(LICENSEEYE) dep resolve -c $(module_dir)/.dep.licenserc.yaml --summary $(module_dir)/dist/LICENSE.tpl -o $(module_dir)/dist/licenses
+
 generate: generate-deep manifests ## Generate codes and manifests
 	$(MAKE) format
 
@@ -97,5 +100,5 @@ undeploy: manifests ## Undeploy operator controller from the K8s cluster specifi
 ##@ Release
 
 .PHONY: release-build
-release-build: generate ## Build binary for release
+release-build: generate binary-licenses ## Build binary for release
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/manager-linux-amd64

@@ -47,3 +47,5 @@ apiserver.local*
 
 .DS_Store
 .env
+**/dist/licenses
+**/dist/LICENSE

@@ -59,13 +59,16 @@ docker-push: ## Push docker image with the adapter.
 
 ##@ Deployment
 
+binary-licenses: ## Generate licenses for binary
+	$(LICENSEEYE) dep resolve -c $(module_dir)/.dep.licenserc.yaml --summary $(module_dir)/dist/LICENSE.tpl -o $(module_dir)/dist/licenses
+
 .PHONY: deploy
 deploy: kustomize ## Deploy adapter controller to the K8s cluster specified in ~/.kube/config.
 	@echo "Deploy adapter"
 	-MOD=adapter DIR="./" IMG_PATH=namespaced/adapter IMG=metrics-adapter NEW_IMG=${ADAPTER_IMG} $(root_dir)/hack/deploy.sh d
 
 .PHONY: release-build
-release-build: ## Build binary for release
+release-build: binary-licenses ## Build binary for release
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/adapter-linux-amd64
 	
 # Generation
