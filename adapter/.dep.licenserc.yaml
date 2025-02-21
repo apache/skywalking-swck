@@ -20,7 +20,8 @@ header: # `header` section is configurations for source codes license header.
   license:
     spdx-id: Apache-2.0 # the spdx id of the license, it's convenient when your license is standard SPDX license.
     copyright-owner: Apache Software Foundation # the copyright owner to replace the [owner] in the `spdx-id` template.
-    content: | # `license` will be used as the content when `fix` command needs to insert a license header.
+    content:
+      | # `license` will be used as the content when `fix` command needs to insert a license header.
       Licensed to Apache Software Foundation (ASF) under one or more contributor
       license agreements. See the NOTICE file distributed with
       this work for additional information regarding copyright
@@ -58,20 +59,10 @@ header: # `header` section is configurations for source codes license header.
       under the License.
 
   paths: # `paths` are the path list that will be checked (and fixed) by license-eye, default is ['**'].
-    - 'config/'
+    - "config/"
 
   comment: on-failure # on what condition license-eye will comment on the pull request, `on-failure`, `always`, `never`.
 
 dependency:
   files:
     - go.mod
-  licenses:
-    - name: github.com/chzyer/logex
-      version: v1.1.10
-      license: MIT
-    - name: github.com/kr/logfmt
-      version: v0.0.0-20140226030751-b84e30acd515
-      license: MIT
-    - name: github.com/pascaldekloe/goe
-      version: v0.0.0-20180627143212-57f6aae5913c
-      license: CC0-1.0

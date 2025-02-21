@@ -39,7 +39,7 @@ help: ## Display this help.
 LICENSEEYE = $(tool_bin)/license-eye
 .PHONY: licenseeye
 licenseeye: ## Download skywalking-eye locally if necessary.
-	$(call go-install-tool,$(LICENSEEYE),github.com/apache/skywalking-eyes/cmd/license-eye@f461a46e74e5fa22e9f9599a355ab4f0ac265469)
+	$(call go-install-tool,$(LICENSEEYE),github.com/apache/skywalking-eyes/cmd/license-eye@477772b7ef382b9024ac89676ebe6cbb26165a4f)
 
 .PHONY: license-check
 license-check: licenseeye ## Check license header
