@@ -34,6 +34,8 @@ var banyandbLog = logf.Log.WithName("banyandb-resource")
 func (r *BanyanDB) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
