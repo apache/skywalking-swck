@@ -20,6 +20,7 @@ package v1alpha1
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -43,10 +44,15 @@ func (r *SwAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &SwAgent{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *SwAgent) Default(_ context.Context, _ runtime.Object) error {
-	swagentlog.Info("default", "name", r.Name)
-	r.setDefault()
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *SwAgent) Default(_ context.Context, o runtime.Object) error {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("default", "name", swagent.Name)
+	swagent.setDefault()
 	return nil
 }
 
@@ -56,15 +62,25 @@ func (r *SwAgent) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &SwAgent{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *SwAgent) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	swagentlog.Info("validate create", "name", r.Name)
+func (r *SwAgent) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("validate create", "name", swagent.Name)
 	r.setDefault()
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *SwAgent) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	swagentlog.Info("validate update", "name", r.Name)
+func (r *SwAgent) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("validate update", "name", swagent.Name)
 	return nil, nil
 }
 

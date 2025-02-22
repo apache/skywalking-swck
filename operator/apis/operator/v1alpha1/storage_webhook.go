@@ -46,15 +46,20 @@ func (r *Storage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &Storage{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Storage) Default(_ context.Context, _ runtime.Object) error {
-	storagelog.Info("default", "name", r.Name)
-	if r.Spec.ConnectType == "internal" {
-		if r.Spec.Image == "" {
-			r.Spec.Image = "docker.elastic.co/elasticsearch/elasticsearch:7.5.1"
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *Storage) Default(_ context.Context, o runtime.Object) error {
+	storage, ok := o.(*Storage)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a Storage")
+	}
+
+	storagelog.Info("default", "name", storage.Name)
+	if storage.Spec.ConnectType == "internal" {
+		if storage.Spec.Image == "" {
+			storage.Spec.Image = "docker.elastic.co/elasticsearch/elasticsearch:7.5.1"
 		}
-		if r.Spec.Instances == 0 {
-			r.Spec.Instances = 3
+		if storage.Spec.Instances == 0 {
+			storage.Spec.Instances = 3
 		}
 	}
 	return nil
@@ -66,20 +71,35 @@ func (r *Storage) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &Storage{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Storage) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	storagelog.Info("validate create", "name", r.Name)
-	return nil, r.valid()
+func (r *Storage) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	storage, ok := o.(*Storage)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Storage")
+	}
+
+	storagelog.Info("validate create", "name", storage.Name)
+	return nil, storage.valid()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Storage) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	storagelog.Info("validate update", "name", r.Name)
-	return nil, r.valid()
+func (r *Storage) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	storage, ok := o.(*Storage)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Storage")
+	}
+
+	storagelog.Info("validate update", "name", storage.Name)
+	return nil, storage.valid()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Storage) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	storagelog.Info("validate delete", "name", r.Name)
+func (r *Storage) ValidateDelete(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	storage, ok := o.(*Storage)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Storage")
+	}
+
+	storagelog.Info("validate delete", "name", storage.Name)
 	return nil, nil
 }
 

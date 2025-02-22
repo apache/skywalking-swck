@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,20 +50,25 @@ func (r *EventExporter) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &EventExporter{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *EventExporter) Default(_ context.Context, _ runtime.Object) error {
-	eventexporterlog.Info("default", "name", r.Name)
-
-	if r.Spec.Version == "" {
-		r.Spec.Version = latestVersion
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *EventExporter) Default(_ context.Context, o runtime.Object) error {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a EventExporter")
 	}
 
-	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("%s:%s", image, r.Spec.Version)
+	eventexporterlog.Info("default", "name", eventexporter.Name)
+
+	if eventexporter.Spec.Version == "" {
+		eventexporter.Spec.Version = latestVersion
 	}
 
-	if r.Spec.Replicas == 0 {
-		r.Spec.Replicas = 1
+	if eventexporter.Spec.Image == "" {
+		eventexporter.Spec.Image = fmt.Sprintf("%s:%s", image, eventexporter.Spec.Version)
+	}
+
+	if eventexporter.Spec.Replicas == 0 {
+		eventexporter.Spec.Replicas = 1
 	}
 
 	return nil
@@ -74,17 +80,27 @@ func (r *EventExporter) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &EventExporter{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *EventExporter) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	eventexporterlog.Info("validate create", "name", r.Name)
+func (r *EventExporter) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a EventExporter")
+	}
 
-	return nil, r.validate()
+	eventexporterlog.Info("validate create", "name", eventexporter.Name)
+
+	return nil, eventexporter.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *EventExporter) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	eventexporterlog.Info("validate update", "name", r.Name)
+func (r *EventExporter) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a EventExporter")
+	}
 
-	return nil, r.validate()
+	eventexporterlog.Info("validate update", "name", eventexporter.Name)
+
+	return nil, eventexporter.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -44,18 +45,23 @@ func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error
 
 var _ webhook.CustomDefaulter = &OAPServerDynamicConfig{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) Default(_ context.Context, _ runtime.Object) error {
-	oapserverdynamicconfiglog.Info("default", "name", r.Name)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *OAPServerDynamicConfig) Default(_ context.Context, o runtime.Object) error {
+	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
+	}
+
+	oapserverdynamicconfiglog.Info("default", "name", oapserverdynamicconfig.Name)
 
 	// Default version is "9.5.0"
-	if r.Spec.Version == "" {
-		r.Spec.Version = "9.5.0"
+	if oapserverdynamicconfig.Spec.Version == "" {
+		oapserverdynamicconfig.Spec.Version = "9.5.0"
 	}
 
 	// Default labelselector is "app=collector,release=skywalking"
-	if r.Spec.LabelSelector == "" {
-		r.Spec.LabelSelector = "app=collector,release=skywalking"
+	if oapserverdynamicconfig.Spec.LabelSelector == "" {
+		oapserverdynamicconfig.Spec.LabelSelector = "app=collector,release=skywalking"
 	}
 	return nil
 }
@@ -66,15 +72,25 @@ func (r *OAPServerDynamicConfig) Default(_ context.Context, _ runtime.Object) er
 var _ webhook.CustomValidator = &OAPServerDynamicConfig{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	oapserverdynamicconfiglog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+func (r *OAPServerDynamicConfig) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
+	}
+
+	oapserverdynamicconfiglog.Info("validate create", "name", oapserverdynamicconfig.Name)
+	return nil, oapserverdynamicconfig.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	oapserverdynamicconfiglog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+func (r *OAPServerDynamicConfig) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
+	}
+
+	oapserverdynamicconfiglog.Info("validate update", "name", oapserverdynamicconfig.Name)
+	return nil, oapserverdynamicconfig.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type

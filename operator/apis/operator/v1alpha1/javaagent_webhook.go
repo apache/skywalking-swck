@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -50,11 +51,16 @@ func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &JavaAgent{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *JavaAgent) Default(_ context.Context, _ runtime.Object) error {
-	javaagentlog.Info("default", "name", r.Name)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *JavaAgent) Default(_ context.Context, o runtime.Object) error {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a JavaAgent")
+	}
 
-	config := r.Spec.AgentConfiguration
+	javaagentlog.Info("default", "name", javaagent.Name)
+
+	config := javaagent.Spec.AgentConfiguration
 	if config == nil {
 		return nil
 	}
@@ -62,11 +68,11 @@ func (r *JavaAgent) Default(_ context.Context, _ runtime.Object) error {
 	service := GetServiceName(&config)
 	backend := GetBackendService(&config)
 
-	if r.Spec.ServiceName == "" && service != "" {
-		r.Spec.ServiceName = service
+	if javaagent.Spec.ServiceName == "" && service != "" {
+		javaagent.Spec.ServiceName = service
 	}
-	if r.Spec.BackendService == "" && backend != "" {
-		r.Spec.BackendService = backend
+	if javaagent.Spec.BackendService == "" && backend != "" {
+		javaagent.Spec.BackendService = backend
 	}
 
 	return nil
@@ -78,15 +84,25 @@ func (r *JavaAgent) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &JavaAgent{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	javaagentlog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+func (r *JavaAgent) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
+	}
+
+	javaagentlog.Info("validate create", "name", javaagent.Name)
+	return nil, javaagent.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	javaagentlog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+func (r *JavaAgent) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
+	}
+
+	javaagentlog.Info("validate update", "name", javaagent.Name)
+	return nil, javaagent.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type

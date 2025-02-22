@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -44,24 +45,29 @@ func (r *Satellite) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &Satellite{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Satellite) Default(_ context.Context, _ runtime.Object) error {
-	satellitelog.Info("default", "name", r.Name)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *Satellite) Default(_ context.Context, o runtime.Object) error {
+	satellite, ok := o.(*Satellite)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a Satellite")
+	}
 
-	image := r.Spec.Image
+	satellitelog.Info("default", "name", satellite.Name)
+
+	image := satellite.Spec.Image
 	if image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-satellite:%s", r.Spec.Version)
+		satellite.Spec.Image = fmt.Sprintf("apache/skywalking-satellite:%s", satellite.Spec.Version)
 	}
 
-	oapServerName := r.Spec.OAPServerName
+	oapServerName := satellite.Spec.OAPServerName
 	if oapServerName == "" {
-		r.Spec.OAPServerName = r.Name
+		satellite.Spec.OAPServerName = satellite.Name
 	}
 
-	if r.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
-		r.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
+	if satellite.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
+		satellite.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
 			"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
-			"--set meshConfig.enableEnvoyAccessLogService=true", r.Name, r.Namespace)
+			"--set meshConfig.enableEnvoyAccessLogService=true", satellite.Name, satellite.Namespace)
 	}
 
 	return nil
@@ -73,15 +79,25 @@ func (r *Satellite) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &Satellite{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Satellite) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	satellitelog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+func (r *Satellite) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	satellite, ok := o.(*Satellite)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Satellite")
+	}
+
+	satellitelog.Info("validate create", "name", satellite.Name)
+	return nil, satellite.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Satellite) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	satellitelog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+func (r *Satellite) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	satellite, ok := o.(*Satellite)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Satellite")
+	}
+
+	satellitelog.Info("validate update", "name", satellite.Name)
+	return nil, satellite.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -44,11 +45,16 @@ func (r *Fetcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomDefaulter = &Fetcher{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Fetcher) Default(_ context.Context, _ runtime.Object) error {
-	fetcherlog.Info("default", "name", r.Name)
-	if r.Spec.ClusterName == "" {
-		r.Spec.ClusterName = r.Name
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *Fetcher) Default(_ context.Context, o runtime.Object) error {
+	fetcher, ok := o.(*Fetcher)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a Fetcher")
+	}
+
+	fetcherlog.Info("default", "name", fetcher.Name)
+	if fetcher.Spec.ClusterName == "" {
+		fetcher.Spec.ClusterName = fetcher.Name
 	}
 	return nil
 }
@@ -59,15 +65,25 @@ func (r *Fetcher) Default(_ context.Context, _ runtime.Object) error {
 var _ webhook.CustomValidator = &Fetcher{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Fetcher) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	fetcherlog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+func (r *Fetcher) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	fetcher, ok := o.(*Fetcher)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Fetcher")
+	}
+
+	fetcherlog.Info("validate create", "name", fetcher.Name)
+	return nil, fetcher.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Fetcher) ValidateUpdate(_ context.Context, _ runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	fetcherlog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+func (r *Fetcher) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	fetcher, ok := o.(*Fetcher)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a Fetcher")
+	}
+
+	fetcherlog.Info("validate update", "name", fetcher.Name)
+	return nil, fetcher.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
