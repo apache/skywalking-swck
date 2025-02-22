@@ -18,6 +18,9 @@
 package v1alpha1
 
 import (
+	"context"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -31,40 +34,58 @@ var swagentlog = logf.Log.WithName("swagent-resource")
 func (r *SwAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-swagent,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=swagents,verbs=create;update,versions=v1alpha1,name=mswagent.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &SwAgent{}
+var _ webhook.CustomDefaulter = &SwAgent{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *SwAgent) Default() {
-	swagentlog.Info("default", "name", r.Name)
-	r.setDefault()
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *SwAgent) Default(_ context.Context, o runtime.Object) error {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("default", "name", swagent.Name)
+	swagent.setDefault()
+	return nil
 }
 
 // nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-swagent,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=swagents,verbs=create;update,versions=v1alpha1,name=vswagent.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &SwAgent{}
+var _ webhook.CustomValidator = &SwAgent{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateCreate() (admission.Warnings, error) {
-	swagentlog.Info("validate create", "name", r.Name)
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *SwAgent) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("validate create", "name", swagent.Name)
 	r.setDefault()
 	return nil, nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	swagentlog.Info("validate update", "name", r.Name)
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *SwAgent) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	swagent, ok := o.(*SwAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a SwAgent")
+	}
+
+	swagentlog.Info("validate update", "name", swagent.Name)
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *SwAgent) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *SwAgent) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	swagentlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

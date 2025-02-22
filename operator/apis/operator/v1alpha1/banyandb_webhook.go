@@ -18,8 +18,10 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -32,50 +34,74 @@ var banyandbLog = logf.Log.WithName("banyandb-resource")
 func (r *BanyanDB) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-banyandb,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=banyandbs,verbs=create;update,versions=v1alpha1,name=mbanyandb.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &BanyanDB{}
+var _ webhook.CustomDefaulter = &BanyanDB{}
 
-func (r *BanyanDB) Default() {
-	banyandbLog.Info("default", "name", r.Name)
+func (r *BanyanDB) Default(_ context.Context, o runtime.Object) error {
+	banyandb, ok := o.(*BanyanDB)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a BanyanDB")
+	}
 
-	if r.Spec.Version == "" {
+	banyandbLog.Info("default", "name", banyandb.Name)
+
+	if banyandb.Spec.Version == "" {
 		// use the latest version by default
-		r.Spec.Version = "latest"
+		banyandb.Spec.Version = "latest"
 	}
 
-	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-banyandb:%s", r.Spec.Version)
+	if banyandb.Spec.Image == "" {
+		banyandb.Spec.Image = fmt.Sprintf("apache/skywalking-banyandb:%s", banyandb.Spec.Version)
 	}
 
-	if r.Spec.Counts == 0 {
+	if banyandb.Spec.Counts == 0 {
 		// currently only support one data copy
-		r.Spec.Counts = 1
+		banyandb.Spec.Counts = 1
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-banyandb,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=banyandbs,versions=v1alpha1,name=vbanyandb.kb.io
 
-var _ webhook.Validator = &BanyanDB{}
+var _ webhook.CustomValidator = &BanyanDB{}
 
-func (r *BanyanDB) ValidateCreate() (admission.Warnings, error) {
-	banyandbLog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+func (r *BanyanDB) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	banyandb, ok := o.(*BanyanDB)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a BanyanDB")
+	}
+
+	banyandbLog.Info("validate create", "name", banyandb.Name)
+	return nil, banyandb.validate()
 }
 
-func (r *BanyanDB) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	banyandbLog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+func (r *BanyanDB) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	banyandb, ok := o.(*BanyanDB)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a BanyanDB")
+	}
+
+	banyandbLog.Info("validate update", "name", banyandb.Name)
+	return nil, banyandb.validate()
 }
 
-func (r *BanyanDB) ValidateDelete() (admission.Warnings, error) {
-	banyandbLog.Info("validate delete", "name", r.Name)
-	return nil, r.validate()
+func (r *BanyanDB) ValidateDelete(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	banyandb, ok := o.(*BanyanDB)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a BanyanDB")
+	}
+
+	banyandbLog.Info("validate delete", "name", banyandb.Name)
+	return nil, banyandb.validate()
 }
 
 func (r *BanyanDB) validate() error {
