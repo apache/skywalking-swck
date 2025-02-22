@@ -18,8 +18,10 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,51 +37,70 @@ var oapserverlog = logf.Log.WithName("oapserver-resource")
 func (r *OAPServer) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-oapserver,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=oapservers,verbs=create;update,versions=v1alpha1,name=moapserver.kb.io
 
-var _ webhook.Defaulter = &OAPServer{}
+var _ webhook.CustomDefaulter = &OAPServer{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *OAPServer) Default() {
-	oapserverlog.Info("default", "name", r.Name)
-
-	image := r.Spec.Image
-	if image == "" {
-		r.Spec.Image = fmt.Sprintf("apache/skywalking-oap-server:%s", r.Spec.Version)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *OAPServer) Default(_ context.Context, o runtime.Object) error {
+	oapserver, ok := o.(*OAPServer)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a OAPServer")
 	}
-	for _, envVar := range r.Spec.Config {
+
+	oapserverlog.Info("default", "name", oapserver.Name)
+
+	image := oapserver.Spec.Image
+	if image == "" {
+		oapserver.Spec.Image = fmt.Sprintf("apache/skywalking-oap-server:%s", oapserver.Spec.Version)
+	}
+	for _, envVar := range oapserver.Spec.Config {
 		if envVar.Name == "SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS" &&
-			r.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
-			r.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
+			oapserver.ObjectMeta.Annotations[annotationKeyIstioSetup] == "" {
+			oapserver.Annotations[annotationKeyIstioSetup] = fmt.Sprintf("istioctl install --set profile=demo "+
 				"--set meshConfig.defaultConfig.envoyAccessLogService.address=%s.%s:11800 "+
-				"--set meshConfig.enableEnvoyAccessLogService=true", r.Name, r.Namespace)
+				"--set meshConfig.enableEnvoyAccessLogService=true", oapserver.Name, oapserver.Namespace)
 		}
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-oapserver,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=oapservers,versions=v1alpha1,name=voapserver.kb.io
 
-var _ webhook.Validator = &OAPServer{}
+var _ webhook.CustomValidator = &OAPServer{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateCreate() (admission.Warnings, error) {
-	oapserverlog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	oapserver, ok := o.(*OAPServer)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a OAPServer")
+	}
+
+	oapserverlog.Info("validate create", "name", oapserver.Name)
+	return nil, oapserver.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	oapserverlog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	oapserver, ok := o.(*OAPServer)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a OAPServer")
+	}
+
+	oapserverlog.Info("validate update", "name", oapserver.Name)
+	return nil, oapserver.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *OAPServer) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *OAPServer) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	oapserverlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

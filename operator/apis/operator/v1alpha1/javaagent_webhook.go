@@ -18,8 +18,10 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -39,53 +41,72 @@ const (
 func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,verbs=create;update,versions=v1alpha1,name=mjavaagent.kb.io
 
-var _ webhook.Defaulter = &JavaAgent{}
+var _ webhook.CustomDefaulter = &JavaAgent{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *JavaAgent) Default() {
-	javaagentlog.Info("default", "name", r.Name)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *JavaAgent) Default(_ context.Context, o runtime.Object) error {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a JavaAgent")
+	}
 
-	config := r.Spec.AgentConfiguration
+	javaagentlog.Info("default", "name", javaagent.Name)
+
+	config := javaagent.Spec.AgentConfiguration
 	if config == nil {
-		return
+		return nil
 	}
 
 	service := GetServiceName(&config)
 	backend := GetBackendService(&config)
 
-	if r.Spec.ServiceName == "" && service != "" {
-		r.Spec.ServiceName = service
+	if javaagent.Spec.ServiceName == "" && service != "" {
+		javaagent.Spec.ServiceName = service
 	}
-	if r.Spec.BackendService == "" && backend != "" {
-		r.Spec.BackendService = backend
+	if javaagent.Spec.BackendService == "" && backend != "" {
+		javaagent.Spec.BackendService = backend
 	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,versions=v1alpha1,name=vjavaagent.kb.io
 
-var _ webhook.Validator = &JavaAgent{}
+var _ webhook.CustomValidator = &JavaAgent{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateCreate() (admission.Warnings, error) {
-	javaagentlog.Info("validate create", "name", r.Name)
-	return nil, r.validate()
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
+	}
+
+	javaagentlog.Info("validate create", "name", javaagent.Name)
+	return nil, javaagent.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	javaagentlog.Info("validate update", "name", r.Name)
-	return nil, r.validate()
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	javaagent, ok := o.(*JavaAgent)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
+	}
+
+	javaagentlog.Info("validate update", "name", javaagent.Name)
+	return nil, javaagent.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *JavaAgent) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	javaagentlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }

@@ -18,8 +18,10 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -27,8 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-const latestVersion = "latest"
-const image = "apache/skywalking-kubernetes-event-exporter"
+const (
+	latestVersion = "latest"
+	image         = "apache/skywalking-kubernetes-event-exporter"
+)
 
 // log is for logging in this package.
 var eventexporterlog = logf.Log.WithName("eventexporter-resource")
@@ -36,52 +40,71 @@ var eventexporterlog = logf.Log.WithName("eventexporter-resource")
 func (r *EventExporter) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-eventexporter,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=eventexporters,verbs=create;update,versions=v1alpha1,name=meventexporter.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &EventExporter{}
+var _ webhook.CustomDefaulter = &EventExporter{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *EventExporter) Default() {
-	eventexporterlog.Info("default", "name", r.Name)
-
-	if r.Spec.Version == "" {
-		r.Spec.Version = latestVersion
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
+func (r *EventExporter) Default(_ context.Context, o runtime.Object) error {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return apierrors.NewBadRequest("object is not a EventExporter")
 	}
 
-	if r.Spec.Image == "" {
-		r.Spec.Image = fmt.Sprintf("%s:%s", image, r.Spec.Version)
+	eventexporterlog.Info("default", "name", eventexporter.Name)
+
+	if eventexporter.Spec.Version == "" {
+		eventexporter.Spec.Version = latestVersion
 	}
 
-	if r.Spec.Replicas == 0 {
-		r.Spec.Replicas = 1
+	if eventexporter.Spec.Image == "" {
+		eventexporter.Spec.Image = fmt.Sprintf("%s:%s", image, eventexporter.Spec.Version)
 	}
+
+	if eventexporter.Spec.Replicas == 0 {
+		eventexporter.Spec.Replicas = 1
+	}
+
+	return nil
 }
 
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-eventexporter,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=eventexporters,verbs=create;update,versions=v1alpha1,name=meventexporter.kb.io
 
-var _ webhook.Validator = &EventExporter{}
+var _ webhook.CustomValidator = &EventExporter{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *EventExporter) ValidateCreate() (admission.Warnings, error) {
-	eventexporterlog.Info("validate create", "name", r.Name)
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *EventExporter) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a EventExporter")
+	}
 
-	return nil, r.validate()
+	eventexporterlog.Info("validate create", "name", eventexporter.Name)
+
+	return nil, eventexporter.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *EventExporter) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	eventexporterlog.Info("validate update", "name", r.Name)
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *EventExporter) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
+	eventexporter, ok := o.(*EventExporter)
+	if !ok {
+		return nil, apierrors.NewBadRequest("object is not a EventExporter")
+	}
 
-	return nil, r.validate()
+	eventexporterlog.Info("validate update", "name", eventexporter.Name)
+
+	return nil, eventexporter.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *EventExporter) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
+func (r *EventExporter) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	eventexporterlog.Info("validate delete", "name", r.Name)
 
 	return nil, nil
