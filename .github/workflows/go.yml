@@ -29,7 +29,7 @@ concurrency:
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -43,7 +43,7 @@ jobs:
         run: make check
   build:
     name: Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -57,7 +57,7 @@ jobs:
         run: make docker-build
   unit-tests:
     name: Unit tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -243,7 +243,7 @@ jobs:
           e2e-file: test/e2e/oap-eventexporter/e2e.yaml
   checks:
     name: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [check, build, unit-tests, e2e-tests, swagent-e2e-tests, swagent-configmap-e2e-tests, internel-storage-e2e-tests, external-storage-e2e-tests, adapter-hpa-e2e-tests, e2e-tests-with-satellite, adapter-satellite-hpa-e2e-tests, oapserver-configuration-e2e-tests, oapserver-eventexporter-e2e-tests]
     steps:
       - run: echo 'success'
