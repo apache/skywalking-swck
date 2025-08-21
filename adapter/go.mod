@@ -1,6 +1,6 @@
 module github.com/apache/skywalking-swck/adapter
 
-go 1.24.2
+go 1.24.6
 
 require (
 	github.com/apache/skywalking-cli v0.0.0-20210209032327-04a0ce08990f
