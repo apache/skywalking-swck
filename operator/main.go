@@ -88,7 +88,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("oapserver"),
-		Recorder: mgr.GetEventRecorderFor("oapserver-controller"),
+		Recorder: mgr.GetEventRecorder("oapserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OAPServer")
 		os.Exit(1)
@@ -97,7 +97,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("ui"),
-		Recorder: mgr.GetEventRecorderFor("ui-controller"),
+		Recorder: mgr.GetEventRecorder("ui-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UI")
 		os.Exit(1)
@@ -106,7 +106,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("fetcher"),
-		Recorder: mgr.GetEventRecorderFor("fetcher-controller"),
+		Recorder: mgr.GetEventRecorder("fetcher-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Fetcher")
 		os.Exit(1)
@@ -116,7 +116,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		FileRepo:   manifests.NewRepo("storage"),
 		RestConfig: mgr.GetConfig(),
-		Recorder:   mgr.GetEventRecorderFor("storage-controller"),
+		Recorder:   mgr.GetEventRecorder("storage-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Storage")
 		os.Exit(1)
@@ -134,7 +134,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("satellite"),
-		Recorder: mgr.GetEventRecorderFor("satellite-controller"),
+		Recorder: mgr.GetEventRecorder("satellite-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Satellite")
 		os.Exit(1)
@@ -165,7 +165,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("banyandb"),
-		Recorder: mgr.GetEventRecorderFor("banyandb-controller"),
+		Recorder: mgr.GetEventRecorder("banyandb-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "BanyanDB")
 		os.Exit(1)
@@ -174,7 +174,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		FileRepo: manifests.NewRepo("eventexporter"),
-		Recorder: mgr.GetEventRecorderFor("eventexporter-controller"),
+		Recorder: mgr.GetEventRecorder("eventexporter-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "EventExporter")
 		os.Exit(1)

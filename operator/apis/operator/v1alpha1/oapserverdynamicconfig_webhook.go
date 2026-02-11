@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,8 +30,7 @@ import (
 var oapserverdynamicconfiglog = logf.Log.WithName("oapserverdynamicconfig-resource")
 
 func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -43,15 +39,8 @@ func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverdynamicconfigs,verbs=create;update,versions=v1alpha1,name=moapserverdynamicconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomDefaulter = &OAPServerDynamicConfig{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) Default(_ context.Context, o runtime.Object) error {
-	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
-	}
-
+func (r *OAPServerDynamicConfig) Default(_ context.Context, oapserverdynamicconfig *OAPServerDynamicConfig) error {
 	oapserverdynamicconfiglog.Info("default", "name", oapserverdynamicconfig.Name)
 
 	// Default version is "9.5.0"
@@ -69,33 +58,22 @@ func (r *OAPServerDynamicConfig) Default(_ context.Context, o runtime.Object) er
 // nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-oapserverdynamicconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverdynamicconfigs,verbs=create;update,versions=v1alpha1,name=voapserverdynamicconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &OAPServerDynamicConfig{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
-	}
-
+func (r *OAPServerDynamicConfig) ValidateCreate(_ context.Context, oapserverdynamicconfig *OAPServerDynamicConfig) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate create", "name", oapserverdynamicconfig.Name)
 	return nil, oapserverdynamicconfig.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	oapserverdynamicconfig, ok := o.(*OAPServerDynamicConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a OAPServerDynamicConfig")
-	}
-
+// nolint: lll
+func (r *OAPServerDynamicConfig) ValidateUpdate(_ context.Context, oapserverdynamicconfig *OAPServerDynamicConfig, _ *OAPServerDynamicConfig) (admission.Warnings, error) {
 	oapserverdynamicconfiglog.Info("validate update", "name", oapserverdynamicconfig.Name)
 	return nil, oapserverdynamicconfig.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerDynamicConfig) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	oapserverdynamicconfiglog.Info("validate delete", "name", r.Name)
+func (r *OAPServerDynamicConfig) ValidateDelete(_ context.Context, oapserverdynamicconfig *OAPServerDynamicConfig) (admission.Warnings, error) {
+	oapserverdynamicconfiglog.Info("validate delete", "name", oapserverdynamicconfig.Name)
 	return nil, nil
 }
 

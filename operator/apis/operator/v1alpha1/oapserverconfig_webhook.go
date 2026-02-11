@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,8 +30,7 @@ import (
 var oapserverconfiglog = logf.Log.WithName("oapserverconfig-resource")
 
 func (r *OAPServerConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -43,15 +39,8 @@ func (r *OAPServerConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-oapserverconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverconfigs,verbs=create;update,versions=v1alpha1,name=moapserverconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomDefaulter = &OAPServerConfig{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *OAPServerConfig) Default(_ context.Context, o runtime.Object) error {
-	oapserverconfig, ok := o.(*OAPServerConfig)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a OAPServerConfig")
-	}
-
+func (r *OAPServerConfig) Default(_ context.Context, oapserverconfig *OAPServerConfig) error {
 	oapserverconfiglog.Info("default", "name", oapserverconfig.Name)
 
 	// Default version is "9.5.0"
@@ -65,33 +54,21 @@ func (r *OAPServerConfig) Default(_ context.Context, o runtime.Object) error {
 // nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-oapserverconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=oapserverconfigs,verbs=create;update,versions=v1alpha1,name=voapserverconfig.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &OAPServerConfig{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerConfig) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	oapserverconfig, ok := o.(*OAPServerConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a OAPServerConfig")
-	}
-
+func (r *OAPServerConfig) ValidateCreate(_ context.Context, oapserverconfig *OAPServerConfig) (admission.Warnings, error) {
 	oapserverconfiglog.Info("validate create", "name", oapserverconfig.Name)
 	return nil, oapserverconfig.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerConfig) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	oapserverconfig, ok := o.(*OAPServerConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a OAPServerConfig")
-	}
-
+func (r *OAPServerConfig) ValidateUpdate(_ context.Context, oapserverconfig *OAPServerConfig, _ *OAPServerConfig) (admission.Warnings, error) {
 	oapserverconfiglog.Info("validate update", "name", oapserverconfig.Name)
 	return nil, oapserverconfig.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *OAPServerConfig) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	oapserverconfiglog.Info("validate delete", "name", r.Name)
+func (r *OAPServerConfig) ValidateDelete(_ context.Context, oapserverconfig *OAPServerConfig) (admission.Warnings, error) {
+	oapserverconfiglog.Info("validate delete", "name", oapserverconfig.Name)
 	return nil, nil
 }
 
