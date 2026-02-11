@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,7 +47,7 @@ type Application struct {
 	FileRepo Repo
 	GVK      schema.GroupVersionKind
 	TmplFunc template.FuncMap
-	Recorder record.EventRecorder
+	Recorder events.EventRecorder
 }
 
 // ApplyAll manifests dependent a single CR
@@ -58,7 +58,7 @@ func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log 
 		changed, err := a.Apply(ctx, f, sl, true)
 		if err != nil {
 			l.Error(err, "failed to apply resource")
-			a.Recorder.Eventf(a.CR, v1.EventTypeWarning, "failed to apply resource", "encountered err: %v", err)
+			a.Recorder.Eventf(a.CR, nil, v1.EventTypeWarning, "FailedApply", "Failed", "encountered err: %v", err)
 			return err
 		}
 		if changed {
@@ -66,7 +66,7 @@ func (a *Application) ApplyAll(ctx context.Context, manifestFiles []string, log 
 		}
 	}
 	if len(changedFf) > 0 {
-		a.Recorder.Eventf(a.CR, v1.EventTypeNormal, "resources are created or updated", "resources: %v", changedFf)
+		a.Recorder.Eventf(a.CR, nil, v1.EventTypeNormal, "Applied", "Applied", "resources: %v", changedFf)
 	}
 	return nil
 }

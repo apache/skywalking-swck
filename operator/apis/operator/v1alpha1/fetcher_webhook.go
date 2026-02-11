@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,8 +30,7 @@ import (
 var fetcherlog = logf.Log.WithName("fetcher-resource")
 
 func (r *Fetcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -43,15 +39,8 @@ func (r *Fetcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,verbs=create;update,versions=v1alpha1,name=mfetcher.kb.io
 
-var _ webhook.CustomDefaulter = &Fetcher{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *Fetcher) Default(_ context.Context, o runtime.Object) error {
-	fetcher, ok := o.(*Fetcher)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a Fetcher")
-	}
-
+func (r *Fetcher) Default(_ context.Context, fetcher *Fetcher) error {
 	fetcherlog.Info("default", "name", fetcher.Name)
 	if fetcher.Spec.ClusterName == "" {
 		fetcher.Spec.ClusterName = fetcher.Name
@@ -62,33 +51,21 @@ func (r *Fetcher) Default(_ context.Context, o runtime.Object) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-fetcher,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=fetchers,versions=v1alpha1,name=vfetcher.kb.io
 
-var _ webhook.CustomValidator = &Fetcher{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Fetcher) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	fetcher, ok := o.(*Fetcher)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a Fetcher")
-	}
-
+func (r *Fetcher) ValidateCreate(_ context.Context, fetcher *Fetcher) (admission.Warnings, error) {
 	fetcherlog.Info("validate create", "name", fetcher.Name)
 	return nil, fetcher.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Fetcher) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	fetcher, ok := o.(*Fetcher)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a Fetcher")
-	}
-
+func (r *Fetcher) ValidateUpdate(_ context.Context, fetcher *Fetcher, _ *Fetcher) (admission.Warnings, error) {
 	fetcherlog.Info("validate update", "name", fetcher.Name)
 	return nil, fetcher.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Fetcher) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	fetcherlog.Info("validate delete", "name", r.Name)
+func (r *Fetcher) ValidateDelete(_ context.Context, fetcher *Fetcher) (admission.Warnings, error) {
+	fetcherlog.Info("validate delete", "name", fetcher.Name)
 	return nil, nil
 }
 

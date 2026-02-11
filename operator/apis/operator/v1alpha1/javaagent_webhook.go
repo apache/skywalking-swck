@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -39,8 +36,7 @@ const (
 )
 
 func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -49,15 +45,8 @@ func (r *JavaAgent) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,verbs=create;update,versions=v1alpha1,name=mjavaagent.kb.io
 
-var _ webhook.CustomDefaulter = &JavaAgent{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *JavaAgent) Default(_ context.Context, o runtime.Object) error {
-	javaagent, ok := o.(*JavaAgent)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a JavaAgent")
-	}
-
+func (r *JavaAgent) Default(_ context.Context, javaagent *JavaAgent) error {
 	javaagentlog.Info("default", "name", javaagent.Name)
 
 	config := javaagent.Spec.AgentConfiguration
@@ -81,33 +70,21 @@ func (r *JavaAgent) Default(_ context.Context, o runtime.Object) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-javaagent,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=javaagents,versions=v1alpha1,name=vjavaagent.kb.io
 
-var _ webhook.CustomValidator = &JavaAgent{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	javaagent, ok := o.(*JavaAgent)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
-	}
-
+func (r *JavaAgent) ValidateCreate(_ context.Context, javaagent *JavaAgent) (admission.Warnings, error) {
 	javaagentlog.Info("validate create", "name", javaagent.Name)
 	return nil, javaagent.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	javaagent, ok := o.(*JavaAgent)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a JavaAgent")
-	}
-
+func (r *JavaAgent) ValidateUpdate(_ context.Context, javaagent *JavaAgent, _ *JavaAgent) (admission.Warnings, error) {
 	javaagentlog.Info("validate update", "name", javaagent.Name)
 	return nil, javaagent.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *JavaAgent) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	javaagentlog.Info("validate delete", "name", r.Name)
+func (r *JavaAgent) ValidateDelete(_ context.Context, javaagent *JavaAgent) (admission.Warnings, error) {
+	javaagentlog.Info("validate delete", "name", javaagent.Name)
 	return nil, nil
 }
 

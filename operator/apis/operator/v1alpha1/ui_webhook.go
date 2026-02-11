@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,8 +30,7 @@ import (
 var uilog = logf.Log.WithName("ui-resource")
 
 func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -43,15 +39,8 @@ func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,path=/mutate-operator-skywalking-apache-org-v1alpha1-ui,mutating=true,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,verbs=create;update,versions=v1alpha1,name=mui.kb.io
 
-var _ webhook.CustomDefaulter = &UI{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *UI) Default(_ context.Context, o runtime.Object) error {
-	ui, ok := o.(*UI)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a UI")
-	}
-
+func (r *UI) Default(_ context.Context, ui *UI) error {
 	uilog.Info("default", "name", ui.Name)
 
 	if ui.Spec.Image == "" {
@@ -69,33 +58,21 @@ func (r *UI) Default(_ context.Context, o runtime.Object) error {
 // nolint: lll
 // +kubebuilder:webhook:admissionReviewVersions=v1,sideEffects=None,verbs=create;update,path=/validate-operator-skywalking-apache-org-v1alpha1-ui,mutating=false,failurePolicy=fail,groups=operator.skywalking.apache.org,resources=uis,versions=v1alpha1,name=vui.kb.io
 
-var _ webhook.CustomValidator = &UI{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *UI) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	ui, ok := o.(*UI)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a UI")
-	}
-
+func (r *UI) ValidateCreate(_ context.Context, ui *UI) (admission.Warnings, error) {
 	uilog.Info("validate create", "name", ui.Name)
 	return nil, ui.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *UI) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	ui, ok := o.(*UI)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a UI")
-	}
-
+func (r *UI) ValidateUpdate(_ context.Context, ui *UI, _ *UI) (admission.Warnings, error) {
 	uilog.Info("validate update", "name", ui.Name)
 	return nil, ui.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *UI) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	uilog.Info("validate delete", "name", r.Name)
+func (r *UI) ValidateDelete(_ context.Context, ui *UI) (admission.Warnings, error) {
+	uilog.Info("validate delete", "name", ui.Name)
 	return nil, nil
 }
 

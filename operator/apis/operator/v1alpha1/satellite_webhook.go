@@ -21,11 +21,8 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,8 +30,7 @@ import (
 var satellitelog = logf.Log.WithName("satellite-resource")
 
 func (r *Satellite) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, r).
 		WithDefaulter(r).
 		WithValidator(r).
 		Complete()
@@ -43,15 +39,8 @@ func (r *Satellite) SetupWebhookWithManager(mgr ctrl.Manager) error {
 //nolint: lll
 //+kubebuilder:webhook:path=/mutate-operator-skywalking-apache-org-v1alpha1-satellite,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=satellites,verbs=create;update,versions=v1alpha1,name=msatellite.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomDefaulter = &Satellite{}
-
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (r *Satellite) Default(_ context.Context, o runtime.Object) error {
-	satellite, ok := o.(*Satellite)
-	if !ok {
-		return apierrors.NewBadRequest("object is not a Satellite")
-	}
-
+func (r *Satellite) Default(_ context.Context, satellite *Satellite) error {
 	satellitelog.Info("default", "name", satellite.Name)
 
 	image := satellite.Spec.Image
@@ -76,34 +65,22 @@ func (r *Satellite) Default(_ context.Context, o runtime.Object) error {
 //nolint: lll
 //+kubebuilder:webhook:path=/validate-operator-skywalking-apache-org-v1alpha1-satellite,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.skywalking.apache.org,resources=satellites,verbs=create;update,versions=v1alpha1,name=vsatellite.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &Satellite{}
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Satellite) ValidateCreate(_ context.Context, o runtime.Object) (admission.Warnings, error) {
-	satellite, ok := o.(*Satellite)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a Satellite")
-	}
-
+func (r *Satellite) ValidateCreate(_ context.Context, satellite *Satellite) (admission.Warnings, error) {
 	satellitelog.Info("validate create", "name", satellite.Name)
 	return nil, satellite.validate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Satellite) ValidateUpdate(_ context.Context, o runtime.Object, _ runtime.Object) (admission.Warnings, error) {
-	satellite, ok := o.(*Satellite)
-	if !ok {
-		return nil, apierrors.NewBadRequest("object is not a Satellite")
-	}
-
+func (r *Satellite) ValidateUpdate(_ context.Context, satellite *Satellite, _ *Satellite) (admission.Warnings, error) {
 	satellitelog.Info("validate update", "name", satellite.Name)
 	return nil, satellite.validate()
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (r *Satellite) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	satellitelog.Info("validate delete", "name", r.Name)
-	return nil, r.validate()
+func (r *Satellite) ValidateDelete(_ context.Context, satellite *Satellite) (admission.Warnings, error) {
+	satellitelog.Info("validate delete", "name", satellite.Name)
+	return nil, satellite.validate()
 }
 
 func (r *Satellite) validate() error {
