@@ -60,6 +60,7 @@ spec:
       data: |
         rules:
           - name: example
+            layer: GENERAL
             dsl: |
               filter {
                 text {
