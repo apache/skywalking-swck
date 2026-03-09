@@ -8,7 +8,7 @@ require (
 	k8s.io/apimachinery v0.27.2
 	k8s.io/apiserver v0.27.2
 	k8s.io/component-base v0.27.2
-	k8s.io/klog/v2 v2.130.1
+	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
 	k8s.io/metrics v0.27.2
 	sigs.k8s.io/custom-metrics-apiserver v1.27.0
