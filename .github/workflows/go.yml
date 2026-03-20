@@ -82,6 +82,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205 # always prefer to use a revision instead of `main`.
         with:
           e2e-file: test/e2e/oap-ui-agent/e2e.yaml # need to run E2E file path
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oap-ui-agent-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   swagent-e2e-tests:
     name: e2e tests(oap+ui+swagent)
     runs-on: ubuntu-latest
@@ -97,6 +103,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-ui-swagent/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oap-ui-swagent-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   swagent-configmap-e2e-tests:
     name: e2e tests(oap+ui+swagent+configmap)
     runs-on: ubuntu-latest
@@ -112,6 +124,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-ui-swagent-configmap/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oap-ui-swagent-configmap-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   internel-storage-e2e-tests:
     name: e2e tests(oap+ui+agent+internel-storage)
     runs-on: ubuntu-latest
@@ -148,6 +166,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-ui-agent-external-storage/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: external-storage-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   banyandb-e2e-tests:
     name: e2e tests(oap+ui+agent+banyandb)
     runs-on: ubuntu-latest
@@ -163,6 +187,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/banyandb/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: banyandb-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   adapter-hpa-e2e-tests:
     name: e2e tests(oap+agent+adapter+hpa)
     runs-on: ubuntu-latest
@@ -178,6 +208,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-agent-adapter-hpa/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: adapter-hpa-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   e2e-tests-with-satellite:
     name: e2e tests(oap+ui+agent+satellite)
     runs-on: ubuntu-latest
@@ -193,6 +229,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-ui-agent-satellite/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oap-ui-agent-satellite-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   adapter-satellite-hpa-e2e-tests:
     name: e2e tests(oap+agent+satellite+adapter+hpa)
     runs-on: ubuntu-latest
@@ -208,6 +250,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-satellite-adapter-hpa/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: adapter-satellite-hpa-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   oapserver-configuration-e2e-tests:
     name: e2e tests(oap+ui+agent+oapserverconfig+oapserverdynamicconfig)
     runs-on: ubuntu-latest
@@ -223,6 +271,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-ui-agent-oapserverconfig-oapserverdynamicconfig/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oapserver-configuration-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   oapserver-eventexporter-e2e-tests:
     name: e2e tests(oap+eventexporter)
     runs-on: ubuntu-latest
@@ -238,6 +292,12 @@ jobs:
         uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
         with:
           e2e-file: test/e2e/oap-eventexporter/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: oapserver-eventexporter-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   checks:
     name: build
     runs-on: ubuntu-latest
