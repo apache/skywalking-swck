@@ -32,10 +32,12 @@ spec:
     spec:
       containers:
       - name: es
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
         env:
         - name: discovery.type
           value: single-node
+        - name: xpack.security.enabled
+          value: "false"
 ---
 apiVersion: v1
 kind: Service
