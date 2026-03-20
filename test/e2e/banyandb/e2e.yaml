@@ -30,9 +30,9 @@ setup:
           for: condition=Ready
     - name: install operator
       command: |
-        export OPERATOR_IMG=controller
+        export OPERATOR_IMG=controller:latest
         make -C operator docker-build   
-        kind load docker-image controller
+        kind load docker-image controller:latest
         make -C operator install
         make -C operator deploy
       wait:
