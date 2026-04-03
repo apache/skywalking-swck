@@ -77,7 +77,7 @@ spec:
                 description: Image is the event exporter Docker image to deploy.
                 type: string
               replicas:
-                description: Replicas is the number of event exporter pods
+                description: Instances is the number of event exporter pods
                 format: int32
                 type: integer
               version:

@@ -56,8 +56,8 @@ func (r *EventExporter) Default(_ context.Context, eventexporter *EventExporter)
 		eventexporter.Spec.Image = fmt.Sprintf("%s:%s", image, eventexporter.Spec.Version)
 	}
 
-	if eventexporter.Spec.Replicas == 0 {
-		eventexporter.Spec.Replicas = 1
+	if eventexporter.Spec.Instances == 0 {
+		eventexporter.Spec.Instances = 1
 	}
 
 	return nil
