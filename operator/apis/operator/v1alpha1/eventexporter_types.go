@@ -31,7 +31,7 @@ type EventExporterSpec struct {
 	Image string `json:"image,omitempty"`
 	// Instances is the number of event exporter pods
 	// +kubebuilder:validation:Required
-	Instances int32 `json:"replicas,omitempty"`
+	Instances int32 `json:"instances"`
 	// Config of filters and exporters
 	// +kubebuilder:validation:Optional
 	Config string `json:"config,omitempty"`
