@@ -20,7 +20,7 @@ kind: EventExporter
 metadata:
   name: eventexporter-sample
 spec:
-  replicas: 1
+  instances: 1
   config: |
     filters:
       - reason: ""     

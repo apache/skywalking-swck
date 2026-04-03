@@ -26,7 +26,7 @@ metadata:
     operator.skywalking.apache.org/application: eventexporter
     operator.skywalking.apache.org/component: deployment
 spec:
-  replicas: {{ .Spec.Replicas }}
+  replicas: {{ .Spec.Instances }}
   selector:
     matchLabels:
       operator.skywalking.apache.org/eventexporter-name: {{ .Name }}
