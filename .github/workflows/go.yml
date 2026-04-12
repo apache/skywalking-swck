@@ -31,7 +31,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.9"
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Check License
@@ -45,7 +45,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.9"
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Build
@@ -59,7 +59,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -95,7 +95,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -137,7 +137,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -158,7 +158,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -179,7 +179,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -200,7 +200,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -221,7 +221,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -242,7 +242,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -263,7 +263,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -284,7 +284,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25
+          go-version: "1.25.9"
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
