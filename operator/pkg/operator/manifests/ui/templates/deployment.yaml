@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+{{- $isHorizon := eq .Spec.Kind "horizon" }}
+{{- $port := 8080 }}
+{{- if $isHorizon }}{{ $port = 8081 }}{{ end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,7 +58,7 @@ spec:
         image: {{ .Spec.Image }}
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: {{ $port }}
           name: page
         livenessProbe:
           initialDelaySeconds: 10
@@ -65,7 +68,7 @@ spec:
           successThreshold: 1
           httpGet:
             path: /
-            port: 8080
+            port: {{ $port }}
         readinessProbe:
           initialDelaySeconds: 10
           timeoutSeconds: 10
@@ -74,7 +77,28 @@ spec:
           successThreshold: 1
           httpGet:
             path: /
-            port: 8080
+            port: {{ $port }}
+        {{- if $isHorizon }}
+        volumeMounts:
+          - name: horizon-config
+            mountPath: /app/horizon.yaml
+            subPath: horizon.yaml
+            readOnly: true
+          - name: horizon-data
+            mountPath: /data
+        {{- else }}
         env:
           - name: SW_OAP_ADDRESS
             value: {{ .Spec.OAPServerAddress }}
+        {{- end }}
+      {{- if $isHorizon }}
+      volumes:
+        - name: horizon-config
+          configMap:
+            name: {{ .Name }}-ui-horizon
+            items:
+              - key: horizon.yaml
+                path: horizon.yaml
+        - name: horizon-data
+          emptyDir: {}
+      {{- end }}

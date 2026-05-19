@@ -43,13 +43,30 @@ func (r *UI) SetupWebhookWithManager(mgr ctrl.Manager) error {
 func (r *UI) Default(_ context.Context, ui *UI) error {
 	uilog.Info("default", "name", ui.Name)
 
+	if ui.Spec.Kind == "" {
+		ui.Spec.Kind = "horizon"
+	}
+
 	if ui.Spec.Image == "" {
-		ui.Spec.Image = fmt.Sprintf("apache/skywalking-ui:%s", ui.Spec.Version)
+		switch ui.Spec.Kind {
+		case "booster":
+			ui.Spec.Image = fmt.Sprintf("apache/skywalking-ui:%s", ui.Spec.Version)
+		default:
+			ui.Spec.Image = fmt.Sprintf("apache/skywalking-horizon-ui:%s", ui.Spec.Version)
+		}
 	}
 
 	ui.Spec.Service.Template.Default()
 	if ui.Spec.OAPServerAddress == "" {
 		ui.Spec.OAPServerAddress = fmt.Sprintf("http://%s-oap.%s:12800", ui.Name, ui.Namespace)
+	}
+	if ui.Spec.Kind == "horizon" {
+		if ui.Spec.OAPServerAdminAddress == "" {
+			ui.Spec.OAPServerAdminAddress = fmt.Sprintf("http://%s-oap.%s:17128", ui.Name, ui.Namespace)
+		}
+		if ui.Spec.OAPServerZipkinAddress == "" {
+			ui.Spec.OAPServerZipkinAddress = ui.Spec.OAPServerAddress + "/zipkin"
+		}
 	}
 
 	return nil
@@ -77,6 +94,9 @@ func (r *UI) ValidateDelete(_ context.Context, ui *UI) (admission.Warnings, erro
 }
 
 func (r *UI) validate() error {
+	if r.Spec.Kind != "" && r.Spec.Kind != "booster" && r.Spec.Kind != "horizon" {
+		return fmt.Errorf("unknown ui kind %q (allowed: horizon, booster)", r.Spec.Kind)
+	}
 	if r.Spec.Image == "" {
 		return fmt.Errorf("image is absent")
 	}

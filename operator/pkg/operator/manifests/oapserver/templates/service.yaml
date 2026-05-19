@@ -35,6 +35,8 @@ spec:
     name: grpc
   - port: 1234
     name: http-monitoring
+  - port: 17128
+    name: admin
   {{- if $svc.ExternalIPs }}
   externalIPs:
     {{- range $value := $svc.ExternalIPs }}
