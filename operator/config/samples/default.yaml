@@ -29,14 +29,21 @@ spec:
   
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
+kind: UI
 metadata:
   name: default
 spec:
+  # spec.kind selects the UI flavor:
+  #   horizon (default) -> apache/skywalking-horizon-ui, config mounted at /app/horizon.yaml
+  #   booster           -> apache/skywalking-ui,         OAP address via SW_OAP_ADDRESS env var
+  kind: horizon
   version: 9.5.0
   instances: 1
-  image: apache/skywalking-ui:9.5.0
+  # image defaults to apache/skywalking-horizon-ui:<version> when omitted.
   OAPServerAddress: http://default-oap.default:12800
+  # The following two are horizon-only and default to derived URLs if omitted:
+  # OAPServerAdminAddress: http://default-oap.default:17128
+  # OAPServerZipkinAddress: http://default-oap.default:12800/zipkin
   service:
     template:
       type: ClusterIP

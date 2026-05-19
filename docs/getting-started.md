@@ -175,11 +175,14 @@ spec:
       type: ClusterIP
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
+kind: UI
 metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
+  # spec.kind selects the UI flavor. Default is "horizon" (next-gen UI).
+  # Use "booster" to deploy the legacy apache/skywalking-ui image.
+  kind: booster
   version: 9.5.0
   instances: 1
   image: apache/skywalking-ui:9.5.0
@@ -190,6 +193,45 @@ spec:
     ingress:
       host: demo.ui.skywalking
 EOF
+```
+
+#### UI flavors (`spec.kind`)
+
+The `UI` resource supports two flavors via `spec.kind`:
+
+| `spec.kind`           | Default image                         | Listens on | OAP wire-up                                    |
+|-----------------------|---------------------------------------|------------|------------------------------------------------|
+| `horizon` *(default)* | `apache/skywalking-horizon-ui:<ver>`  | `8081`     | YAML config mounted at `/app/horizon.yaml`     |
+| `booster`             | `apache/skywalking-ui:<ver>`          | `8080`     | `SW_OAP_ADDRESS` env var                       |
+
+When `spec.kind: horizon`, the operator additionally:
+
+- Creates `ConfigMap/<name>-ui-horizon` with key `horizon.yaml`, populated from `spec.OAPServerAddress` (→ `oap.queryUrl`), `spec.OAPServerAdminAddress` (default `http://<name>-oap.<ns>:17128` → `oap.adminUrl`), and `spec.OAPServerZipkinAddress` (default `<OAPServerAddress>/zipkin` → `oap.zipkinUrl`).
+- Mounts that ConfigMap as `/app/horizon.yaml` (read-only) on the Horizon UI container.
+- Mounts an `emptyDir` at `/data` for Horizon's writable state (audit log, setup state, alarm state, wire-debug log). State is lost on pod restart.
+
+Set `spec.config` to a raw `horizon.yaml` string to fully override the operator-generated config (e.g. to configure local users, LDAP, RBAC, or session settings). When set, the operator-generated fields above are ignored.
+
+Note: the `OAPServer` Service exposes port `17128` (admin) in addition to `12800`/`11800`/`1234` so Horizon UI can reach runtime-rule, DSL/MQE debug, and inspect endpoints. The admin port must be enabled in your OAP configuration for Horizon's admin features to work.
+
+Minimal horizon example (defaults pick image, admin URL, and Zipkin URL):
+
+```yaml
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: UI
+metadata:
+  name: skywalking-system
+  namespace: skywalking-system
+spec:
+  kind: horizon              # default — can be omitted
+  version: 9.5.0
+  instances: 1
+  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
+  service:
+    template:
+      type: ClusterIP
+    ingress:
+      host: demo.ui.skywalking
 ```
 
 Check the status of the skywalking components.

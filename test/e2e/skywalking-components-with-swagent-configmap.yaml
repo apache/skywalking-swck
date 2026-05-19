@@ -35,6 +35,7 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
+  kind: booster
   version: 9.5.0
   instances: 1
   image: apache/skywalking-ui:9.5.0

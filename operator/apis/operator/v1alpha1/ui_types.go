@@ -24,6 +24,13 @@ import (
 
 // UISpec defines the desired state of UI
 type UISpec struct {
+	// Kind selects which SkyWalking web UI to deploy.
+	// "horizon" deploys the next-generation Horizon UI (default).
+	// "booster" deploys the legacy Booster UI image.
+	// +kubebuilder:validation:Enum=horizon;booster
+	// +kubebuilder:default=horizon
+	// +kubebuilder:validation:Optional
+	Kind string `json:"kind,omitempty"`
 	// Version of UI.
 	// +kubebuilder:validation:Required
 	Version string `json:"version"`
@@ -32,9 +39,24 @@ type UISpec struct {
 	// Count is the number of UI pods
 	// +kubebuilder:validation:Required
 	Instances int32 `json:"instances"`
-	// Backend OAP server address
+	// Backend OAP server address.
+	// For kind=booster, exported as the SW_OAP_ADDRESS env var.
+	// For kind=horizon, used as oap.queryUrl in the generated horizon.yaml.
 	// +kubebuilder:validation:Optional
 	OAPServerAddress string `json:"OAPServerAddress,omitempty"`
+	// OAPServerAdminAddress is the OAP admin host (port 17128 by default; runtime-rule,
+	// dsl-debug, inspect, status). Only used when kind=horizon. If unset, defaults to
+	// http://<name>-oap.<namespace>:17128.
+	// +kubebuilder:validation:Optional
+	OAPServerAdminAddress string `json:"OAPServerAdminAddress,omitempty"`
+	// OAPServerZipkinAddress is the OAP Zipkin REST host. Only used when kind=horizon.
+	// If unset, defaults to <OAPServerAddress>/zipkin.
+	// +kubebuilder:validation:Optional
+	OAPServerZipkinAddress string `json:"OAPServerZipkinAddress,omitempty"`
+	// Config is a raw horizon.yaml that, when set, fully replaces the operator-generated
+	// config mounted into the Horizon UI container. Only used when kind=horizon.
+	// +kubebuilder:validation:Optional
+	Config string `json:"config,omitempty"`
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`
