@@ -55,10 +55,15 @@ func main() {
 	cmd := &Adapter{}
 	cmd.Name = "apache-skywalking-adapter"
 
-	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIV3Config(generatedopenapi.GetOpenAPIDefinitions,
+	cmd.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(generatedopenapi.GetOpenAPIDefinitions,
 		openapinamer.NewDefinitionNamer(api.Scheme, customexternalmetrics.Scheme))
 	cmd.OpenAPIConfig.Info.Title = "apache-skywalking-adapter"
 	cmd.OpenAPIConfig.Info.Version = "1.0.0"
+
+	cmd.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(generatedopenapi.GetOpenAPIDefinitions,
+		openapinamer.NewDefinitionNamer(api.Scheme, customexternalmetrics.Scheme))
+	cmd.OpenAPIV3Config.Info.Title = "apache-skywalking-adapter"
+	cmd.OpenAPIV3Config.Info.Version = "1.0.0"
 
 	cmd.Flags().StringVar(&cmd.Message, "msg", "starting adapter...", "startup message")
 	cmd.Flags().StringVar(&cmd.BaseURL, "oap-addr", "http://oap:12800/graphql", "the address of OAP cluster")
