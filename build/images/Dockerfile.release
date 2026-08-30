@@ -52,15 +52,11 @@ RUN set -eux; \
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-# TARGETARCH is supplied per platform by buildx, and the release tarball carries a binary per
-# supported architecture (operator/Makefile and adapter/Makefile release-build).
-#
-# Hardcoding -linux-amd64 here is how apache/skywalking-swck:0.10.0 came to advertise linux/arm64
-# while its arm64 manifest reused the amd64 layers byte for byte: /manager inside it is an x86-64
-# ELF, so an arm64 node gets "exec format error". Selecting on TARGETARCH is what makes the
-# multi-platform manifest honest, and it fails the build loudly -- rather than silently shipping
-# the wrong binary -- if a release tarball does not carry that architecture.
-ARG TARGETARCH=amd64
+# TARGETARCH is supplied per platform by buildx, and MUST be declared with no default: giving a
+# predefined platform argument a default makes BuildKit use that default instead of the target's
+# architecture, which is how an amd64 binary ended up inside an arm64 manifest. The release tarball
+# carries a binary per architecture and this selects the right one.
+ARG TARGETARCH
 COPY --from=builder --chown=65532:65532 /swck/bin/manager-linux-${TARGETARCH} /manager
 COPY --from=builder --chown=65532:65532 /swck/bin/adapter-linux-${TARGETARCH} /adapter
 USER 65532:65532

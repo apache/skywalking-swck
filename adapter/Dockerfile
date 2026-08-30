@@ -32,13 +32,14 @@ COPY main.go main.go
 COPY pkg/ pkg/
 
 # Build
-# TARGETARCH is supplied per platform by buildx. .github/workflows/publish-docker.yml
-# builds this image for linux/amd64 AND linux/arm64, and now stamps release version tags
-# on the result; a hardcoded GOARCH=amd64 would put an amd64 binary inside the arm64
-# manifest, so every arm64 node would fail with "exec format error". The default keeps a
-# plain `docker build` (make docker-build, used by the e2e suites) building amd64 as before.
-ARG TARGETARCH=amd64
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -o adapter main.go
+# TARGETARCH is supplied per platform by buildx, and MUST be declared with no default. Giving a
+# predefined platform argument a default makes BuildKit treat it as an ordinary build argument and
+# use that default, so `ARG TARGETARCH=amd64` reported amd64 even when building for arm64 -- which
+# put an amd64 binary inside the arm64 manifest, the exact failure this was meant to prevent. The
+# shell default below covers a plain `docker build` (make docker-build, used by the e2e suites),
+# where the variable may be unset.
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-$(go env GOARCH)} GO111MODULE=on go build -a -o adapter main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
