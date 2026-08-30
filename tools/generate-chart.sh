@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+
+#
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+# Regenerates the parts of chart/skywalking-swck that are DERIVED from the
+# operator sources, so the chart cannot drift from the operator it ships beside.
+# This is the whole reason the chart lives in this repository rather than in
+# apache/skywalking-helm, where the CRDs were a hand-copied snapshot that nothing
+# checked. Three things are generated:
+#
+#   crds/                              <- operator/config/crd/bases
+#   templates/operator-manager-role.yaml   <- kustomize build operator/config/rbac
+#   templates/operator-webhook.yaml        <- kustomize build operator/config/webhook
+#
+# All three ultimately come from controller-gen reading the +kubebuilder markers
+# in the operator sources, via `make -C operator manifests`. Run this through
+# `make chart-manifests`, which runs that first. `make chart-check` runs it and
+# fails if anything changed, which is what CI enforces.
+#
+# The two RBAC and webhook inputs are read through `kustomize build`, not
+# straight off the files in operator/config: the kustomizations carry patches
+# that materially change the result. config/rbac prepends a rule to manager-role
+# with a JSON 6902 patch, and config/webhook applies ns_selector_patch.yaml,
+# whose strategic merge is also what collapses the duplicate meventexporter.kb.io
+# entry that controller-gen emits into manifests.yaml -- the API server rejects a
+# webhook configuration that lists one name twice.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+CHART_DIR="${ROOT_DIR}/chart/skywalking-swck"
+# Where the generated files are written. `make chart-check` points this at a scratch directory and
+# diffs the result against the chart, so the check does not depend on the state of the git tree.
+OUTPUT_DIR="${OUTPUT_DIR:-${CHART_DIR}}"
+KUSTOMIZE="${KUSTOMIZE:-${ROOT_DIR}/bin/kustomize}"
+YQ="${YQ:-${ROOT_DIR}/bin/yq}"
+
+for tool in "${KUSTOMIZE}" "${YQ}"; do
+  if [ ! -x "${tool}" ]; then
+    echo "${tool} not found; run this through 'make chart-manifests'" >&2
+    exit 1
+  fi
+done
+
+LICENSE_HEADER=$(cat <<'EOF'
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+EOF
+)
+
+# Turns the SWCKGEN_ placeholders yq writes into the Helm expressions they stand
+# for. Placeholders rather than the expressions themselves because "{{" opens a
+# YAML flow mapping, so yq would quote it and the quotes would survive into the
+# template.
+expand_placeholders() {
+  sed \
+    -e 's|SWCKGEN_COMPONENT_\([a-z0-9-]*\)|{{ include "swck.componentName" (list . "\1") }}|g' \
+    -e 's|SWCKGEN_SERVING_CERT|{{ .Release.Namespace }}/{{ include "swck.componentName" (list . "serving-cert") }}|g' \
+    -e 's|SWCKGEN_WEBHOOK_SERVICE|{{ include "swck.componentName" (list . "webhook-service") }}|g' \
+    -e 's|SWCKGEN_NAMESPACE|{{ .Release.Namespace }}|g'
+}
+
+echo "==> crds/ from operator/config/crd/bases"
+mkdir -p "${OUTPUT_DIR}/crds" "${OUTPUT_DIR}/templates"
+rm -f "${OUTPUT_DIR}/crds"/*.yaml
+cp "${ROOT_DIR}"/operator/config/crd/bases/*.yaml "${OUTPUT_DIR}/crds/"
+crd_count=$(find "${OUTPUT_DIR}/crds" -name '*.yaml' | wc -l | tr -d ' ')
+if [ "${crd_count}" -eq 0 ]; then
+  echo "no CRDs were copied into the chart; did 'make -C operator manifests' run?" >&2
+  exit 1
+fi
+echo "    ${crd_count} CRDs"
+
+echo "==> templates/operator-manager-role.yaml from operator/config/rbac"
+{
+  echo "${LICENSE_HEADER}"
+  cat <<'EOF'
+
+# GENERATED by tools/generate-chart.sh. DO NOT EDIT.
+#
+# The rules below are controller-gen's output for the +kubebuilder:rbac markers
+# in the operator sources, with operator/config/rbac/role_patch.yaml applied. To
+# change them, change the markers and run `make chart-manifests`.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "swck.componentName" (list . "manager-role") }}
+  labels:
+    {{- include "swck.labels" . | nindent 4 }}
+rules:
+EOF
+  "${KUSTOMIZE}" build "${ROOT_DIR}/operator/config/rbac" |
+    "${YQ}" 'select(.kind == "ClusterRole" and .metadata.name == "manager-role") | .rules'
+} > "${OUTPUT_DIR}/templates/operator-manager-role.yaml"
+
+echo "==> templates/operator-webhook.yaml from operator/config/webhook"
+{
+  echo "${LICENSE_HEADER}"
+  cat <<'EOF'
+
+# GENERATED by tools/generate-chart.sh. DO NOT EDIT.
+#
+# The admission webhook configurations controller-gen emits for the
+# +kubebuilder:webhook markers in the operator sources, with the release's own
+# names and namespace substituted in. To change them, change the markers and run
+# `make chart-manifests`.
+{{- if .Values.operator.webhook.enabled }}
+EOF
+  "${KUSTOMIZE}" build "${ROOT_DIR}/operator/config/webhook" |
+    "${YQ}" '
+      select(.kind == "MutatingWebhookConfiguration" or .kind == "ValidatingWebhookConfiguration")
+      | .metadata.annotations."cert-manager.io/inject-ca-from" = "SWCKGEN_SERVING_CERT"
+      | .metadata.name = "SWCKGEN_COMPONENT_" + .metadata.name
+      | .webhooks[].clientConfig.service.name = "SWCKGEN_WEBHOOK_SERVICE"
+      | .webhooks[].clientConfig.service.namespace = "SWCKGEN_NAMESPACE"
+    ' | expand_placeholders
+  echo "{{- end }}"
+} > "${OUTPUT_DIR}/templates/operator-webhook.yaml"
+
+echo "==> done"

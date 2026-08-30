@@ -33,7 +33,7 @@ OSNAME := $(if $(findstring Darwin,$(ARCH)),darwin,linux)
 module_path  := $(abspath $(lastword $(MAKEFILE_LIST)))
 module_dir   := $(dir $(module_path))
 
-include ../hack/build/module.mk
+include ../tools/build/module.mk
 
 .PHONY: all
 all: build docker-build
@@ -53,7 +53,7 @@ manifests: controller-gen licenseeye ## Generate WebhookConfiguration, ClusterRo
     		
 .PHONY: generate
 generate-deep: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="../hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="../tools/boilerplate.go.txt" paths="./..."
 
 .PHONY: test
 test: generate format envtest ## Run tests.
@@ -90,15 +90,23 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy operator controller to the K8s cluster specified in ~/.kube/config.
 	@echo "Deploy operator"
-	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/hack/deploy.sh d
+	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/tools/deploy.sh d
 
 .PHONY: undeploy
 undeploy: manifests ## Undeploy operator controller from the K8s cluster specified in ~/.kube/config.
 	@echo "Undeploy operator"
-	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/hack/deploy.sh u
+	-MOD=operator DIR=default IMG_PATH=manager IMG=controller NEW_IMG=${OPERATOR_IMG} $(root_dir)/tools/deploy.sh u
 
 ##@ Release
 
+# The architectures the release ships a binary for. build/images/Dockerfile.release picks one of
+# these by TARGETARCH, so this list is what the released multi-platform image can cover.
+RELEASE_ARCHS ?= amd64 arm64
+
 .PHONY: release-build
-release-build: generate binary-licenses ## Build binary for release
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/manager-linux-amd64
+release-build: generate binary-licenses ## Build binaries for release, one per architecture
+	@for arch in $(RELEASE_ARCHS); do \
+		echo "building manager-linux-$$arch"; \
+		CGO_ENABLED=0 GOOS=linux GOARCH=$$arch GO111MODULE=on \
+			go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/manager-linux-$$arch || exit 1; \
+	done

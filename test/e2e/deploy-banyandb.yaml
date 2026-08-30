@@ -22,11 +22,15 @@ metadata:
 spec:
   version: 1.0.0
   counts: 1
-  image: apache/skywalking-banyandb:latest
+  image: ${BANYANDB_IMAGE}
   config:
     - "standalone"
+    # --metadata-root-path went away with etcd (apache/skywalking-banyandb#1057); the schema server
+    # took its place. BanyanDB exits on an unknown flag, so the old name is not ignored -- it stops
+    # the database from starting at all, and the OAP then fails on a refused connection.
     - "--measure-root-path=/data/banyandb"
-    - "--metadata-root-path=/data/banyandb"
+    - "--stream-root-path=/data/banyandb"
+    - "--schema-server-root-path=/data/banyandb"
   storages:
     - name: banyandb-volume
       path: "/data/banyandb"

@@ -35,6 +35,13 @@ type OAPServerSpec struct {
 	Instances int32 `json:"instances"`
 	// Config holds the OAP server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
+	// EnvFrom pulls environment variables from Secrets or ConfigMaps into the container.
+	//
+	// The OAP is configured entirely through environment variables, and spec.config above sets them one
+	// at a time. Use this for anything that should not be written into the resource -- credentials,
+	// tokens -- since spec.config is visible to anyone with read access on these objects.
+	// +kubebuilder:validation:Optional
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`
@@ -62,6 +69,16 @@ type RelevantStorage struct {
 	Name string `json:"name,omitempty"`
 	// Storage relevant settings
 	Storage *Storage `json:"injectstorage,omitempty"`
+	// CredentialsVersion is the resourceVersion of the Secret this storage's credentials come
+	// from. It is set by the controller while reconciling and rendered into a pod-template
+	// annotation, so that rotating the Secret changes the pod template and rolls the pods.
+	//
+	// Environment variables taken from a Secret are resolved once, when the container starts, and
+	// are never refreshed while it runs -- so without this a rotated credential would sit unused
+	// until something happened to restart the pod. The resourceVersion is an opaque token, not a
+	// digest of the secret, so nothing about the credential itself is written down.
+	// +kubebuilder:validation:Optional
+	CredentialsVersion string `json:"credentialsVersion,omitempty"`
 }
 
 // +kubebuilder:object:root=true

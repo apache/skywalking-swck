@@ -43,9 +43,9 @@ func (r *OAPServerConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 func (r *OAPServerConfig) Default(_ context.Context, oapserverconfig *OAPServerConfig) error {
 	oapserverconfiglog.Info("default", "name", oapserverconfig.Name)
 
-	// Default version is "9.5.0"
+	// Default version is "11.0.0"
 	if oapserverconfig.Spec.Version == "" {
-		oapserverconfig.Spec.Version = "9.5.0"
+		oapserverconfig.Spec.Version = "11.0.0"
 	}
 
 	return nil

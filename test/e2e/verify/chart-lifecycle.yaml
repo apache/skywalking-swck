@@ -1,0 +1,75 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- contains . }}
+# The chart installs one CRD per file in operator/config/crd/bases. The two counts come from
+# different places on purpose: the expected count is read off the generated sources at run time, so
+# adding a CRD does not need this file edited -- but a chart that ships none, or a stale subset,
+# fails.
+- key: "crds_expected"
+  value: "11"
+- key: "crds_installed"
+  value: "11"
+# Without the CA bundle the API server cannot reach the webhook and every custom resource is
+# rejected, while the chart still installs cleanly and the operator still reports ready.
+- key: "mutating_webhook_ca_injected"
+  value: "true"
+- key: "validating_webhook_ca_injected"
+  value: "true"
+# Generated from the +kubebuilder:webhook markers. 12 mutating (11 kinds plus the /mutate-v1-pod
+# java agent injector) and 10 validating.
+- key: "mutating_webhooks"
+  value: "12"
+- key: "validating_webhooks"
+  value: "10"
+# The operator reconciled an OAPServer into a Deployment: CRD, webhooks, ClusterRole and service
+# account binding all working.
+- key: "oapserver_deployment_created"
+  value: "1"
+# The java agent injector mutated a pod in an opted-in namespace.
+- key: "agent_initcontainer_injected"
+  value: "1"
+- key: "agent_javaagent_env_set"
+  value: "1"
+# The metrics adapter owns and serves external.metrics.k8s.io, which is what an HPA reads.
+- key: "external_metrics_apiservice_available"
+  value: "True"
+- key: "external_metrics_api_serves"
+  value: "1"
+# Operator metrics are served through the kube-rbac-proxy sidecar.
+- key: "metrics_service_exists"
+  value: "1"
+- key: "kube_rbac_proxy_running"
+  value: "1"
+# helm upgrade takes the adapter away and puts it back, APIService and all.
+- key: "adapter_removed_on_upgrade"
+  value: "0"
+- key: "adapter_restored_on_upgrade"
+  value: "1"
+- key: "adapter_uses_explicit_oap_address"
+  value: "1"
+# helm uninstall must not take the CRDs -- and with them every custom resource in the cluster --
+# with it, and must not leave cluster-scoped resources behind for the next install to collide with.
+- key: "crds_after_uninstall"
+  value: "11"
+- key: "oapservers_after_uninstall"
+  value: "1"
+- key: "cluster_scoped_leftovers"
+  value: "0"
+# Named checks cannot see this one: it is a fixed, cluster-wide singleton rather than a
+# release-prefixed name, and leaving it behind takes external.metrics.k8s.io away from the cluster.
+- key: "external_metrics_apiservice_after_uninstall"
+  value: "0"
+{{- end }}

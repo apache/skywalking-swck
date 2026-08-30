@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: songs
-          image: ghcr.io/apache/skywalking-showcase/songs-service:7c17079-agentless
+          image: ${SONGS_SERVICE_IMAGE}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

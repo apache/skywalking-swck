@@ -22,7 +22,7 @@ spec:
   connectType: internal
   version: 7.5.1
   instances: 1
-  image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+  image: ${ELASTICSEARCH_LEGACY_IMAGE}
   resource:
     limit: "200m"
     requests: "100m"

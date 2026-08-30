@@ -16,9 +16,11 @@
 setup:
   env: kind
   file: ../kind.yaml
+  # Every SkyWalking image this case deploys is pinned in ../env; see docs/en/guides/e2e.md.
+  init-system-environment: ../env
   steps:
     - name: prepare e2e.yaml
-      command: bash hack/prepare-e2e.sh
+      command: bash test/tools/prepare-e2e.sh
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
@@ -39,10 +41,27 @@ setup:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
+    # SkyWalking has had no embedded storage since 10.2.0, so every OAP version this operator
+    # supports needs a real storage before it can start. There is no fallback.
+    - name: setup banyandb storage
+      command: |
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/banyandb-storage.yaml | kubectl apply -f -
+        # The operator turns the BanyanDB resource into a Deployment, which takes a moment, and
+        # `kubectl wait` fails outright rather than retrying when nothing matches yet. Wait for the
+        # Deployment to exist before asking the framework to wait for it to be ready.
+        for _ in $(seq 1 60); do
+          kubectl get deployment storage-banyandb -n skywalking-system >/dev/null 2>&1 && break
+          sleep 2
+        done
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/storage-banyandb
+          for: condition=Available
     - name: setup oapserver and ui
       command: |
-        kubectl create namespace skywalking-system
-        kubectl apply -f test/e2e/skywalking-components.yaml
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/skywalking-components.yaml | kubectl apply -f -
       wait:
         - namespace: skywalking-system
           resource: OAPServer/skywalking-system
@@ -53,7 +72,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed 's/oap-service/skywalking-system-oap.skywalking-system/' test/e2e/demo.yaml | kubectl create -f -
+        envsubst "$E2E_IMAGES" < test/e2e/demo.yaml | sed 's/oap-service/skywalking-system-oap.skywalking-system/' | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
@@ -113,3 +132,28 @@ verify:
       expected: ../verify/bootstrap-plugin.yaml
     - includes:
         - ../ui-cases.yaml
+    # This resource seeds a user through spec.config, so the whole authenticated path can be
+    # exercised: log in, get a session cookie, and reach a route RBAC protects. See
+    # test/tools/horizon.sh.
+    - query: 'bash test/tools/horizon.sh http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80} get /api/auth/me | yq e ''{"username": .username}'' - | yq e ''to_entries'' -'
+      expected: ../verify/ui-authenticated.yaml
+    # And that the BFF can reach the OAP it was pointed at -- the hop the swctl queries above skip
+    # entirely, since they talk to the OAP directly. /api/oap/info asks the OAP over GraphQL on
+    # every call, so it reflects the state now.
+    #
+    # Deliberately not a metric read: the layer header's KPIs are cached per completed hour
+    # (apps/bff/src/logic/layers/header-kpi-cache.ts), so a suite that has been generating traffic
+    # for a couple of minutes would assert against an empty or stale bucket. Metric values are
+    # checked against the OAP directly, with the general linear cpm query.
+    - query: 'bash test/tools/horizon.sh http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80} get /api/oap/info | yq e ''{"reachable": .reachable}'' - | yq e ''to_entries'' -'
+      expected: ../verify/ui-oap-reachable.yaml
+    # The other URL the operator writes into horizon.yaml. /api/oap/info exercises oap.queryUrl
+    # over GraphQL; this one is what the cluster status page calls, and it fires
+    # /runtime/rule/list at oap.adminUrl -- so between them both configured endpoints are proven
+    # to reach the service they name.
+    #
+    # It matters more than it looks. adminUrl is no longer derived, because port 17128 is the
+    # admin API on OAP 11 and the AI-pipeline URI-recognition server on 10.x; an adminUrl aimed at
+    # the wrong one still answers. `ok` here is false unless a real OAP admin API replied.
+    - query: 'bash test/tools/horizon.sh http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80} get /api/cluster/state | yq e ''{"ok": .ok}'' - | yq e ''to_entries'' -'
+      expected: ../verify/ui-cluster-state.yaml

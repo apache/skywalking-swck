@@ -1,0 +1,52 @@
+{{/*
+Licensed to Apache Software Foundation (ASF) under one or more contributor
+license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright
+ownership. Apache Software Foundation (ASF) licenses this file to you under
+the Apache License, Version 2.0 (the "License"); you may
+not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+*/}}
+{{ .Chart.Name }} {{ .Chart.Version }} is installed as "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Installed:
+  * the SkyWalking operator{{ if .Values.operator.webhook.enabled }}, with its admission webhooks and the Java agent injector{{ else }} (webhooks and the Java agent injector are DISABLED){{ end }}
+  * {{ if .Values.adapter.enabled }}the custom metrics adapter, querying OAP at {{ include "swck.adapter.oapAddress" . }}{{ else }}no metrics adapter (set adapter.enabled=true to add it){{ end }}
+
+Check it came up:
+
+  kubectl get pods -n {{ .Release.Namespace }}
+{{ if .Values.operator.webhook.enabled }}
+The Java agent injector only touches namespaces that opt in:
+
+  kubectl label namespace <your-namespace> swck-injection=enabled
+{{ end }}
+Create your first OAP cluster:
+
+  kubectl apply -f https://raw.githubusercontent.com/apache/skywalking-swck/master/operator/config/samples/default.yaml
+
+The CRDs are installed from the chart's crds/ directory. Helm does not upgrade
+them on `helm upgrade`, so after upgrading this chart apply the new ones.
+--force-conflicts is required, not optional: Helm installed these CRDs and owns
+every field of them, so a server-side apply under a different field manager
+conflicts on exactly the fields an upgrade needs to change. Pass the same chart
+reference you installed from -- `helm show crds` needs an OCI URL, a repo/chart
+or a path, not a release name:
+
+  helm show crds oci://registry-1.docker.io/apache/skywalking-swck --version {{ .Chart.Version }} \
+    | kubectl apply --server-side --force-conflicts -f -
+
+  # or, from GHCR
+  helm show crds oci://ghcr.io/apache/skywalking-swck/helm/{{ .Chart.Name }} --version {{ .Chart.Version }} \
+    | kubectl apply --server-side --force-conflicts -f -
+
+Docs: https://github.com/apache/skywalking-swck/tree/master/docs

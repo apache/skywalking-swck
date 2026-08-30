@@ -21,9 +21,13 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: ${OAP_IMAGE}
+  # No supported OAP has an embedded storage -- H2 went in 10.2.0 -- and there is no fallback;
+  # test/e2e/banyandb-storage.yaml provides one.
+  storage:
+    name: storage
   service:
     template:
       type: ClusterIP
@@ -35,10 +39,10 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  kind: booster
-  version: 9.5.0
+  kind: horizon
+  version: 1.0.0
   instances: 1
-  image: apache/skywalking-ui:9.5.0
+  image: ${UI_IMAGE}
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:
@@ -57,7 +61,7 @@ spec:
   selector:
   javaSidecar:
     name: swagent-001
-    image: apache/skywalking-java-agent:8.16.0-java8
+    image: ${JAVA_AGENT_IMAGE}
     env:
       - name: "SW_LOGGING_LEVEL"
         value: "DEBUG"

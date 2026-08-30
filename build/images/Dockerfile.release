@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.12.1 AS builder
+# --platform=$BUILDPLATFORM: this stage only downloads and GPG-verifies the release tarball, so
+# it has no reason to run under emulation when the image is built for another architecture.
+FROM --platform=$BUILDPLATFORM alpine:3.12.1 AS builder
 
 RUN apk add --no-cache bash gettext nmap-ncat openssl busybox-extras
 
@@ -50,8 +52,17 @@ RUN set -eux; \
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --from=builder --chown=65532:65532 /swck/bin/manager-linux-amd64 /manager
-COPY --from=builder --chown=65532:65532 /swck/bin/adapter-linux-amd64 /adapter
+# TARGETARCH is supplied per platform by buildx, and the release tarball carries a binary per
+# supported architecture (operator/Makefile and adapter/Makefile release-build).
+#
+# Hardcoding -linux-amd64 here is how apache/skywalking-swck:0.10.0 came to advertise linux/arm64
+# while its arm64 manifest reused the amd64 layers byte for byte: /manager inside it is an x86-64
+# ELF, so an arm64 node gets "exec format error". Selecting on TARGETARCH is what makes the
+# multi-platform manifest honest, and it fails the build loudly -- rather than silently shipping
+# the wrong binary -- if a release tarball does not carry that architecture.
+ARG TARGETARCH=amd64
+COPY --from=builder --chown=65532:65532 /swck/bin/manager-linux-${TARGETARCH} /manager
+COPY --from=builder --chown=65532:65532 /swck/bin/adapter-linux-${TARGETARCH} /adapter
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]

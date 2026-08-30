@@ -1,0 +1,92 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Every image the e2e suite deploys, in one place.
+#
+# skywalking-infra-e2e loads this into every setup step through
+# `setup.init-system-environment: ../env`, and the manifests reference the
+# variables directly, so applying one is just:
+#
+#     envsubst "$E2E_IMAGES" < test/e2e/skywalking-components.yaml | kubectl apply -f -
+#
+# RULES
+#
+#   * Pin, never float. `latest` is how apache/skywalking-banyandb:latest got
+#     into this suite: a moving target that silently changes what CI tests and
+#     breaks on someone else's merge.
+#   * Prefer a GHCR commit id. Docker Hub applies anonymous pull rate limits
+#     that CI runners share with the rest of the internet.
+#   * The exception is OAP and the UI, which are pinned to their Docker Hub
+#     RELEASE tags, matching apache/skywalking-helm's test/e2e/env: those two
+#     are what the operator's own webhook defaults point at, so CI validates the
+#     artifacts users are actually told to install.
+#   * The operator and the metrics adapter are NOT here. They are built from the
+#     working tree by `make -C operator docker-build` and side-loaded into kind,
+#     because e2e exists to test the code in the pull request.
+
+# OAP 11.0.0, Horizon UI 1.0.0 and BanyanDB 0.11.0 move together: OAP 11.0.0 accepts BanyanDB
+# server API 0.11 only, and Horizon 1.0.0's admin host and template store are OAP 11 additions.
+# Bumping one of the three alone produces a combination nobody supports.
+OAP_IMAGE=docker.io/apache/skywalking-oap-server:11.0.0
+
+# The Horizon UI -- the SkyWalking UI since 11.0.0. Its releases share the skywalking-ui
+# repository with the legacy Booster UI and are told apart by the horizon- tag prefix; there is no
+# apache/skywalking-horizon-ui repository. Booster is gone: apache/skywalking removed its submodule
+# in 11.0.0 and no longer builds an image for it.
+UI_IMAGE=docker.io/apache/skywalking-ui:horizon-1.0.0
+
+# apache/skywalking-java @ dc602b7d, the last main commit before the v8.16.0 tag,
+# which is the agent this suite used before it was pinned. The -java8 variant is
+# the one the demo application needs.
+# NOTE: the GHCR development images are `skywalking-java`; `skywalking-java-agent`
+# is the Docker Hub *release* name.
+JAVA_AGENT_IMAGE=ghcr.io/apache/skywalking-java/skywalking-java:dc602b7d0415aeec49cefe463c37d826041056f2-java8
+
+# apache/skywalking-banyandb @ 3b83e18f, the v0.11.0 commit -- the same pin
+# apache/skywalking-helm uses with OAP 11.0.0. Replaces `apache/skywalking-banyandb:latest`.
+BANYANDB_IMAGE=ghcr.io/apache/skywalking-banyandb:3b83e18fb0481d02e44eaa5df137fcf7b000754b
+
+# apache/skywalking-satellite @ 1987e1d5. The satellite images carry a `v` prefix on the commit id.
+#
+# Deliberately NOT the newer 35bfaff6 that apache/skywalking-helm runs. On 35bfaff6 the
+# `sw_stl_grpc_server_connection_count` gauge behind satellite_service_grpc_connect_count no longer
+# tracks live agent connections: with five agents attached and the satellite visibly serving all of
+# them, OAP saw the value peak at 3 and then decay to 1, which is neither the connection count nor
+# stable. oap-satellite-adapter-hpa drives an HPA off that metric, so it never scaled.
+#
+# 1987e1d5 is what this suite has always run and what master still validates. Nothing here needs a
+# newer satellite, and no other case covers this metric -- oap-ui-agent-satellite only checks that
+# traces arrive -- so bumping it would have swapped tested behaviour for untested behaviour.
+SATELLITE_IMAGE=ghcr.io/apache/skywalking-satellite/skywalking-satellite:v1987e1d566ac90f6b58a45fd9bfa27bf8faad635
+
+# apache/skywalking-kubernetes-event-exporter @ 12d23637. The EventExporter CR
+# used to declare `version: latest`, which the operator turns into
+# apache/skywalking-kubernetes-event-exporter:latest.
+EVENT_EXPORTER_IMAGE=ghcr.io/apache/skywalking-kubernetes-event-exporter/skywalking-kubernetes-event-exporter:12d236376dbee1bec6ba0dd7c6d7a90053f26e28
+
+# The Spring Boot application the agent is injected into, and the showcase
+# service the Fetcher case scrapes. Neither publishes per-commit images, so
+# these are the tags they have.
+DEMO_IMAGE=ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+SONGS_SERVICE_IMAGE=ghcr.io/apache/skywalking-showcase/songs-service:7c17079-agentless
+
+# Not SkyWalking components, and not on GHCR. Version-pinned, never floating.
+ELASTICSEARCH_IMAGE=docker.elastic.co/elasticsearch/elasticsearch:8.18.8
+ELASTICSEARCH_LEGACY_IMAGE=docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+
+# The complete list, so that `envsubst "$E2E_IMAGES"` substitutes exactly these
+# and leaves everything else alone -- the manifests also contain regexes and
+# shell-looking strings that a bare `envsubst` would happily mangle.
+E2E_IMAGES='${OAP_IMAGE} ${UI_IMAGE} ${JAVA_AGENT_IMAGE} ${BANYANDB_IMAGE} ${SATELLITE_IMAGE} ${EVENT_EXPORTER_IMAGE} ${DEMO_IMAGE} ${SONGS_SERVICE_IMAGE} ${ELASTICSEARCH_IMAGE} ${ELASTICSEARCH_LEGACY_IMAGE}'

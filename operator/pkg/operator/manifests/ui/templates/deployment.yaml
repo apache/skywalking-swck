@@ -15,9 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- $isHorizon := eq .Spec.Kind "horizon" }}
-{{- $port := 8080 }}
-{{- if $isHorizon }}{{ $port = 8081 }}{{ end }}
+{{- /* Horizon listens on 8081. It is the only supported UI; see UISpec.Kind. */}}
+{{- $port := 8081 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,6 +59,47 @@ spec:
         ports:
         - containerPort: {{ $port }}
           name: page
+        {{- /*
+        Horizon's image bakes a fully tokenised horizon.yaml, so configuring it is a matter of
+        setting HORIZON_* variables -- including settings this operator has never heard of. Only
+        what the operator actually derives is set here; everything else comes from .Spec.Env and
+        .Spec.EnvFrom. An explicit value in .Spec.Env wins over the derived one.
+        */}}
+        {{- $userEnv := list }}
+        {{- range .Spec.Env }}{{ $userEnv = append $userEnv .Name }}{{ end }}
+        env:
+        {{- if not (has "HORIZON_OAP_QUERY_URL" $userEnv) }}
+          - name: HORIZON_OAP_QUERY_URL
+            value: {{ .Spec.OAPServerAddress | quote }}
+        {{- end }}
+        {{- if and .Spec.OAPServerAdminAddress (not (has "HORIZON_OAP_ADMIN_URL" $userEnv)) }}
+          - name: HORIZON_OAP_ADMIN_URL
+            value: {{ .Spec.OAPServerAdminAddress | quote }}
+        {{- end }}
+        {{- if and .Spec.OAPServerZipkinAddress (not (has "HORIZON_OAP_ZIPKIN_URL" $userEnv)) }}
+          - name: HORIZON_OAP_ZIPKIN_URL
+            value: {{ .Spec.OAPServerZipkinAddress | quote }}
+        {{- end }}
+        {{- if not (has "HORIZON_TEMPLATES_MODE" $userEnv) }}
+          - name: HORIZON_TEMPLATES_MODE
+            {{- /*
+            The webhook always fills this in, deriving live only when an admin address is set. The
+            fallback here is for a cluster running with webhooks disabled, and it is readonly for
+            the same reason: live without a reachable admin host blocks every layer-driven page.
+            */}}
+            value: {{ .Spec.TemplatesMode | default "readonly" | quote }}
+        {{- end }}
+        {{- range .Spec.Env }}
+          - name: {{ .Name }}
+            {{- if .ValueFrom }}
+            valueFrom: {{ toJson .ValueFrom }}
+            {{- else }}
+            value: {{ .Value | quote }}
+            {{- end }}
+        {{- end }}
+        {{- if .Spec.EnvFrom }}
+        envFrom: {{ toJson .Spec.EnvFrom }}
+        {{- end }}
         livenessProbe:
           initialDelaySeconds: 10
           timeoutSeconds: 10
@@ -78,27 +118,23 @@ spec:
           httpGet:
             path: /
             port: {{ $port }}
-        {{- if $isHorizon }}
         volumeMounts:
+          {{- if .Spec.Config }}
           - name: horizon-config
             mountPath: /app/horizon.yaml
             subPath: horizon.yaml
             readOnly: true
+          {{- end }}
           - name: horizon-data
             mountPath: /data
-        {{- else }}
-        env:
-          - name: SW_OAP_ADDRESS
-            value: {{ .Spec.OAPServerAddress }}
-        {{- end }}
-      {{- if $isHorizon }}
       volumes:
+        {{- if .Spec.Config }}
         - name: horizon-config
           configMap:
             name: {{ .Name }}-ui-horizon
             items:
               - key: horizon.yaml
                 path: horizon.yaml
+        {{- end }}
         - name: horizon-data
           emptyDir: {}
-      {{- end }}

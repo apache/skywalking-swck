@@ -15,35 +15,65 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# SkyWalking removed the embedded H2 in 10.2.0, so no supported OAP has a zero-dependency option
+# and there is no fallback: an OAPServer with no storage starts, looks for a BanyanDB on
+# 127.0.0.1:17912, and never becomes ready. This sample therefore brings its own BanyanDB.
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: BanyanDB
+metadata:
+  name: default
+spec:
+  version: 0.11.0
+  counts: 1
+  image: apache/skywalking-banyandb:0.11.0
+  config:
+    - "standalone"
+---
+# The pointer an OAPServer follows through spec.storage.name. The BanyanDB above is provisioned
+# separately, so this is `external`: the operator turns it into SW_STORAGE=banyandb and
+# SW_STORAGE_BANYANDB_TARGETS.
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: Storage
+metadata:
+  name: default
+spec:
+  type: banyandb
+  connectType: external
+  address: default-banyandb-grpc.default:17912
+  version: 0.11.0
+---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: OAPServer
 metadata:
   name: default
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: apache/skywalking-oap-server:11.0.0
+  storage:
+    name: default
   service:
     template:
       type: ClusterIP
-  
+
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: UI
 metadata:
   name: default
 spec:
-  # spec.kind selects the UI flavor:
-  #   horizon (default) -> apache/skywalking-horizon-ui, config mounted at /app/horizon.yaml
-  #   booster           -> apache/skywalking-ui,         OAP address via SW_OAP_ADDRESS env var
+  # horizon is the only supported kind, and the default. Its image is
+  # apache/skywalking-ui:horizon-<version> and its config is mounted at /app/horizon.yaml.
   kind: horizon
-  version: 9.5.0
+  # The Horizon version, not the OAP version: the two are released separately.
+  version: 1.0.0
   instances: 1
-  # image defaults to apache/skywalking-horizon-ui:<version> when omitted.
+  # image defaults to apache/skywalking-ui:horizon-<version> when omitted.
   OAPServerAddress: http://default-oap.default:12800
-  # The following two are horizon-only and default to derived URLs if omitted:
+  # Horizon-only, and NOT derived: set them or Horizon does without them. The admin host is an
+  # OAP 11 addition, and the OAPServer this operator deploys exposes no Zipkin query port, so
+  # guessing either one pointed Horizon at something that was not there.
   # OAPServerAdminAddress: http://default-oap.default:17128
-  # OAPServerZipkinAddress: http://default-oap.default:12800/zipkin
   service:
     template:
       type: ClusterIP

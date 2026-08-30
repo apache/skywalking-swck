@@ -44,7 +44,9 @@ func (r *Storage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
 func (r *Storage) Default(_ context.Context, storage *Storage) error {
 	storagelog.Info("default", "name", storage.Name)
-	if storage.Spec.ConnectType == "internal" {
+	// Only Elasticsearch is provisioned here, so only it gets an image default; a banyandb
+	// Storage is a pointer and has no image of its own.
+	if storage.Spec.ConnectType == "internal" && storage.Spec.Type != StorageTypeBanyanDB {
 		if storage.Spec.Image == "" {
 			storage.Spec.Image = "docker.elastic.co/elasticsearch/elasticsearch:7.5.1"
 		}
@@ -78,12 +80,40 @@ func (r *Storage) ValidateDelete(_ context.Context, storage *Storage) (admission
 
 func (r *Storage) valid() error {
 	var allErrs field.ErrorList
-	if r.Spec.Type != "elasticsearch" {
+	switch r.Spec.Type {
+	case StorageTypeElasticsearch, StorageTypeBanyanDB:
+	default:
 		storagelog.Info("Invalid Storage Type")
 		err := field.Invalid(field.NewPath("spec").Child("type"),
 			r.Spec.Type,
-			"d. must be elasticsearch")
+			"must be "+StorageTypeElasticsearch+" or "+StorageTypeBanyanDB+
+				". SkyWalking removed H2 permanently in 10.2.0 and accepts no other storage")
 		allErrs = append(allErrs, err)
+	}
+	// This resource provisions Elasticsearch; a BanyanDB is provisioned by the BanyanDB resource,
+	// so for banyandb this is only ever a pointer at one that already exists.
+	if r.Spec.Type == StorageTypeBanyanDB {
+		if r.Spec.ConnectType != "external" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("connectType"),
+				r.Spec.ConnectType,
+				"must be external for "+StorageTypeBanyanDB+
+					": deploy the database itself with a BanyanDB resource and point this at it"))
+		}
+		if r.Spec.ConnectAddress == "" {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("address"),
+				r.Spec.ConnectAddress,
+				"is required for "+StorageTypeBanyanDB+
+					", for example <banyandb-name>-banyandb-grpc.<namespace>:17912"))
+		}
+		// Without this the OAP has no CA to hand SW_STORAGE_BANYANDB_SSL_TRUST_CA_PATH, and the
+		// pod would sit unschedulable waiting on a secret nothing creates.
+		if r.Spec.Security.TLS && r.Spec.Security.TLSSecretName == "" {
+			allErrs = append(allErrs, field.Invalid(
+				field.NewPath("spec").Child("security").Child("tlsSecretName"),
+				r.Spec.Security.TLSSecretName,
+				"is required when security.tls is true for "+StorageTypeBanyanDB+
+					": name a Secret holding the BanyanDB CA certificate under the key ca.crt"))
+		}
 	}
 	if r.Spec.ConnectType != "internal" && r.Spec.ConnectType != "external" {
 		storagelog.Info("Invalid Storage ConnectType")

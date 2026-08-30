@@ -21,9 +21,13 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: ${OAP_IMAGE}
+  # No supported OAP has an embedded storage -- H2 went in 10.2.0 -- and there is no fallback;
+  # test/e2e/banyandb-storage.yaml provides one.
+  storage:
+    name: storage
   service:
     template:
       type: ClusterIP
@@ -36,7 +40,11 @@ metadata:
   namespace: skywalking-system
 spec:
   replicas: 1
+  # `version` alone would leave the operator to build
+  # apache/skywalking-kubernetes-event-exporter:<version> from Docker Hub, which is how `latest`
+  # got in here. The explicit image is what test/e2e/env pins.
   version: latest
+  image: ${EVENT_EXPORTER_IMAGE}
   config: |
     filters:
       - reason: ""     

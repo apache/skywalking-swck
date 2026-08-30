@@ -16,9 +16,11 @@
 setup:
   env: kind
   file: ../kind.yaml
+  # Every SkyWalking image this case deploys is pinned in ../env; see docs/en/guides/e2e.md.
+  init-system-environment: ../env
   steps:
     - name: prepare e2e.yaml
-      command: bash hack/prepare-e2e.sh
+      command: bash test/tools/prepare-e2e.sh
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
@@ -31,25 +33,29 @@ setup:
     - name: install operator
       command: |
         export OPERATOR_IMG=controller:latest
-        make -C operator docker-build   
+        make -C operator docker-build
         kind load docker-image controller:latest
-        make -C operator install
-        make -C operator deploy
+        helm install skywalking-swck chart/skywalking-swck \
+          --namespace skywalking-swck-system --create-namespace \
+          --set operator.image.repository=controller \
+          --set operator.image.tag=latest \
+          --set operator.image.pullPolicy=IfNotPresent \
+          --wait --timeout 10m
       wait:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
     - name: setup elasticsearch
       command: |
-        kubectl apply -f test/e2e/deploy-elasticsearch.yaml
+        envsubst "$E2E_IMAGES" < test/e2e/deploy-elasticsearch.yaml | kubectl apply -f -
         kubectl rollout status --watch --timeout=120s statefulset/es
     - name: setup storage(use the external type)
       command: |
         kubectl apply -f test/e2e/external-storage.yaml
     - name: setup oapserver and ui
       command: |
-        kubectl create namespace skywalking-system
-        kubectl apply -f test/e2e/skywalking-components-with-storage.yaml
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/skywalking-components-with-storage.yaml | kubectl apply -f -
       wait:
         - namespace: default
           resource: OAPServer/default
@@ -60,7 +66,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed 's/oap-service/default-oap.default/' test/e2e/demo.yaml | kubectl create -f -
+        envsubst "$E2E_IMAGES" < test/e2e/demo.yaml | sed 's/oap-service/default-oap.default/' | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo

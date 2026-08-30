@@ -31,7 +31,7 @@ spec:
       containers:
       - name: demo1
         imagePullPolicy: IfNotPresent
-        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+        image: ${DEMO_IMAGE}
         command: ["java"]
         args: ["-jar","/app.jar"]
         ports:

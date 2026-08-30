@@ -28,6 +28,10 @@ spec:
         swck-java-agent-injected: "true"
         app: demo
       annotations:
+        # Without this the injector falls back to its own default, which is a Docker Hub image
+        # hardcoded in operator/pkg/operator/manifests/injector/templates/annotations.yaml -- so
+        # the agent actually injected would not be the one test/e2e/env pins.
+        sidecar.skywalking.apache.org/initcontainer.Image: ${JAVA_AGENT_IMAGE}
         sidecar.skywalking.apache.org/initcontainer.resources.limits: '{"memory": "100Mi","cpu": "100m"}'
         sidecar.skywalking.apache.org/initcontainer.resources.requests: '{"memory": "100Mi","cpu": "100m"}'
         agent.skywalking.apache.org/collector.backend_service: "oap-service:11800"
@@ -37,7 +41,7 @@ spec:
       containers:
       - name: demo1
         imagePullPolicy: IfNotPresent
-        image: ghcr.io/apache/skywalking-swck-spring-demo:v0.0.1
+        image: ${DEMO_IMAGE}
         command: ["java"]
         args: ["-jar","/app.jar"]
         ports:

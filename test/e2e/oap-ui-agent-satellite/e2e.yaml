@@ -16,9 +16,11 @@
 setup:
   env: kind
   file: ../kind.yaml
+  # Every SkyWalking image this case deploys is pinned in ../env; see docs/en/guides/e2e.md.
+  init-system-environment: ../env
   steps:
     - name: prepare e2e.yaml
-      command: bash hack/prepare-e2e.sh
+      command: bash test/tools/prepare-e2e.sh
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
@@ -31,18 +33,39 @@ setup:
     - name: install operator
       command: |
         export OPERATOR_IMG=controller:latest
-        make -C operator docker-build   
+        make -C operator docker-build
         kind load docker-image controller:latest
-        make -C operator install
-        make -C operator deploy
+        helm install skywalking-swck chart/skywalking-swck \
+          --namespace skywalking-swck-system --create-namespace \
+          --set operator.image.repository=controller \
+          --set operator.image.tag=latest \
+          --set operator.image.pullPolicy=IfNotPresent \
+          --wait --timeout 10m
       wait:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
+    # SkyWalking has had no embedded storage since 10.2.0, so every OAP version this operator
+    # supports needs a real storage before it can start. There is no fallback.
+    - name: setup banyandb storage
+      command: |
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/banyandb-storage.yaml | kubectl apply -f -
+        # The operator turns the BanyanDB resource into a Deployment, which takes a moment, and
+        # `kubectl wait` fails outright rather than retrying when nothing matches yet. Wait for the
+        # Deployment to exist before asking the framework to wait for it to be ready.
+        for _ in $(seq 1 60); do
+          kubectl get deployment storage-banyandb -n skywalking-system >/dev/null 2>&1 && break
+          sleep 2
+        done
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/storage-banyandb
+          for: condition=Available
     - name: setup oapserver and ui
       command: |
-        kubectl create namespace skywalking-system
-        kubectl apply -f test/e2e/skywalking-components-with-satellite.yaml
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/skywalking-components-with-satellite.yaml | kubectl apply -f -
       wait:
         - namespace: skywalking-system
           resource: OAPServer/skywalking-system
@@ -56,7 +79,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed 's/oap-service/skywalking-system-satellite.skywalking-system/' test/e2e/demo.yaml | kubectl create -f -
+        envsubst "$E2E_IMAGES" < test/e2e/demo.yaml | sed 's/oap-service/skywalking-system-satellite.skywalking-system/' | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo

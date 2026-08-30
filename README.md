@@ -21,7 +21,22 @@ SWCK is a platform for the SkyWalking user that provisions, upgrades, maintains 
 
 # Quick Start
 
-You can follow the [Getting Started](docs/getting-started.md) to deploy swck on a testing Kubernetes cluster quickly and try out the skywalking components end to end.
+You can follow the [Getting Started](docs/en/setup/getting-started.md) to deploy swck on a testing Kubernetes cluster quickly and try out the skywalking components end to end.
+
+## Install with Helm
+
+The `skywalking-swck` chart installs the operator and, behind a values flag, the custom metrics
+adapter. It needs [`cert-manager`](https://cert-manager.io/docs/installation/) in the cluster.
+
+```shell
+helm install skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+  --version <SWCK_VERSION>-helm \
+  --namespace skywalking-swck-system --create-namespace
+```
+
+The `-helm` suffix is not a typo: on Docker Hub the chart shares a repository with the image, so the
+two are told apart by tag. For more details, please read [Install with Helm](docs/en/setup/helm-chart.md)
+and the [chart reference](chart/skywalking-swck/README.md).
 
 ## Java Agent Injector
 
@@ -34,7 +49,7 @@ $ kubectl label namespace default(your namespace) swck-injection=enabled
 
 * Add label `swck-java-agent-injected: "true"` to the workloads
 
-For more details, please read [Java agent injector](/docs/java-agent-injector.md)
+For more details, please read [Java agent injector](docs/en/setup/java-agent-injector.md)
 
 ## Operator
 
@@ -54,10 +69,10 @@ For more details, please read [Java agent injector](/docs/java-agent-injector.md
 or
 
  ```
- kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.8.0"
+ kubectl apply -k "github.com/apache/skywalking-swck/operator/config/default?ref=v0.11.0"
  ```
 
-For more details, please refer to [deploy operator](docs/operator.md)
+For more details, please refer to [deploy operator](docs/en/setup/operator.md)
 
 ## Custom Metrics Adapter
   
@@ -76,13 +91,13 @@ For more details, please refer to [deploy operator](docs/operator.md)
 or
 
  ```
- kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.8.0"
+ kubectl apply -k "github.com/apache/skywalking-swck/adapter/config?ref=v0.11.0"
  ```
 
-For more details, please read [Custom metrics adapter](docs/custom-metrics-adapter.md)
+For more details, please read [Custom metrics adapter](docs/en/setup/custom-metrics-adapter.md)
 
 # Contributing
-For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md). What's more, we have a guide about how to add new CRDs and Controllers, see [How to add new CRD and Controller in SWCK](docs/how-to-add-new-crd-and-controller.md).
+For developers who want to contribute to this project, see [Contribution Guide](CONTRIBUTING.md). What's more, we have a guide about how to add new CRDs and Controllers, see [How to add new CRD and Controller in SWCK](docs/en/guides/how-to-add-new-crd-and-controller.md).
 
 # License
 [Apache 2.0 License.](/LICENSE)

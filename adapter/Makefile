@@ -32,7 +32,7 @@ module_dir   := $(dir $(module_path))
 
 GOPATH:=$(shell go env GOPATH)
 
-include ../hack/build/module.mk
+include ../tools/build/module.mk
 
 .PHONY: all
 all: build docker-build
@@ -65,11 +65,19 @@ binary-licenses: ## Generate licenses for binary
 .PHONY: deploy
 deploy: kustomize ## Deploy adapter controller to the K8s cluster specified in ~/.kube/config.
 	@echo "Deploy adapter"
-	-MOD=adapter DIR="./" IMG_PATH=namespaced/adapter IMG=metrics-adapter NEW_IMG=${ADAPTER_IMG} $(root_dir)/hack/deploy.sh d
+	-MOD=adapter DIR="./" IMG_PATH=namespaced/adapter IMG=metrics-adapter NEW_IMG=${ADAPTER_IMG} $(root_dir)/tools/deploy.sh d
+
+# Kept in step with operator/Makefile: build/images/Dockerfile.release picks the binary for the
+# platform it is being built for, so both components must cover the same architectures.
+RELEASE_ARCHS ?= amd64 arm64
 
 .PHONY: release-build
-release-build: binary-licenses ## Build binary for release
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/adapter-linux-amd64
+release-build: binary-licenses ## Build binaries for release, one per architecture
+	@for arch in $(RELEASE_ARCHS); do \
+		echo "building adapter-linux-$$arch"; \
+		CGO_ENABLED=0 GOOS=linux GOARCH=$$arch GO111MODULE=on \
+			go build -a -ldflags="-s -w" -o $(root_dir)/build/bin/adapter-linux-$$arch || exit 1; \
+	done
 	
 # Generation
 # ----------
@@ -83,4 +91,4 @@ verify-generated: update-generated
 .PHONY: update-generated
 update-generated:
 	go install -mod=readonly k8s.io/kube-openapi/cmd/openapi-gen
-	$(GOPATH)/bin/openapi-gen --logtostderr -i k8s.io/metrics/pkg/apis/custom_metrics,k8s.io/metrics/pkg/apis/custom_metrics/v1beta1,k8s.io/metrics/pkg/apis/custom_metrics/v1beta2,k8s.io/metrics/pkg/apis/external_metrics,k8s.io/metrics/pkg/apis/external_metrics/v1beta1,k8s.io/metrics/pkg/apis/metrics,k8s.io/metrics/pkg/apis/metrics/v1beta1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1 -h ../hack/boilerplate.go.txt -p ./pkg/api/generated/openapi -O zz_generated.openapi -o ./ -r /dev/null
+	$(GOPATH)/bin/openapi-gen --logtostderr -i k8s.io/metrics/pkg/apis/custom_metrics,k8s.io/metrics/pkg/apis/custom_metrics/v1beta1,k8s.io/metrics/pkg/apis/custom_metrics/v1beta2,k8s.io/metrics/pkg/apis/external_metrics,k8s.io/metrics/pkg/apis/external_metrics/v1beta1,k8s.io/metrics/pkg/apis/metrics,k8s.io/metrics/pkg/apis/metrics/v1beta1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1 -h ../tools/boilerplate.go.txt -p ./pkg/api/generated/openapi -O zz_generated.openapi -o ./ -r /dev/null

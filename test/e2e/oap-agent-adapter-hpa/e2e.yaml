@@ -16,9 +16,11 @@
 setup:
   env: kind
   file: ../kind.yaml
+  # Every SkyWalking image this case deploys is pinned in ../env; see docs/en/guides/e2e.md.
+  init-system-environment: ../env
   steps:
     - name: prepare e2e.yaml
-      command: bash hack/prepare-e2e.sh
+      command: bash test/tools/prepare-e2e.sh
     - name: install cert-manager
       command: |
         # kind k8s cluster is in $TMPDIR
@@ -28,28 +30,52 @@ setup:
         - namespace: cert-manager
           resource: pod
           for: condition=Ready
-    - name: install operator
+    - name: install operator and metrics-adapter
       command: |
         export OPERATOR_IMG=controller:latest
-        make -C operator docker-build   
+        export ADAPTER_IMG=metrics-adapter:latest
+        make -C operator docker-build
+        make -C adapter docker-build
         kind load docker-image controller:latest
-        make -C operator install
-        make -C operator deploy
+        kind load docker-image metrics-adapter:latest
+        helm install skywalking-swck chart/skywalking-swck \
+          --namespace skywalking-swck-system --create-namespace \
+          --set operator.image.repository=controller \
+          --set operator.image.tag=latest \
+          --set operator.image.pullPolicy=IfNotPresent \
+          --set adapter.enabled=true \
+          --set adapter.image.repository=metrics-adapter \
+          --set adapter.image.tag=latest \
+          --set adapter.image.pullPolicy=IfNotPresent \
+          --set adapter.oap.address=http://skywalking-system-oap.skywalking-system:12800/graphql \
+          --wait --timeout 10m
       wait:
         - namespace: skywalking-swck-system
           resource: pod
           for: condition=Ready
-    - name: install metrics-adapter
+    # SkyWalking has had no embedded storage since 10.2.0, so every OAP version this operator
+    # supports needs a real storage before it can start. There is no fallback.
+    - name: setup banyandb storage
       command: |
-        export ADAPTER_IMG=metrics-adapter
-        make -C adapter docker-build
-        kind load docker-image metrics-adapter
-        make -C adapter deploy
-        kubectl wait pods -n skywalking-custom-metrics-system -l app=custom-metrics-apiserver --for condition=Ready --timeout=90s
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        envsubst "$E2E_IMAGES" < test/e2e/banyandb-storage.yaml | kubectl apply -f -
+        # The operator turns the BanyanDB resource into a Deployment, which takes a moment, and
+        # `kubectl wait` fails outright rather than retrying when nothing matches yet. Wait for the
+        # Deployment to exist before asking the framework to wait for it to be ready.
+        for _ in $(seq 1 60); do
+          kubectl get deployment storage-banyandb -n skywalking-system >/dev/null 2>&1 && break
+          sleep 2
+        done
+      wait:
+        - namespace: skywalking-system
+          resource: deployment/storage-banyandb
+          for: condition=Available
     - name: setup oapserver and ui
       command: |
-        kubectl create namespace skywalking-system
-        grep -B20 "\-\-\-" test/e2e/skywalking-components.yaml | kubectl apply -f -
+        kubectl create namespace skywalking-system --dry-run=client -o yaml | kubectl apply -f -
+        # This case drives the HPA from OAP metrics and never opens the UI, so deploy only the
+        # first document -- the OAPServer -- and leave the UI out.
+        envsubst "$E2E_IMAGES" < test/e2e/skywalking-components.yaml | awk '/^---$/{doc++} doc<1' | kubectl apply -f -
       wait:
         - namespace: skywalking-system
           resource: OAPServer/skywalking-system
@@ -57,7 +83,7 @@ setup:
     - name: setup java agent demo
       command: |
         kubectl label namespace skywalking-system swck-injection=enabled
-        sed 's/oap-service/skywalking-system-oap.skywalking-system/' test/e2e/demo.yaml | kubectl create -f -
+        envsubst "$E2E_IMAGES" < test/e2e/demo.yaml | sed 's/oap-service/skywalking-system-oap.skywalking-system/' | kubectl create -f -
       wait:
         - namespace: skywalking-system
           resource: deployment/demo
