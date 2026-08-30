@@ -98,7 +98,11 @@ spec:
               value: "1000"
             {{ range .Spec.Config }}
             - name: {{ .Name }}
+              {{- if .ValueFrom }}
+              valueFrom: {{ toJson .ValueFrom }}
+              {{- else }}
               value: "{{ .Value }}"
+              {{- end }}
             {{end}}
           readinessProbe:
             exec:

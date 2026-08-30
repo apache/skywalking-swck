@@ -1,0 +1,141 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swck.componentName" (list . "operator") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "swck.operator.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.operator.replicas }}
+  selector:
+    matchLabels:
+      {{- include "swck.operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+        # Roll the manager when its ControllerManagerConfig changes: the file is
+        # read once at start-up, so without this a `helm upgrade` that only edits
+        # the ConfigMap would leave the running manager on the old settings.
+        checksum/config: {{ include (print $.Template.BasePath "/operator-configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "swck.operator.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "swck.operator.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 10
+      {{- with .Values.operator.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: manager
+        image: {{ include "swck.operator.image" . }}
+        imagePullPolicy: {{ include "swck.operator.imagePullPolicy" . }}
+        command:
+        - /manager
+        args:
+        - --config=controller_manager_config.yaml
+        {{- if not .Values.operator.webhook.enabled }}
+        # The manager registers every admission webhook, and the java agent
+        # injector, unless this is set. Without it a webhook-less install would
+        # still start a TLS webhook server, find no certificate at
+        # /tmp/k8s-webhook-server/serving-certs, and never become ready.
+        env:
+        - name: ENABLE_WEBHOOKS
+          value: "false"
+        {{- end }}
+        {{- if .Values.operator.webhook.enabled }}
+        ports:
+        - containerPort: {{ .Values.operator.webhook.service.port }}
+          name: webhook-server
+          protocol: TCP
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        {{- with .Values.operator.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.operator.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.operator.webhook.enabled }}
+        - name: cert
+          mountPath: /tmp/k8s-webhook-server/serving-certs
+          readOnly: true
+        {{- end }}
+        - name: manager-config
+          mountPath: /controller_manager_config.yaml
+          subPath: controller_manager_config.yaml
+      {{- if .Values.operator.metrics.enabled }}
+      # The manager binds its metrics endpoint to 127.0.0.1 only. This sidecar is
+      # the only route to it from outside the pod, and it authenticates and
+      # authorises every scrape against the API server.
+      - name: kube-rbac-proxy
+        image: {{ .Values.operator.metrics.kubeRbacProxy.image.repository }}:{{ .Values.operator.metrics.kubeRbacProxy.image.tag }}
+        imagePullPolicy: {{ .Values.operator.metrics.kubeRbacProxy.image.pullPolicy }}
+        args:
+        - --secure-listen-address=0.0.0.0:{{ .Values.operator.metrics.service.port }}
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        ports:
+        - containerPort: {{ .Values.operator.metrics.service.port }}
+          name: https
+          protocol: TCP
+        {{- with .Values.operator.metrics.kubeRbacProxy.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      volumes:
+      {{- if .Values.operator.webhook.enabled }}
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: {{ include "swck.componentName" (list . "controller-manager-cert") }}
+      {{- end }}
+      - name: manager-config
+        configMap:
+          name: {{ include "swck.componentName" (list . "manager-config") }}
+      {{- with .Values.operator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -52,6 +52,26 @@ jobs:
         run: make build
       - name: Build docker image
         run: make docker-build
+  chart:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      # The CRDs, the manager ClusterRole and the admission webhook configurations in
+      # chart/skywalking-swck are generated from the operator sources. Regenerate them and fail on
+      # any difference, so the chart cannot drift from the operator it ships beside -- which is the
+      # whole reason it lives in this repository rather than in apache/skywalking-helm.
+      - name: Check the generated chart manifests
+        run: make chart-check
+      # helm lint and helm template both exit 0 on a chart that renders nothing, so this asserts on
+      # the rendered output across the values that change what the chart produces.
+      - name: Lint and render the chart
+        run: make chart-lint
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
@@ -64,9 +84,34 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: install kubebuilder
-        run: ./hack/install-kubebuilder.sh
+        run: ./test/tools/install-kubebuilder.sh
       - name: tests
         run: make test
+  chart-e2e-tests:
+    name: e2e tests(helm chart lifecycle)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      # Every other e2e case installs the chart and then tests the operator. This one tests the
+      # chart itself: installing the packaged tarball, the CRDs and webhook wiring it brings with
+      # it, upgrading in both directions, and uninstalling without taking the CRDs -- and every
+      # custom resource in the cluster -- with it.
+      - name: Run E2E Test
+        uses: apache/skywalking-infra-e2e@996ed8902e941e2883fcf0ac5b3090364942d205
+        with:
+          e2e-file: test/e2e/chart/e2e.yaml
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: chart-lifecycle-logs
+          path: ${{ env.SW_INFRA_E2E_LOG_DIR }}
   e2e-tests:
     name: e2e tests(oap+ui+agent)
     runs-on: ubuntu-latest
@@ -304,12 +349,15 @@ jobs:
     needs:
       - check
       - build
+      - chart
+      - chart-e2e-tests
       - unit-tests
       - e2e-tests
       - swagent-e2e-tests
       - swagent-configmap-e2e-tests
       - internel-storage-e2e-tests
       - external-storage-e2e-tests
+      - banyandb-e2e-tests
       - adapter-hpa-e2e-tests
       - e2e-tests-with-satellite
       - adapter-satellite-hpa-e2e-tests

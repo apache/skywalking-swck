@@ -23,6 +23,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// The storage backends the operator can wire an OAPServer to. SkyWalking removed H2 permanently in
+// 10.2.0, so across the whole supported range these two are all there is -- and there is no
+// fallback if neither is configured.
+const (
+	StorageTypeElasticsearch = "elasticsearch"
+	StorageTypeBanyanDB      = "banyandb"
+)
+
 // StorageSpec defines the desired state of Storage
 type StorageSpec struct {
 	// Type of storage.
@@ -59,6 +67,15 @@ type SecuritySpec struct {
 	// SSLConfig of  storage .
 	// +kubebuilder:validation:Optional
 	TLS bool `json:"tls,omitempty"`
+	// TLSSecretName names a Secret holding the CA certificate that verifies the storage server's
+	// certificate, under the key ca.crt -- the layout cert-manager and kubernetes.io/tls secrets
+	// already use.
+	//
+	// Required when tls is true and type is banyandb: the OAP needs a path to hand
+	// SW_STORAGE_BANYANDB_SSL_TRUST_CA_PATH, and there is no conventional secret to fall back on.
+	// For elasticsearch it is optional and defaults to the historical "skywalking-storage".
+	// +kubebuilder:validation:Optional
+	TLSSecretName string `json:"tlsSecretName,omitempty"`
 	// UserConfig of storage .
 	// +kubebuilder:validation:Optional
 	User UserSpec `json:"user,omitempty"`

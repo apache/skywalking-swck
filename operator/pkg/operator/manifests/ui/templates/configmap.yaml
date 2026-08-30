@@ -15,7 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- if eq .Spec.Kind "horizon" }}
+{{- /*
+Only emitted when the user supplied a whole horizon.yaml through UI.spec.config.
+
+Left to itself, Horizon runs on the fully tokenised config baked into its image -- every field is
+a ${HORIZON_...:default} token -- and this operator configures it with HORIZON_* environment
+variables instead (see UI.spec.env / envFrom, and the deployment template). Generating a file here
+would replace the baked one and, with it, every token that makes those variables work, so a
+setting the operator does not know about could not be reached at all.
+*/}}
+{{- if .Spec.Config }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -28,50 +37,5 @@ metadata:
     operator.skywalking.apache.org/component: configmap
 data:
   horizon.yaml: |
-{{- if .Spec.Config }}
 {{ .Spec.Config | indent 4 }}
-{{- else }}
-    server:
-      host: 0.0.0.0
-      port: 8081
-    oap:
-      queryUrl: {{ .Spec.OAPServerAddress }}
-      adminUrl: {{ .Spec.OAPServerAdminAddress }}
-      zipkinUrl: {{ .Spec.OAPServerZipkinAddress }}
-      timeoutMs: 15000
-    auth:
-      backend: local
-      local:
-        users: []
-    rbac:
-      enabled: true
-      roles:
-        viewer:
-          - metrics:read
-          - alarms:read
-          - traces:read
-          - logs:read
-          - topology:read
-          - profile:read
-        admin:
-          - "*"
-      landingByRole:
-        viewer: /
-        admin: /admin/cluster
-    session:
-      ttlMinutes: 60
-      cookieName: horizon_sid
-      cookieSecure: false
-    audit:
-      file: /data/horizon-audit.jsonl
-    setup:
-      file: /data/horizon-setup.json
-    alarms:
-      file: /data/horizon-alarms.json
-    debugLog:
-      enabled: false
-      file: /data/horizon-wire.jsonl
-      maxBodyChars: 8192
-      redactAuthHeaders: true
-{{- end }}
 {{- end }}

@@ -15,8 +15,11 @@
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --chown=65532:65532 bin/manager-linux-amd64 /manager
-COPY --chown=65532:65532 bin/adapter-linux-amd64 /adapter
+# The binary distribution carries one binary per supported architecture; pick the one that
+# matches the image being built. See the longer note in Dockerfile.release.
+ARG TARGETARCH=amd64
+COPY --chown=65532:65532 bin/manager-linux-${TARGETARCH} /manager
+COPY --chown=65532:65532 bin/adapter-linux-${TARGETARCH} /adapter
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]

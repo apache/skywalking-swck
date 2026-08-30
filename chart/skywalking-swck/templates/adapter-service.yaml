@@ -1,0 +1,55 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- if .Values.adapter.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "swck.componentName" (list . "custom-metrics-apiserver") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "swck.labels" . | nindent 4 }}
+spec:
+  ports:
+  - name: https
+    port: 443
+    targetPort: {{ .Values.adapter.service.port }}
+  selector:
+    {{- include "swck.adapter.selectorLabels" . | nindent 4 }}
+---
+# v1beta1.external.metrics.k8s.io is a CLUSTER-WIDE singleton: exactly one
+# external metrics provider can own it. Installing this chart with
+# adapter.enabled=true in a cluster that already runs prometheus-adapter, KEDA or
+# another external metrics provider takes that API group away from it.
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.external.metrics.k8s.io
+  labels:
+    {{- include "swck.labels" . | nindent 4 }}
+spec:
+  group: external.metrics.k8s.io
+  version: v1beta1
+  groupPriorityMinimum: 100
+  versionPriority: 100
+  # The adapter serves a certificate it signs itself, so the aggregation layer
+  # has nothing to verify it against.
+  insecureSkipTLSVerify: true
+  service:
+    name: {{ include "swck.componentName" (list . "custom-metrics-apiserver") }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

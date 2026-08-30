@@ -14,16 +14,161 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Two publishing paths live in this workflow, exactly as in apache/skywalking's own
+# publish-docker workflow: push to master publishes development snapshots, and publishing a
+# GitHub release publishes the official artifacts.
+#
+#   push (master / publishdocker)  -> development snapshots, GHCR only, no Docker Hub credentials
+#       ghcr.io/apache/skywalking-swck/operator:<sha>        + :latest
+#       ghcr.io/apache/skywalking-swck/metrics-adapter:<sha> + :latest
+#       ghcr.io/apache/skywalking-swck/helm/skywalking-swck:0.0.0-<sha>
+#
+#   release (published, for example v0.11.0) -> the official release artifacts
+#       ghcr.io/apache/skywalking-swck/operator:<version>            (split image)
+#       ghcr.io/apache/skywalking-swck/metrics-adapter:<version>     (split image)
+#       ghcr.io/apache/skywalking-swck/helm/skywalking-swck:<version>(chart)
+#       docker.io/apache/skywalking-swck:<version>                   (combined image, /manager + /adapter)
+#       docker.io/apache/skywalking-swck:<version>-helm              (chart)
+#
+# The release path is also reachable through workflow_dispatch with the same tag. That is not a
+# second way to release; it is how the release manager re-runs a release publish that failed, most
+# often because the release had not yet reached archive.apache.org when the GitHub release was
+# published -- see the wait in publish-combined-image.
+#
+# The Docker Hub repository apache/skywalking-swck carries two kinds of artifact at two distinct
+# tags. They MUST stay at distinct tags: pushing a chart over an image tag rewrites the manifest
+# config mediaType to application/vnd.cncf.helm.config.v1+json and breaks `docker pull`. The last
+# step of publish-chart re-inspects the image manifest to prove that did not happen.
+# Every third-party action here must be pinned to a commit SHA that appears on the ASF
+# allow-list, https://github.com/apache/infrastructure-actions/blob/main/approved_patterns.yml.
+# The gateway enforces this before any job starts, so an unapproved pin does not fail a step --
+# it produces a run with zero jobs and a `startup_failure` conclusion, which is easy to miss.
+# This workflow sat in exactly that state from 2026-06-16 onward. Bumping one of these actions
+# means picking another SHA off that list, not whatever the action's latest tag resolves to.
 name: Publish Docker Images
 on:
   push:
     branches:
       - master
       - publishdocker
+  release:
+    types:
+      - released
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to re-publish, for example v0.11.0
+        required: true
+        type: string
+
 jobs:
-  publish:
-    name: Publish ${{ matrix.component }} image
+  # One place that decides what is being published, so the three publishing jobs below never parse
+  # the tag themselves and cannot disagree about it.
+  resolve:
+    name: Resolve what to publish
+    if: github.repository == 'apache/skywalking-swck'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      # 'true' on the release path, 'false' on the master-push snapshot path.
+      is_release: ${{ steps.resolve.outputs.is_release }}
+      # The git ref to build from: the release tag, or the pushed commit.
+      ref: ${{ steps.resolve.outputs.ref }}
+      # The release version with its leading v stripped, e.g. 0.11.0. Empty on the snapshot path.
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Resolve
+        id: resolve
+        shell: bash
+        # The tag reaches the script through the environment rather than through ${{ }}
+        # interpolation, so a tag name can never be spliced into the script itself.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_TAG: ${{ inputs.tag }}
+          PUSH_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          case "$EVENT_NAME" in
+            release)           tag="$RELEASE_TAG" ;;
+            workflow_dispatch) tag="$DISPATCH_TAG" ;;
+            *)                 tag="" ;;
+          esac
+          if [[ -z "$tag" ]]; then
+            {
+              echo "is_release=false"
+              echo "ref=$PUSH_SHA"
+              echo "version="
+            } >> "$GITHUB_OUTPUT"
+            echo "Snapshot publish of $PUSH_SHA"
+            exit 0
+          fi
+          # The git tag is v$VERSION; every registry coordinate is the plain $VERSION. See
+          # docs/en/guides/release.md, "Release artifacts and version scheme".
+          version="${tag#v}"
+          if [[ "$version" == "$tag" ]]; then
+            echo "::error::Release tag must start with v, got: $tag"
+            exit 1
+          fi
+          # The version becomes the Helm chart version, and helm rejects anything that is not
+          # SemVer -- catch that here rather than three jobs later.
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release version must be SemVer, got: $version"
+            exit 1
+          fi
+          git rev-parse --verify "refs/tags/$tag^{commit}"
+          # The tag alone is not permission to publish. tools/releasing/release.sh
+          # pushes it BEFORE the vote, so a dispatch against a freshly cut candidate
+          # would put official version-tagged images on GHCR while the vote is still
+          # running -- convenience binaries that predate the release they claim to
+          # be. Publishing the GitHub release is the step that happens after the
+          # vote passes, so require it. On the `release` event this holds by
+          # definition; on a dispatch it is the guard.
+          # Existence is not publication. `gh release view` resolves drafts and prereleases
+          # too, so testing only whether it succeeds would let a dispatch against a draft --
+          # a release object that exists precisely because the vote has NOT finished -- put
+          # official version-tagged images on GHCR. Require a release that is not a draft and
+          # carries a publication time.
+          if ! state=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+              --json isDraft,isPrerelease,publishedAt \
+              --jq '[.isDraft, .isPrerelease, (.publishedAt // "")] | @tsv' 2>/dev/null); then
+            echo "::error::No GitHub release for $tag."
+            echo "::error::Images and charts are convenience binaries: they are published"
+            echo "::error::after the vote passes, by tools/releasing/release-passed.sh."
+            exit 1
+          fi
+          IFS=$'\t' read -r is_draft is_prerelease published_at <<< "$state"
+          if [[ "$is_draft" != "false" || -z "$published_at" ]]; then
+            echo "::error::The GitHub release for $tag exists but is not published"
+            echo "::error::(draft=$is_draft, publishedAt='${published_at:-none}')."
+            echo "::error::A draft is what a release looks like before the vote finishes."
+            exit 1
+          fi
+          if [[ "$is_prerelease" != "false" ]]; then
+            echo "::error::The GitHub release for $tag is marked as a prerelease."
+            echo "::error::Official convenience binaries are published from a full release."
+            exit 1
+          fi
+          {
+            echo "is_release=true"
+            echo "ref=$tag"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release publish of $tag as $version"
+
+  # Split images, GHCR only, on both paths.
+  publish-split-images:
+    name: Publish ${{ matrix.component }} image
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -33,24 +178,427 @@ jobs:
           - component: operator
             context: operator
             image: ghcr.io/apache/skywalking-swck/operator
+            binary: /manager
           - component: adapter
             context: adapter
             image: ghcr.io/apache/skywalking-swck/metrics-adapter
+            binary: /adapter
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - name: Login to ghcr.io
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          fetch-tags: true
+          ref: ${{ needs.resolve.outputs.ref }}
+      - name: Set the image tags
+        shell: bash
+        env:
+          IS_RELEASE: ${{ needs.resolve.outputs.is_release }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          IMAGE: ${{ matrix.image }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            echo "IMAGE_TAGS=$IMAGE:$VERSION" >> "$GITHUB_ENV"
+          else
+            echo "IMAGE_TAGS=$IMAGE:$SHA,$IMAGE:latest" >> "$GITHUB_ENV"
+          fi
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push ${{ matrix.component }} image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+      # Both Dockerfiles take TARGETARCH, which buildx sets per platform, so each manifest entry
+      # really holds a binary for its own architecture.
+      - name: Build and push the ${{ matrix.component }} image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         with:
           context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ matrix.image }}:${{ github.sha }}
-            ${{ matrix.image }}:latest
+          tags: ${{ env.IMAGE_TAGS }}
+      # A multi-platform manifest that advertises an architecture it does not actually carry is a
+      # silent failure: `docker pull` succeeds and the container dies with "exec format error" on
+      # the node. It is not hypothetical -- apache/skywalking-swck:0.10.0 shipped that way. Pull
+      # each advertised platform back and check the ELF machine type of the binary inside it.
+      - name: Verify every advertised platform really holds that architecture
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}
+          BINARY: ${{ matrix.binary }}
+        run: |
+          set -euo pipefail
+          ref="${IMAGE_TAGS%%,*}"
+          docker buildx imagetools inspect "$ref"
+          for platform in linux/amd64 linux/arm64; do
+            arch="${platform#linux/}"
+            case "$arch" in
+              amd64) expect="x86-64" ;;
+              arm64) expect="aarch64" ;;
+            esac
+            # `docker create` does not run the container, so no emulation is needed to copy a file
+            # out of an image built for another architecture.
+            id=$(docker create --platform "$platform" "$ref")
+            docker cp "$id:$BINARY" "/tmp/$arch-binary"
+            docker rm "$id" > /dev/null
+            got=$(file -b "/tmp/$arch-binary")
+            echo "$platform $BINARY: $got"
+            if ! grep -q "$expect" <<<"$got"; then
+              echo "::error::$ref $platform holds a $BINARY that is not $expect: $got"
+              exit 1
+            fi
+          done
+
+  # Combined image, release path only. This is the image the kustomize bundles in the release
+  # tarball point at: build/package/release.sh runs
+  #     kustomize edit set image controller=apache/skywalking-swck:$RELEASE_VERSION
+  #     kustomize edit set image metrics-adapter=apache/skywalking-swck:$RELEASE_VERSION
+  # so operator and adapter deployments share one image that carries /manager and /adapter, with
+  # ENTRYPOINT ["/manager"]. Until now nothing automated this build; the 0.1.0..0.10.0 tags on
+  # apache/skywalking-swck were pushed by hand. It is built from build/images/Dockerfile.release,
+  # which downloads skywalking-swck-$VERSION-bin.tgz from archive.apache.org and GPG-verifies it
+  # against the published KEYS file, so the image contains exactly the voted release binaries.
+  publish-combined-image:
+    name: Publish combined image to Docker Hub
+    needs: resolve
+    if: needs.resolve.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          ref: ${{ needs.resolve.outputs.ref }}
+      - name: Check the Docker Hub credentials
+        shell: bash
+        # Provisioned by ASF INFRA on request, as for apache/skywalking and apache/skywalking-java.
+        # Without them docker/login-action fails with an opaque error, so say what is missing.
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$DOCKERHUB_USER" || -z "$DOCKERHUB_TOKEN" ]]; then
+            echo "::error::DOCKERHUB_USER / DOCKERHUB_TOKEN are not available to this repository."
+            echo "::error::Ask ASF INFRA to grant apache/skywalking-swck access to them (see docs/en/guides/release.md)."
+            exit 1
+          fi
+      # Dockerfile.release downloads the voted binary tarball from archive.apache.org. The GitHub
+      # release is normally published right after the artifacts are moved into the dist release
+      # repository, and the move to the archive is not instant -- so wait for it here instead of
+      # failing the release publish on a mirror that has not caught up. If it never arrives, the
+      # release manager re-runs this workflow through workflow_dispatch once it has.
+      - name: Wait for the release to reach archive.apache.org
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://archive.apache.org/dist/skywalking/swck/${VERSION}/skywalking-swck-${VERSION}-bin.tgz"
+          for attempt in $(seq 1 30); do
+            if curl -sfIL --max-time 30 "$url" >/dev/null; then
+              echo "$url is available"
+              exit 0
+            fi
+            echo "attempt $attempt/30: $url is not available yet, waiting 60s"
+            sleep 60
+          done
+          echo "::error::$url did not appear within 30 minutes."
+          echo "::error::Move the release to dist/release first, then re-run this workflow with tag=v${VERSION}."
+          exit 1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Multi-platform, and honestly so: the release tarball carries manager-linux-<arch> and
+      # adapter-linux-<arch> for every architecture in RELEASE_ARCHS (operator/Makefile and
+      # adapter/Makefile), and Dockerfile.release COPYs the pair that matches TARGETARCH.
+      #
+      # apache/skywalking-swck:0.10.0, built by hand, advertised linux/arm64 while its arm64
+      # manifest reused the amd64 layer digests byte for byte -- /manager inside it is an x86-64
+      # ELF, so an arm64 node gets "exec format error". The verification step below is what stops
+      # that recurring: it pulls each advertised platform back and checks the ELF machine type.
+      - name: Build and push the combined image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: build/images
+          file: build/images/Dockerfile.release
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            version=${{ env.VERSION }}
+          tags: docker.io/apache/skywalking-swck:${{ env.VERSION }}
+      - name: Verify every advertised platform really holds that architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="docker.io/apache/skywalking-swck:${VERSION}"
+          docker buildx imagetools inspect "$ref"
+          for platform in linux/amd64 linux/arm64; do
+            arch="${platform#linux/}"
+            case "$arch" in
+              amd64) expect="x86-64" ;;
+              arm64) expect="aarch64" ;;
+            esac
+            # `docker create` does not run the container, so no emulation is needed to copy a file
+            # out of an image built for another architecture.
+            id=$(docker create --platform "$platform" "$ref")
+            docker cp "$id:/manager" "/tmp/manager-$arch"
+            docker cp "$id:/adapter" "/tmp/adapter-$arch"
+            docker rm "$id" > /dev/null
+            for binary in manager adapter; do
+              got=$(file -b "/tmp/$binary-$arch")
+              echo "$platform /$binary: $got"
+              if ! grep -q "$expect" <<<"$got"; then
+                echo "::error::$ref $platform holds a /$binary that is not $expect: $got"
+                exit 1
+              fi
+            done
+          done
+
+  # The chart, to GHCR, on both paths.
+  #
+  # On the snapshot path this is deliberately independent of Docker Hub: the chart is retargeted at
+  # the GHCR images below, both need nothing but GITHUB_TOKEN, and a missing or expired Docker Hub
+  # credential must not be able to withhold them.
+  #
+  # On the release path it is not independent, because a release chart keeps its Docker Hub
+  # defaults -- docker.io/apache/skywalking-swck:<appVersion>, which publish-combined-image builds.
+  # Publishing the chart first would advertise an image that does not exist yet, and if that job
+  # then failed, would leave it advertising one that never will. So publish-combined-image is in
+  # `needs`, and the guard below lets the snapshot path through the `skipped` result it produces
+  # there.
+  publish-chart-ghcr:
+    name: Publish Helm chart to GHCR
+    needs: [resolve, publish-split-images, publish-combined-image]
+    # publish-combined-image is skipped on the snapshot path, which would otherwise skip this job
+    # too. Require it to have succeeded only where the chart actually points at what it builds.
+    if: |
+      always()
+      && needs.resolve.result == 'success'
+      && needs.publish-split-images.result == 'success'
+      && (needs.resolve.outputs.is_release != 'true' || needs.publish-combined-image.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      CHART_DIR: chart/skywalking-swck
+      IS_RELEASE: ${{ needs.resolve.outputs.is_release }}
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          ref: ${{ needs.resolve.outputs.ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Set the chart version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
+            echo "CHART_APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+          else
+            # A snapshot must still be valid SemVer or helm refuses to package it, hence
+            # 0.0.0-<sha>: it sorts below every real release and is installable with
+            #   helm install --version 0.0.0-<sha> oci://ghcr.io/apache/skywalking-swck/helm/skywalking-swck
+            echo "CHART_VERSION=0.0.0-${{ github.sha }}" >> "$GITHUB_ENV"
+            echo "CHART_APP_VERSION=${{ github.sha }}" >> "$GITHUB_ENV"
+          fi
+      # helm 3 ships preinstalled on the GitHub-hosted ubuntu images; OCI push is GA since 3.8.
+      - name: Check the chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm version
+          if [[ ! -f "$CHART_DIR/Chart.yaml" ]]; then
+            echo "No chart at $CHART_DIR" >&2
+            exit 1
+          fi
+          chart_name=$(awk '/^name:/{print $2; exit}' "$CHART_DIR/Chart.yaml")
+          # helm derives the pushed repository from the chart NAME, so the Docker Hub artifact
+          # apache/skywalking-swck:<version>-helm only lands on the right repository while the
+          # chart is named skywalking-swck. Fail loudly rather than publish to a stray repository.
+          if [[ "$chart_name" != "skywalking-swck" ]]; then
+            echo "Chart name must be skywalking-swck to publish to apache/skywalking-swck, got: $chart_name" >&2
+            exit 1
+          fi
+          # The CRDs, the manager ClusterRole and the webhook configurations the chart ships are
+          # GENERATED from the operator sources by tools/generate-chart.sh. Since `helm install`
+          # replaced `make -C operator install` in the e2e suites, the chart is the only thing that
+          # installs the CRDs: a chart published with a stale or hand-edited crds/ ships an operator
+          # that cannot reconcile anything. `make chart-check` regenerates and diffs, so a hand-edit
+          # is a build failure rather than a release. CI runs it on every PR too.
+          make chart-check
+      # A snapshot only ever has the two split GHCR images to point at -- there is no combined
+      # image at a commit SHA -- but the chart's defaults name the Docker Hub combined image. Left
+      # alone, `helm install` of a snapshot would request docker.io/apache/skywalking-swck:<sha>,
+      # which never exists. Point the defaults at what this same run actually pushed.
+      - name: Point the snapshot chart at the images this run published
+        if: needs.resolve.outputs.is_release != 'true'
+        shell: bash
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - "$CHART_DIR/values.yaml" <<'PY'
+          import os, re, sys
+
+          path = sys.argv[1]
+          lines = open(path).read().splitlines(keepends=True)
+
+          # Edited line by line rather than parsed and re-dumped: the comments in values.yaml are
+          # the chart's reference documentation and a YAML round-trip would drop them.
+          out, section, changed = [], None, {"shared": False, "adapter": False}
+          for line in lines:
+              if re.match(r"^[a-zA-Z]", line):
+                  section = line.split(":")[0]
+              # The shared image.repository, which the operator falls back to.
+              if section == "image" and re.match(r"^  repository: ", line):
+                  line = "  repository: ghcr.io/apache/skywalking-swck/operator\n"
+                  changed["shared"] = True
+              # The adapter overrides it, because the two GHCR images hold one binary each.
+              elif section == "adapter" and re.match(r"^    repository: \"\"", line):
+                  line = '    repository: "ghcr.io/apache/skywalking-swck/metrics-adapter"\n'
+                  changed["adapter"] = True
+              out.append(line)
+
+          if not all(changed.values()):
+              sys.exit(f"failed to rewrite the snapshot image defaults: {changed}")
+          open(path, "w").writelines(out)
+          PY
+          grep -nE "^  repository:|^    repository: \"ghcr" "$CHART_DIR/values.yaml"
+      - name: Lint and package the chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm dependency update "$CHART_DIR"
+          helm lint "$CHART_DIR"
+          # `helm lint` and `helm template` BOTH exit 0 on a chart that renders nothing -- a chart
+          # with no templates/ lints clean and templates to an empty string. Check the output, not
+          # the exit code, or an empty package sails through this job and is published to two
+          # registries as a green run.
+          rendered=$(helm template swck "$CHART_DIR")
+          if ! grep -q '^kind: Deployment$' <<<"$rendered"; then
+            echo "::error::$CHART_DIR renders no Deployment; refusing to publish an empty chart." >&2
+            echo "$rendered" >&2
+            exit 1
+          fi
+          # The voted chart tarball on dist.apache.org is packaged with LICENSE and NOTICE inside
+          # it (docs/en/guides/release.md, "Package and sign the Helm chart"). Copy them here too,
+          # so the registry copies differ from the voted artifact only in the version helm stamps in.
+          cp LICENSE NOTICE "$CHART_DIR/"
+          mkdir -p build/chart
+          helm package "$CHART_DIR" \
+            --version "$CHART_VERSION" \
+            --app-version "$CHART_APP_VERSION" \
+            --destination build/chart
+          # The Docker Hub copy, packaged here so the two registries publish byte-identical chart
+          # sources; the job below pushes it. ("helm-$CHART_VERSION" is not valid SemVer and helm
+          # rejects it, both at package time and as a --version constraint, so the suffix goes on
+          # the end.)
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            helm package "$CHART_DIR" \
+              --version "${CHART_VERSION}-helm" \
+              --app-version "$CHART_APP_VERSION" \
+              --destination build/chart
+          fi
+          ls -l build/chart
+      - name: Upload the packaged charts
+        uses: actions/upload-artifact@v4
+        with:
+          name: charts
+          path: build/chart/*.tgz
+          retention-days: 1
+      # helm appends the chart name to the OCI namespace it is given, so pushing into
+      # oci://ghcr.io/apache/skywalking-swck/helm produces the package
+      # ghcr.io/apache/skywalking-swck/helm/skywalking-swck -- the chart artifact of the
+      # skywalking-swck namespace, alongside /operator and /metrics-adapter, without renaming the
+      # chart itself to "helm".
+      - name: Push the chart to GHCR
+        shell: bash
+        env:
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "$GHCR_PASSWORD" | helm registry login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          helm push "build/chart/skywalking-swck-${CHART_VERSION}.tgz" oci://ghcr.io/apache/skywalking-swck/helm
+          helm registry logout ghcr.io
+
+  # The chart, to Docker Hub, release path only. Separate from the GHCR job so that a Docker Hub
+  # problem cannot withhold the GHCR chart, and ordered after the combined image so the mediaType
+  # guard runs against the image this same run pushed.
+  publish-chart-dockerhub:
+    name: Publish Helm chart to Docker Hub
+    needs: [resolve, publish-combined-image, publish-chart-ghcr]
+    if: needs.resolve.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - name: Check the Docker Hub credentials
+        shell: bash
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$DOCKERHUB_USER" || -z "$DOCKERHUB_TOKEN" ]]; then
+            echo "::error::DOCKERHUB_USER / DOCKERHUB_TOKEN are not available to this repository."
+            echo "::error::Ask ASF INFRA to grant apache/skywalking-swck access to them (see docs/en/guides/release.md)."
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: charts
+          path: build/chart
+      # Docker Hub: the same chart the GHCR job packaged, at <version>-helm, pushed into the
+      # oci://.../apache namespace so helm lands it on apache/skywalking-swck at tag
+      # <version>-helm, next to the combined image at tag <version>. registry-1.docker.io is the
+      # registry endpoint; docker.io itself does not serve the /v2/ API that helm's OCI client
+      # talks to.
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push the chart to Docker Hub
+        shell: bash
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "$DOCKERHUB_TOKEN" | helm registry login registry-1.docker.io -u "$DOCKERHUB_USER" --password-stdin
+          helm push "build/chart/skywalking-swck-${VERSION}-helm.tgz" oci://registry-1.docker.io/apache
+          helm registry logout registry-1.docker.io
+      # A chart pushed over an image tag replaces the manifest config with
+      # application/vnd.cncf.helm.config.v1+json and docker pull then fails. Prove the combined
+      # image tag survived the chart push.
+      - name: Verify the combined image tag still holds an image
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="docker.io/apache/skywalking-swck:${VERSION}"
+          raw=$(docker buildx imagetools inspect --raw "$ref")
+          if grep -q "vnd.cncf.helm.config" <<<"$raw"; then
+            echo "$ref now carries a Helm chart manifest, the chart push clobbered the image" >&2
+            echo "$raw" >&2
+            exit 1
+          fi
+          echo "$ref is still an image manifest"

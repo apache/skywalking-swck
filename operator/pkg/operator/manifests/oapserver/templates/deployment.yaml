@@ -34,6 +34,16 @@ spec:
       operator.skywalking.apache.org/oap-server-name: {{ .Name }}
   template:
     metadata:
+      {{- /*
+      Rotating the Secret behind a secretKeyRef does not restart anything on its own: the kubelet
+      resolves those values when the container starts and never again. Carrying the Secret's
+      resourceVersion here makes a rotation change the pod template, which rolls the pods and
+      picks the new credential up.
+      */}}
+      {{- with ((.Spec.StorageConfig | default dict).CredentialsVersion | default "") }}
+      annotations:
+        operator.skywalking.apache.org/storage-credentials-version: {{ . | quote }}
+      {{- end }}
       labels:
         app: oap
         operator.skywalking.apache.org/oap-server-name: {{ .Name }}
@@ -72,19 +82,45 @@ spec:
             tcpSocket:
               port: 12800
             initialDelaySeconds: 10
+            # 10 minutes. No supported OAP has an embedded storage, so every start now includes
+            # negotiating with BanyanDB or Elasticsearch and installing the schema -- minutes of
+            # work on a cold cluster, against the 110 seconds this used to allow. Overrunning the
+            # startup probe gets the container killed and restarted, which starts the schema work
+            # again, so a slow first boot became a crash loop that never converged.
             periodSeconds: 10
-            failureThreshold: 10
+            failureThreshold: 60
           readinessProbe:
             tcpSocket:
               port: 12800
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 10
-          {{if (((.Spec.StorageConfig | default dict).Storage.Spec | default dict).Security | default dict).TLS}}
+          {{- /*
+          The two storages verify TLS differently: Elasticsearch reads a PKCS#12 keystore that the
+          cert-manager Certificate creates as "skywalking-storage", BanyanDB wants a CA file whose
+          path goes into SW_STORAGE_BANYANDB_SSL_TRUST_CA_PATH. Mounting the Elasticsearch keystore
+          for a BanyanDB storage left the pod waiting forever on a secret nothing creates.
+          */}}
+          {{- /*
+          .Storage is filled in by InjectStorage only when it could read the Storage resource. A
+          name that does not resolve yet -- an OAPServer applied before its Storage, which is now
+          the common ordering because storage is mandatory -- leaves StorageConfig non-nil with a
+          nil .Storage, and reaching through it aborts the whole template.
+          */}}
+          {{- $storageSpec := dict }}
+          {{- with (.Spec.StorageConfig | default dict).Storage }}{{ $storageSpec = .Spec }}{{ end }}
+          {{- $security := ($storageSpec.Security | default dict) }}
+          {{- if $security.TLS }}
           volumeMounts:
+            {{- if eq ($storageSpec.Type | default "") "banyandb" }}
+            - name: storage-tls
+              mountPath: /skywalking/bydb-tls
+              readOnly: true
+            {{- else }}
             - name: cert
               mountPath: /skywalking/p12
-          {{end}}
+            {{- end }}
+          {{- end }}
           env:
             - name: JAVA_OPTS
               value: -Xmx2048M
@@ -104,11 +140,38 @@ spec:
               value: default
           {{range .Spec.Config}}
             - name: {{ .Name }}
+              {{- /*
+              valueFrom carries secretKeyRef / configMapKeyRef / fieldRef. Rendering only `value`
+              silently dropped it, which meant a credential could not be referenced at all -- it
+              had to be dereferenced into a literal, putting the password in the resource. Emitted
+              as JSON because YAML is a superset of it, and sprig has no toYaml.
+              */}}
+              {{- if .ValueFrom }}
+              valueFrom: {{ toJson .ValueFrom }}
+              {{- else }}
               value: "{{ .Value }}"
+              {{- end }}
           {{end}}
-      {{if (((.Spec.StorageConfig | default dict).Storage.Spec | default dict).Security | default dict).TLS}}
+          {{- if .Spec.EnvFrom }}
+          envFrom: {{ toJson .Spec.EnvFrom }}
+          {{- end }}
+      {{- $storageSpec := dict }}
+      {{- with (.Spec.StorageConfig | default dict).Storage }}{{ $storageSpec = .Spec }}{{ end }}
+      {{- $security := ($storageSpec.Security | default dict) }}
+      {{- if $security.TLS }}
       volumes:
+        {{- if eq ($storageSpec.Type | default "") "banyandb" }}
+        - name: storage-tls
+          secret:
+            {{- /*
+            The webhook requires tlsSecretName for banyandb+tls, but only on create and update --
+            a Storage that predates the rule is never revalidated. Fall back rather than render
+            secretName: "", which the API server rejects and which would take the OAP down.
+            */}}
+            secretName: {{ $security.TLSSecretName | default "skywalking-storage" | quote }}
+        {{- else }}
         - name: cert
           secret:
-            secretName:  "skywalking-storage"
-      {{end}}
+            secretName: {{ $security.TLSSecretName | default "skywalking-storage" | quote }}
+        {{- end }}
+      {{- end }}

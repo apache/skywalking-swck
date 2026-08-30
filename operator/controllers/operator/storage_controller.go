@@ -33,7 +33,7 @@ import (
 
 	"github.com/go-logr/logr"
 	apps "k8s.io/api/apps/v1"
-	certv1beta1 "k8s.io/api/certificates/v1beta1"
+	certv1 "k8s.io/api/certificates/v1"
 	core "k8s.io/api/core/v1"
 	apiequal "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -67,6 +67,9 @@ type StorageReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services;serviceaccounts;secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=certificates.k8s.io,resources=certificatesigningrequests,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=certificates.k8s.io,resources=certificatesigningrequests/approval,verbs=update
+// Approving a v1 CSR also needs `approve` on the signer itself, which v1beta1 did not require.
+// config/rbac/role_patch.yaml already grants it for kubernetes.io/*, so there is no marker here --
+// adding one would only duplicate that rule in the generated ClusterRole.
 
 func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := runtimelog.FromContext(ctx)
@@ -81,7 +84,7 @@ func (r *StorageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	r.createCert(ctx, log, &storage)
-	r.checkSecurity(ctx, log, &storage)
+	r.checkSecurity(&storage)
 
 	ff, err := r.FileRepo.GetFilesRecursive(storage.Spec.Type + "/templates")
 	if err != nil {
@@ -173,7 +176,7 @@ func (r *StorageReconciler) updateStatus(ctx context.Context, storage *operatorv
 	})
 }
 
-func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, s *operatorv1alpha1.Storage) {
+func (r *StorageReconciler) checkSecurity(s *operatorv1alpha1.Storage) {
 	user, tls := s.Spec.Security.User, s.Spec.Security.TLS
 	if user.SecretName != "" {
 		if user.SecretName == "default" {
@@ -182,19 +185,15 @@ func (r *StorageReconciler) checkSecurity(ctx context.Context, log logr.Logger, 
 			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_PASSWORD", Value: "changeme"})
 			s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_PASSWORD", Value: "changeme"})
 		} else {
-			usersecret := core.Secret{}
-			if err := r.Client.Get(ctx, client.ObjectKey{Namespace: s.Namespace, Name: user.SecretName}, &usersecret); err != nil && !apierrors.IsNotFound(err) {
-				log.Info("fail get usersecret ")
-			}
-			for k, v := range usersecret.Data {
-				if k == "username" {
-					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_USER", Value: string(v)})
-					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_USER", Value: string(v)})
-				} else if k == "password" {
-					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "SW_ES_PASSWORD", Value: string(v)})
-					s.Spec.Config = append(s.Spec.Config, core.EnvVar{Name: "ELASTIC_PASSWORD", Value: string(v)})
-				}
-			}
+			// Referenced, not read. Copying the values in put the Elasticsearch password into this
+			// Storage resource and the StatefulSet it renders, where anyone with read access on
+			// either could see it -- the same leak the OAPServer side had.
+			s.Spec.Config = append(s.Spec.Config,
+				secretEnv("SW_ES_USER", user.SecretName, "username"),
+				secretEnv("ELASTIC_USER", user.SecretName, "username"),
+				secretEnv("SW_ES_PASSWORD", user.SecretName, "password"),
+				secretEnv("ELASTIC_PASSWORD", user.SecretName, "password"),
+			)
 		}
 	}
 	if tls {
@@ -277,52 +276,77 @@ func (r *StorageReconciler) createCert(ctx context.Context, log logr.Logger, s *
 		log.Info("fail encode CERTIFICATE REQUEST")
 		return
 	}
-	singername := "kubernetes.io/legacy-unknown"
-	request := certv1beta1.CertificateSigningRequest{
+	// certificates.k8s.io/v1beta1 was removed in Kubernetes 1.22, so this whole path failed on
+	// every cluster newer than that. v1 differs in four ways that matter here: SignerName is a
+	// value rather than a pointer, "kubernetes.io/legacy-unknown" is refused outright, an approval
+	// condition must carry a Status, and UpdateApproval takes the CSR's name as its own argument.
+	//
+	// kube-apiserver-client is the built-in signer whose permitted usages match what this
+	// certificate is for -- client authentication. It also has to be named in RBAC with the
+	// approve verb, which v1beta1 did not require; see the marker above.
+	csrName := "storage-csr"
+	request := certv1.CertificateSigningRequest{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CertificateSigningRequest",
-			APIVersion: "certificates.k8s.io/v1beta1",
+			APIVersion: "certificates.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "storage-csr",
+			Name: csrName,
 		},
-		Spec: certv1beta1.CertificateSigningRequestSpec{
-			Groups:     []string{"system:authenticated"},
+		Spec: certv1.CertificateSigningRequestSpec{
 			Request:    buffer.Bytes(),
-			SignerName: &singername,
-			Usages:     []certv1beta1.KeyUsage{certv1beta1.UsageClientAuth},
+			SignerName: certv1.KubeAPIServerClientSignerName,
+			Usages: []certv1.KeyUsage{
+				certv1.UsageDigitalSignature,
+				certv1.UsageKeyEncipherment,
+				certv1.UsageClientAuth,
+			},
 		},
 	}
-	err = clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(ctx, "storage-csr", metav1.DeleteOptions{})
+	err = clientset.CertificatesV1().CertificateSigningRequests().Delete(ctx, csrName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		log.Info("fail delete csr")
 		return
 	}
-	csr, err := clientset.CertificatesV1beta1().CertificateSigningRequests().Create(ctx, &request, metav1.CreateOptions{})
+	csr, err := clientset.CertificatesV1().CertificateSigningRequests().Create(ctx, &request, metav1.CreateOptions{})
 	if err != nil {
-		log.Info("fail create csr")
+		log.Info("fail create csr", "err", err)
 		return
 	}
-	condition := certv1beta1.CertificateSigningRequestCondition{
-		Type:    "Approved",
+	csr.Status.Conditions = append(csr.Status.Conditions, certv1.CertificateSigningRequestCondition{
+		Type:    certv1.CertificateApproved,
+		Status:  core.ConditionTrue,
 		Reason:  "ApprovedBySkywalkingStorage",
 		Message: "Approved by skywalking storage controller",
-	}
-	csr.Status.Conditions = append(csr.Status.Conditions, condition)
-	updateapproval, err := clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(ctx, csr, metav1.UpdateOptions{})
+	})
+	updateapproval, err := clientset.CertificatesV1().CertificateSigningRequests().UpdateApproval(
+		ctx, csrName, csr, metav1.UpdateOptions{})
 	if err != nil {
 		log.Info("fail update approval", "result", updateapproval, "err", err)
 		return
 	}
-	for {
-		csr, err = clientset.CertificatesV1beta1().CertificateSigningRequests().Get(ctx, "storage-csr", metav1.GetOptions{})
+	// Bounded, and it sleeps. This used to spin on Get with no delay and no limit, so a signer
+	// that never issued pinned a core and the reconcile never returned.
+	issued := false
+	for i := 0; i < 60; i++ {
+		csr, err = clientset.CertificatesV1().CertificateSigningRequests().Get(ctx, csrName, metav1.GetOptions{})
 		if err != nil {
 			log.Info("fail get storage-csr")
 			return
 		}
 		if csr.Status.Certificate != nil {
+			issued = true
 			break
 		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Second):
+		}
+	}
+	if !issued {
+		log.Info("the certificate signing request was not issued in time", "csr", csrName)
+		return
 	}
 	block, _ := pem.Decode(csr.Status.Certificate)
 	cert, err := x509.ParseCertificate(block.Bytes)

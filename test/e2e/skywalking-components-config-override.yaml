@@ -1,0 +1,77 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: OAPServer
+metadata:
+  name: skywalking-system
+  namespace: skywalking-system
+spec:
+  version: 11.0.0
+  instances: 1
+  image: ${OAP_IMAGE}
+  # No supported OAP has an embedded storage -- H2 went in 10.2.0 -- and there is no fallback;
+  # test/e2e/banyandb-storage.yaml provides one.
+  storage:
+    name: storage
+  service:
+    template:
+      type: ClusterIP
+---
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: UI 
+metadata:
+  name: skywalking-system
+  namespace: skywalking-system
+spec:
+  kind: horizon
+  version: 1.0.0
+  instances: 1
+  image: ${UI_IMAGE}
+  OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
+  # The override path, and the only case that takes it. spec.config replaces the tokenised
+  # horizon.yaml baked into the image, which also replaces every ${HORIZON_...} token in it -- so
+  # none of the operator's own variables apply any more and this file has to carry the OAP hosts
+  # itself. Everything a user leaves out still falls through to Horizon's schema defaults.
+  #
+  # Its counterpart for the OAP is the OAPServerConfig this case applies, whose `file:` section
+  # overlays a static configuration file. Between them this is the case that proves a user can
+  # take over configuration from the operator on both sides.
+  #
+  # The password hashes are the argon2id fixtures apache/skywalking-helm's e2e uses: admin/admin.
+  config: |
+    server:
+      host: 0.0.0.0
+      port: 8081
+    oap:
+      queryUrl: http://skywalking-system-oap.skywalking-system:12800
+      adminUrl: http://skywalking-system-oap.skywalking-system:17128
+    auth:
+      backend: local
+      local:
+        users:
+          - username: admin
+            passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$eemqy1r72oSXR58y8VpRqw$Bn/dULrmJTHEi3263KfgWDEwQmUsqNLi3xwyv/DekHM"
+            roles: [admin]
+    rbac:
+      enabled: true
+  service:
+    template:
+      type: ClusterIP
+    ingress:
+      host: demo.ui.skywalking
+    

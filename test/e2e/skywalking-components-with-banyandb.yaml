@@ -20,15 +20,28 @@ kind: OAPServer
 metadata:
   name: default
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: ${OAP_IMAGE}
   service:
     template:
       type: ClusterIP
-  config:
-    - name: SW_STORAGE_BANYANDB_HOST
-      value: banyandb-test-banyandb-grpc.default
+  # SW_STORAGE_BANYANDB_HOST, which this used to set by hand, was removed in SkyWalking 11 along
+  # with the banyandb block in application.yml -- the setting now lives in bydb.yml as
+  # SW_STORAGE_BANYANDB_TARGETS. Rather than track that here, point at a Storage and let the
+  # operator write whatever the OAP of the day expects.
+  storage:
+    name: banyandb-test
+---
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: Storage
+metadata:
+  name: banyandb-test
+spec:
+  type: banyandb
+  connectType: external
+  address: banyandb-test-banyandb-grpc.default:17912
+  version: 1.0.0
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: UI 
@@ -36,10 +49,10 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  kind: booster
-  version: 9.5.0
+  kind: horizon
+  version: 1.0.0
   instances: 1
-  image: apache/skywalking-ui:9.5.0
+  image: ${UI_IMAGE}
   OAPServerAddress: http://default-oap.default:12800
   service:
     template:

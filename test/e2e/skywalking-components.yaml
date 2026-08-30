@@ -21,9 +21,13 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: ${OAP_IMAGE}
+  # No supported OAP has an embedded storage -- H2 went in 10.2.0 -- and there is no fallback;
+  # test/e2e/banyandb-storage.yaml provides one.
+  storage:
+    name: storage
   service:
     template:
       type: ClusterIP
@@ -34,14 +38,44 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  kind: booster
-  version: 9.5.0
+  kind: horizon
+  version: 1.0.0
   instances: 1
-  image: apache/skywalking-ui:9.5.0
+  image: ${UI_IMAGE}
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
+  # Setting the admin host also makes the operator pick templates.mode: live, so this case covers
+  # the OAP-backed template store as well as the admin API itself.
+  OAPServerAdminAddress: http://skywalking-system-oap.skywalking-system:17128
+  # The default path: no spec.config, so no ConfigMap is created and nothing is mounted over the
+  # tokenised horizon.yaml baked into the image. Everything here is an environment variable, which
+  # is what makes oap-ui-agent worth having -- it logs in and reads the OAP hosts back out of the
+  # BFF, so it fails if the operator's HORIZON_* variables did not take effect.
+  #
+  # Horizon ships auth.local.users empty and refuses every login until a user exists, so the one
+  # thing that must be supplied is a user. It carries a password hash, so it comes from a Secret
+  # through envFrom rather than sitting inline in the resource -- which is both what the docs tell
+  # users to do and what makes this case the proof that envFrom works: if it did not reach the
+  # container, there would be no user and every login below would fail.
+  envFrom:
+    - secretRef:
+        name: horizon-users
   service:
     template:
       type: ClusterIP
     ingress:
       host: demo.ui.skywalking
     
+---
+# The seeded login. The hashes are the argon2id fixtures apache/skywalking-helm's e2e uses:
+# admin/admin. Test credentials in a test manifest, nothing more.
+#
+# Deliberately the LAST document: oap-agent-adapter-hpa slices this file with `doc<1` to take the
+# OAPServer alone, so anything added ahead of the UI would change what that case deploys.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: horizon-users
+  namespace: skywalking-system
+type: Opaque
+stringData:
+  HORIZON_AUTH_LOCAL_USERS: '[{"username":"admin","passwordHash":"$argon2id$v=19$m=65536,t=3,p=4$eemqy1r72oSXR58y8VpRqw$Bn/dULrmJTHEi3263KfgWDEwQmUsqNLi3xwyv/DekHM","roles":["admin"]}]'

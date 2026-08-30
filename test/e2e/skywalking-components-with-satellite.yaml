@@ -21,9 +21,13 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  version: 9.5.0
+  version: 11.0.0
   instances: 1
-  image: apache/skywalking-oap-server:9.5.0
+  image: ${OAP_IMAGE}
+  # No supported OAP has an embedded storage -- H2 went in 10.2.0 -- and there is no fallback;
+  # test/e2e/banyandb-storage.yaml provides one.
+  storage:
+    name: storage
   config:
     - name: SW_METER_ANALYZER_ACTIVE_FILES
       value: satellite
@@ -40,7 +44,7 @@ metadata:
 spec:
   version: v0.4.0
   instances: 1
-  image: ghcr.io/apache/skywalking-satellite/skywalking-satellite:v1987e1d566ac90f6b58a45fd9bfa27bf8faad635
+  image: ${SATELLITE_IMAGE}
   config:
     - name: SATELLITE_TELEMETRY_EXPORT_TYPE
       value: metrics_service
@@ -55,10 +59,10 @@ metadata:
   name: skywalking-system
   namespace: skywalking-system
 spec:
-  kind: booster
-  version: 9.5.0
+  kind: horizon
+  version: 1.0.0
   instances: 1
-  image: apache/skywalking-ui:9.5.0
+  image: ${UI_IMAGE}
   OAPServerAddress: http://skywalking-system-oap.skywalking-system:12800
   service:
     template:

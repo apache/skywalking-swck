@@ -61,6 +61,25 @@ func (r *UIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	if err := r.Client.Get(ctx, req.NamespacedName, &ui); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	// Narrowing spec.kind to horizon only stops NEW resources: CRD schema validation runs on
+	// admission, never on read, so a UI stored as kind: booster by an earlier operator survives
+	// the upgrade intact and still reconciles here. The templates are unconditionally Horizon's
+	// now -- port 8081, Horizon's environment -- so reconciling one would rewrite a running
+	// Booster Deployment into a shape its image cannot serve and take the UI down. Leave it
+	// exactly as it is and say why; the operator is not the right place to migrate it, and an
+	// untouched workload keeps serving until someone does.
+	if ui.Spec.Kind != "" && ui.Spec.Kind != uiv1alpha1.UIKindHorizon {
+		log.Info("refusing to reconcile a UI whose kind is no longer supported; its workload is "+
+			"left untouched", "kind", ui.Spec.Kind, "name", ui.Name)
+		r.Recorder.Eventf(&ui, nil, core.EventTypeWarning, "UnsupportedKind", "Skipped",
+			"spec.kind %q is no longer supported and this UI was left untouched. The Booster UI "+
+				"was removed from apache/skywalking in 11.0.0 and no image is built for it; "+
+				"replace this resource with kind: horizon and a Horizon version, for example 1.0.0",
+			ui.Spec.Kind)
+		return ctrl.Result{RequeueAfter: schedDuration}, nil
+	}
+
 	ff, err := r.FileRepo.GetFilesRecursive("templates")
 	if err != nil {
 		log.Error(err, "failed to load resource templates")

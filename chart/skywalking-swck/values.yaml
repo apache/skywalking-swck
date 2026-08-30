@@ -1,0 +1,201 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Default values for the skywalking-swck chart.
+# This chart installs the SkyWalking operator (always) and, optionally, the
+# custom metrics adapter that feeds SkyWalking metrics to the Kubernetes HPA.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Container image
+# -----------------------------------------------------------------------------
+# The image released to Docker Hub -- docker.io/apache/skywalking-swck -- is a
+# COMBINED image: a single image that carries BOTH binaries, /manager (the
+# operator) and /adapter (the metrics adapter). The chart picks the right one
+# per component with an explicit `command`, so one shared repository below is
+# enough for a Docker Hub deployment.
+#
+# The images published to GHCR are SPLIT -- one binary each:
+#
+#   ghcr.io/apache/skywalking-swck/operator          contains only /manager
+#   ghcr.io/apache/skywalking-swck/metrics-adapter   contains only /adapter
+#
+# Neither GHCR image can serve both components, so pointing this chart at GHCR
+# requires setting the two per-component repositories separately and leaving
+# the shared `image.repository` unused, for example:
+#
+#   --set operator.image.repository=ghcr.io/apache/skywalking-swck/operator \
+#   --set operator.image.tag=<sha-or-latest> \
+#   --set adapter.image.repository=ghcr.io/apache/skywalking-swck/metrics-adapter \
+#   --set adapter.image.tag=<sha-or-latest>
+#
+# GHCR images are tagged by commit SHA and `latest` on every push to master, and
+# by the plain release version (e.g. 0.11.0) when a GitHub release is published.
+# The shared `tag` below defaults to .Chart.AppVersion, which only matches the
+# Docker Hub image, so an explicit tag is mandatory when pointing at a GHCR
+# snapshot.
+image:
+  # Shared repository, used by any component that does not override it.
+  repository: docker.io/apache/skywalking-swck
+  # Shared tag. Empty means "use .Chart.AppVersion", which keeps the chart and
+  # the image it deploys pinned to the same release by construction.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# -----------------------------------------------------------------------------
+# Operator (always installed)
+# -----------------------------------------------------------------------------
+operator:
+  replicas: 1
+
+  # Per-component image override. Any field left empty falls back to the shared
+  # `image.*` above. Set repository AND tag here when deploying the split GHCR
+  # operator image.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: ""
+
+  serviceAccount:
+    # Empty means the chart creates "<release fullname>-controller-manager".
+    # Set this to the name of a service account you manage yourself, and the
+    # chart will bind its roles to that account instead of creating one.
+    name: ""
+
+  # securityContext applied to the manager container.
+  securityContext:
+    allowPrivilegeEscalation: false
+  # securityContext applied to the operator pod.
+  podSecurityContext:
+    runAsNonRoot: true
+
+  metrics:
+    # When false, neither the kube-rbac-proxy sidecar nor the metrics Service is
+    # created, and the manager does not bind its metrics endpoint at all.
+    enabled: true
+    service:
+      port: 8443
+    # The sidecar that authenticates and authorizes scrapes of the manager's
+    # metrics endpoint. Parameterised so mirrors and air-gapped registries can
+    # retarget it. This is the same image and version that the kustomize bundle
+    # in operator/config/default uses.
+    kubeRbacProxy:
+      image:
+        repository: quay.io/brancz/kube-rbac-proxy
+        tag: v0.18.1
+        pullPolicy: IfNotPresent
+      resources: {}
+
+  webhook:
+    # When false, the mutating/validating webhook configurations, the webhook
+    # Service and the serving Certificate are all skipped, and the manager is
+    # started with ENABLE_WEBHOOKS=false so it does not try to serve them --
+    # which also disables the Java agent injector.
+    #
+    # When true, cert-manager MUST already be installed in the cluster: the
+    # chart creates a cert-manager Issuer and Certificate and relies on
+    # cert-manager's CA injector to populate the webhook configurations. See the
+    # chart README for the prerequisite install command.
+    enabled: true
+    service:
+      port: 9443
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 300Mi
+    requests:
+      cpu: 200m
+      memory: 300Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# -----------------------------------------------------------------------------
+# Custom metrics adapter (optional)
+# -----------------------------------------------------------------------------
+adapter:
+  # Off by default: the adapter is useless without the address of a running OAP
+  # cluster, and it registers a CLUSTER-WIDE APIService
+  # (v1beta1.external.metrics.k8s.io) that only one external metrics provider in
+  # the cluster can own. Opting in has to be a deliberate act.
+  enabled: false
+
+  replicas: 1
+
+  # Per-component image override; see the `image` block above. Set repository
+  # AND tag here when deploying the split GHCR metrics-adapter image.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: ""
+
+  serviceAccount:
+    # Empty means the chart creates
+    # "<release fullname>-custom-metrics-apiserver".
+    name: ""
+
+  service:
+    # Port the adapter's aggregated apiserver listens on.
+    port: 6443
+
+  # klog verbosity of the adapter. The kustomize bundle this chart replaces ran
+  # at 10, which logs every GraphQL request and is what you want while wiring an
+  # HPA up for the first time.
+  logLevel: 10
+
+  oap:
+    # Full GraphQL endpoint of the OAP cluster to query, e.g.
+    # http://my-oap.observability:12800/graphql . When set, it wins over the
+    # `service` fields below; use it for an OAP that this operator did not
+    # create, or one reachable at a non-default path.
+    address: ""
+    service:
+      # REQUIRED when adapter.enabled is true, unless oap.address is set.
+      # Deliberately empty: the value this chart used to ship,
+      # "skywalking-system-oap" in namespace "skywalking-system", is not a
+      # generic default -- it is the test fixture from
+      # adapter/config/namespaced/adapter/adapter.yaml, whose own comment reads
+      # "the address is used for testing, please use your oap address". It only
+      # resolves if you happen to have applied an SWCK `kind: OAPServer` named
+      # "skywalking-system" in a namespace of the same name. Shipping it as a
+      # default trades a loud failure at `helm install` for a silent one: the
+      # adapter would start, claim the cluster-wide external.metrics APIService,
+      # and then fail every HPA query against a host that does not exist.
+      #
+      # The operator names the Service it creates "<OAPServer CR name>-oap" in
+      # the CR's own namespace (operator/pkg/operator/manifests/oapserver/
+      # templates/service.yaml), so for a CR named "my-oap" in namespace
+      # "observability" the values below are name: my-oap-oap, namespace:
+      # observability.
+      name: ""
+      # Empty means the release namespace.
+      namespace: ""
+      port: 12800
+
+  # Empty by default, matching the kustomize bundle this chart replaces. The
+  # adapter is an aggregated apiserver: a memory limit that is too low gets it
+  # OOMKilled under HPA load, and the right number depends on how many metrics
+  # the HPAs in the cluster ask for.
+  resources: {}
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

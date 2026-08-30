@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
       - name: es
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
+        image: ${ELASTICSEARCH_IMAGE}
         env:
         - name: discovery.type
           value: single-node

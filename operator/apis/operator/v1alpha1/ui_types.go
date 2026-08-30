@@ -19,15 +19,19 @@ package v1alpha1
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // UISpec defines the desired state of UI
 type UISpec struct {
-	// Kind selects which SkyWalking web UI to deploy.
-	// "horizon" deploys the next-generation Horizon UI (default).
-	// "booster" deploys the legacy Booster UI image.
-	// +kubebuilder:validation:Enum=horizon;booster
+	// Kind selects which SkyWalking web UI to deploy. "horizon" -- the SkyWalking UI -- is
+	// the only supported value and the default.
+	//
+	// The legacy Booster UI is gone: apache/skywalking removed its submodule in 11.0.0 and no
+	// longer builds an image for it. A UI that still says kind: booster is rejected, with a
+	// message pointing here.
+	// +kubebuilder:validation:Enum=horizon
 	// +kubebuilder:default=horizon
 	// +kubebuilder:validation:Optional
 	Kind string `json:"kind,omitempty"`
@@ -39,22 +43,59 @@ type UISpec struct {
 	// Count is the number of UI pods
 	// +kubebuilder:validation:Required
 	Instances int32 `json:"instances"`
-	// Backend OAP server address.
-	// For kind=booster, exported as the SW_OAP_ADDRESS env var.
-	// For kind=horizon, used as oap.queryUrl in the generated horizon.yaml.
+	// Backend OAP server address. The operator passes it to Horizon as HORIZON_OAP_QUERY_URL.
 	// +kubebuilder:validation:Optional
 	OAPServerAddress string `json:"OAPServerAddress,omitempty"`
-	// OAPServerAdminAddress is the OAP admin host (port 17128 by default; runtime-rule,
-	// dsl-debug, inspect, status). Only used when kind=horizon. If unset, defaults to
-	// http://<name>-oap.<namespace>:17128.
+	// OAPServerAdminAddress is the OAP admin host (port 17128; runtime-rule, dsl-debug, inspect,
+	// status). It is NOT derived from OAPServerAddress: the admin host arrived in OAP 11.x, and on
+	// 10.x that port belongs to the AI-pipeline URI-recognition server, so guessing it pointed
+	// Horizon at the wrong service. Left unset, oap.adminUrl is omitted from the generated
+	// HORIZON_OAP_ADMIN_URL is left unset and Horizon reports the admin API unreachable. It also
+	// decides the default template mode: live can only read OAP's template store over this host.
 	// +kubebuilder:validation:Optional
 	OAPServerAdminAddress string `json:"OAPServerAdminAddress,omitempty"`
-	// OAPServerZipkinAddress is the OAP Zipkin REST host. Only used when kind=horizon.
-	// If unset, defaults to <OAPServerAddress>/zipkin.
+	// OAPServerZipkinAddress is the OAP Zipkin REST host. It is NOT derived from OAPServerAddress:
+	// the OAPServer this operator deploys exposes no Zipkin query port, so <OAPServerAddress>/zipkin
+	// was a URL nothing served. Left unset, HORIZON_OAP_ZIPKIN_URL is simply not set.
 	// +kubebuilder:validation:Optional
 	OAPServerZipkinAddress string `json:"OAPServerZipkinAddress,omitempty"`
-	// Config is a raw horizon.yaml that, when set, fully replaces the operator-generated
-	// config mounted into the Horizon UI container. Only used when kind=horizon.
+	// TemplatesMode selects where Horizon reads dashboard templates from.
+	//
+	// "live" seeds and reads them through OAP 11's /ui-management/templates* REST API, which Horizon
+	// reaches over the OAP admin host. "readonly" renders them from the bundle inside the image and
+	// never calls that API.
+	//
+	// OAP 10.x needs "readonly". It does have persistent template management, but over legacy
+	// query-port GraphQL, and Horizon implements only the OAP 11 REST protocol -- so in "live"
+	// mode the store is unreachable and Horizon blocks every layer-driven page, Traces most
+	// visibly, rather than render a layer whose published template it cannot read. The operator
+	// cannot infer this: a UI resource carries an OAP address, not an OAP version.
+	// Left unset, the operator picks: live needs a reachable OAP admin host, so it is chosen only
+	// when OAPServerAdminAddress is set, and readonly otherwise.
+	// +kubebuilder:validation:Enum=live;readonly
+	// +kubebuilder:validation:Optional
+	TemplatesMode string `json:"templatesMode,omitempty"`
+	// Env sets environment variables on the UI container.
+	//
+	// Horizon's image bakes a fully tokenised horizon.yaml, so every setting it has -- now or in a
+	// release this operator predates -- is reachable as an environment variable. Which variables
+	// exist, and what they mean, is Horizon's to document, not this operator's: see
+	// https://skywalking.apache.org/docs/ for the current set.
+	//
+	// The operator sets only what it derives from the fields above, and an explicit value here
+	// wins over the derived one.
+	// +kubebuilder:validation:Optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+	// EnvFrom pulls environment variables from Secrets or ConfigMaps.
+	//
+	// Use it for anything that should not be written into this resource -- credentials, tokens,
+	// signing keys -- since everything in Env is visible to anyone with read access on UI objects.
+	// +kubebuilder:validation:Optional
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
+	// Config is a raw horizon.yaml. When set, it is mounted at /app/horizon.yaml and replaces the
+	// tokenised one baked into the image -- which also disables every HORIZON_* variable that the
+	// baked file would have carried, including any this operator sets. Prefer Env and EnvFrom;
+	// reach for this only when a whole file is genuinely easier than the variables.
 	// +kubebuilder:validation:Optional
 	Config string `json:"config,omitempty"`
 	// Service relevant settings

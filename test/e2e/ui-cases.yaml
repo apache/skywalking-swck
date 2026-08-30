@@ -13,9 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# These used to run swctl against http://<ui>/graphql. The Horizon UI does not proxy GraphQL --
+# its BFF serves its own /api/* routes behind RBAC -- so the swctl queries go straight to OAP now,
+# exactly as apache/skywalking-helm's e2e does.
+#
+# /api/auth/health is the one route Horizon declares public, and it answers out of the loaded
+# config. Asserting the backend it reports proves the container is up on the port the operator
+# chose for `spec.kind: horizon` (8081, not Booster's 8080) and that the Service maps 80 to it.
+#
+# It says nothing about the operator's own configuration: `local` is also Horizon's built-in
+# default, so this assertion passes whether or not the HORIZON_* variables took effect. The case
+# that proves those is oap-ui-agent, which logs in and reads /api/oap/info and /api/cluster/state
+# back through the BFF.
+# A wrong port, or a horizon.yaml the BFF refused, fails here.
+#
+# Logging in needs a seeded user, which only the resources that set spec.config have; those cases
+# add their own authenticated checks through test/tools/horizon.sh.
 cases:
-  # test ui
-  - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql service ls
-    expected: verify/service.yaml
-  - query: swctl --display yaml --base-url=http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/graphql endpoint list --keyword=hello --service-name Your_ApplicationName
-    expected: verify/endpoint.yaml
+  - query: 'curl -sS --fail-with-body http://${service_skywalking_system_ui_host}:${service_skywalking_system_ui_80}/api/auth/health | yq e ''{"backend": .backend}'' - | yq e ''to_entries'' -'
+    expected: verify/ui-serving.yaml

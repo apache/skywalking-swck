@@ -35,6 +35,13 @@ type SatelliteSpec struct {
 	Instances int32 `json:"instances"`
 	// Config holds the Satellite server configuration.
 	Config []corev1.EnvVar `json:"config,omitempty"`
+	// EnvFrom pulls environment variables from Secrets or ConfigMaps into the container.
+	//
+	// The satellite is configured entirely through environment variables, and spec.config above sets them one
+	// at a time. Use this for anything that should not be written into the resource -- credentials,
+	// tokens -- since spec.config is visible to anyone with read access on these objects.
+	// +kubebuilder:validation:Optional
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 	// Service relevant settings
 	// +kubebuilder:validation:Optional
 	Service Service `json:"service,omitempty"`

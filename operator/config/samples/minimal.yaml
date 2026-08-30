@@ -15,20 +15,46 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# No supported OAP has an embedded storage -- SkyWalking removed H2 in 10.2.0 -- and there is no
+# fallback, so every sample brings a BanyanDB along.
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: BanyanDB
+metadata:
+  name: minimal
+spec:
+  version: 0.11.0
+  counts: 1
+  image: apache/skywalking-banyandb:0.11.0
+  config:
+    - "standalone"
+---
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: Storage
+metadata:
+  name: minimal
+spec:
+  type: banyandb
+  connectType: external
+  address: minimal-banyandb-grpc.default:17912
+  version: 0.11.0
+---
 apiVersion: operator.skywalking.apache.org/v1alpha1
 kind: OAPServer
 metadata:
   name: minimal
 spec:
-  version: 9.1.0
+  version: 11.0.0
   instances: 1
-  
+  storage:
+    name: minimal
 ---
 apiVersion: operator.skywalking.apache.org/v1alpha1
-kind: UI 
+kind: UI
 metadata:
   name: minimal
 spec:
-  version: 9.1.0
+  # The Horizon version, not the OAP version: the two are released separately.
+  version: 1.0.0
   instances: 1
+  OAPServerAddress: http://minimal-oap.default:12800
  

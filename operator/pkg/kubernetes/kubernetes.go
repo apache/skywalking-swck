@@ -102,13 +102,21 @@ func stripCharacters(bb []byte) []byte {
 
 const commentChars = "#"
 
+// stripComment drops the license header and the explanatory comments the manifest templates
+// carry, so they do not reach the API server.
+//
+// Only a comment that OWNS its line is removed. Cutting every line at its first '#' also cut
+// through quoted YAML scalars, so any rendered value containing one -- and user-supplied values
+// reach here now that spec.env and spec.config pass them through -- was truncated mid-string,
+// leaving YAML that no longer parses and a resource that never deployed. The templates only ever
+// use whole-line comments, so nothing needs the old behaviour.
 func stripComment(source string) string {
 	sc := bufio.NewScanner(strings.NewReader(source))
 	ll := make([]string, 0)
 	for sc.Scan() {
 		l := sc.Text()
-		if cut := strings.IndexAny(l, commentChars); cut >= 0 {
-			l = strings.TrimRightFunc(l[:cut], unicode.IsSpace)
+		if strings.HasPrefix(strings.TrimLeftFunc(l, unicode.IsSpace), commentChars) {
+			continue
 		}
 		if strings.TrimSpace(l) != "" {
 			ll = append(ll, l)

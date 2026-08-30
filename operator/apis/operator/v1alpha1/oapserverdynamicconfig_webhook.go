@@ -43,9 +43,9 @@ func (r *OAPServerDynamicConfig) SetupWebhookWithManager(mgr ctrl.Manager) error
 func (r *OAPServerDynamicConfig) Default(_ context.Context, oapserverdynamicconfig *OAPServerDynamicConfig) error {
 	oapserverdynamicconfiglog.Info("default", "name", oapserverdynamicconfig.Name)
 
-	// Default version is "9.5.0"
+	// Default version is "11.0.0"
 	if oapserverdynamicconfig.Spec.Version == "" {
-		oapserverdynamicconfig.Spec.Version = "9.5.0"
+		oapserverdynamicconfig.Spec.Version = "11.0.0"
 	}
 
 	// Default labelselector is "app=collector,release=skywalking"

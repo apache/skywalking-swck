@@ -79,5 +79,12 @@ spec:
               value: "11800"
             {{range .Spec.Config}}
             - name: {{ .Name }}
+              {{- if .ValueFrom }}
+              valueFrom: {{ toJson .ValueFrom }}
+              {{- else }}
               value: "{{ .Value }}"
+              {{- end }}
             {{end}}
+          {{- if .Spec.EnvFrom }}
+          envFrom: {{ toJson .Spec.EnvFrom }}
+          {{- end }}

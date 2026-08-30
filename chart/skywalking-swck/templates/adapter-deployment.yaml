@@ -1,0 +1,84 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- if .Values.adapter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swck.componentName" (list . "adapter") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "swck.adapter.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.adapter.replicas }}
+  selector:
+    matchLabels:
+      {{- include "swck.adapter.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "swck.adapter.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "swck.adapter.serviceAccountName" . }}
+      containers:
+      - name: adapter
+        image: {{ include "swck.adapter.image" . }}
+        imagePullPolicy: {{ include "swck.adapter.imagePullPolicy" . }}
+        # The Docker Hub image is combined -- /manager and /adapter in one image,
+        # with ENTRYPOINT ["/manager"] -- so the entrypoint has to be overridden
+        # here. It is also correct for the single-binary GHCR adapter image.
+        command:
+        - /adapter
+        args:
+        - --secure-port={{ .Values.adapter.service.port }}
+        - --oap-addr={{ include "swck.adapter.oapAddress" . }}
+        # The adapter generates its own self-signed serving certificate into this
+        # directory at start-up; the APIService below trusts it with
+        # insecureSkipTLSVerify. It runs as uid 65532 with a read-only image, so
+        # the directory must be a writable volume.
+        - --cert-dir=/var/run/serving-cert
+        - --v={{ .Values.adapter.logLevel }}
+        ports:
+        - containerPort: {{ .Values.adapter.service.port }}
+          name: https
+        {{- with .Values.adapter.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: temp-vol
+          mountPath: /tmp
+        - name: volume-serving-cert
+          mountPath: /var/run/serving-cert
+      volumes:
+      - name: temp-vol
+        emptyDir: {}
+      - name: volume-serving-cert
+        emptyDir: {}
+      {{- with .Values.adapter.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adapter.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adapter.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

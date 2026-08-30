@@ -1,0 +1,65 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The Helm chart's own lifecycle. Every other case installs the chart and then tests the operator;
+# this one tests the chart -- install of the packaged tarball, the CRDs and webhook wiring it brings
+# with it, upgrade in both directions, and uninstall. See docs/en/guides/e2e.md.
+setup:
+  env: kind
+  file: ../kind.yaml
+  # Every SkyWalking image this case deploys is pinned in ../env; see docs/en/guides/e2e.md.
+  init-system-environment: ../env
+  steps:
+    - name: prepare e2e.yaml
+      command: bash test/tools/prepare-e2e.sh
+    - name: install cert-manager
+      command: |
+        # kind k8s cluster is in $TMPDIR
+        export KUBECONFIG=$TMPDIR/e2e-k8s.config
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.5/cert-manager.yaml
+      wait:
+        - namespace: cert-manager
+          resource: pod
+          for: condition=Ready
+    - name: build the operator and metrics-adapter images
+      command: |
+        export OPERATOR_IMG=controller:latest
+        export ADAPTER_IMG=metrics-adapter:latest
+        make -C operator docker-build
+        make -C adapter docker-build
+        kind load docker-image controller:latest
+        kind load docker-image metrics-adapter:latest
+    # Everything the case asserts happens here, because part of what it asserts is what survives a
+    # `helm uninstall` -- which has to be the last thing that runs.
+    - name: exercise the chart lifecycle
+      command: bash test/e2e/chart/lifecycle.sh
+  timeout: 30m
+
+cleanup:
+  # always never success failure
+  on: always
+
+verify:
+  # skywalking-infra-e2e requires a retry strategy even where retrying cannot help. The report is
+  # a static file that lifecycle.sh has already finished writing by the time verify runs, so this
+  # is deliberately short: a failure here is a real failure, not a race worth waiting out.
+  retry:
+    count: 3
+    interval: 5s
+  cases:
+    # lifecycle.sh writes the report here; the path is fixed rather than under $TMPDIR so the
+    # verify phase does not depend on the setup phase's environment.
+    - query: cat /tmp/swck-chart-report.yaml
+      expected: ../verify/chart-lifecycle.yaml

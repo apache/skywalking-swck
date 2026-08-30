@@ -49,3 +49,6 @@ apiserver.local*
 .env
 **/dist/licenses
 **/dist/LICENSE
+
+# Expectations rendered from test/e2e/verify/*.yaml by test/e2e/render.sh
+test/e2e/verify/*.rendered.yaml

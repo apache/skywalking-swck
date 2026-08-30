@@ -1,0 +1,51 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The storage every OAP in this suite runs on.
+#
+# SkyWalking removed H2 permanently in 10.2.0, so `selector: ${SW_STORAGE:banyandb}` is the default
+# and no supported OAP has a zero-dependency option: an OAPServer with no storage starts, looks for
+# a BanyanDB at 127.0.0.1:17912, and never becomes ready. There is no fallback, so every case
+# deploys this.
+#
+# No `storages` and no `affinity` on purpose -- both are optional and the deployment template skips
+# the volume when they are absent, so BanyanDB writes to the container filesystem. That is right for
+# a test that throws the cluster away; test/e2e/deploy-banyandb.yaml is the case that exercises
+# persistent volumes and node affinity.
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: BanyanDB
+metadata:
+  name: storage
+  namespace: skywalking-system
+spec:
+  version: 0.11.0
+  counts: 1
+  image: ${BANYANDB_IMAGE}
+  config:
+    - "standalone"
+---
+# The pointer an OAPServer follows through `spec.storage.name`. BanyanDB is provisioned by the
+# resource above, so this is always external: the operator turns it into SW_STORAGE=banyandb and
+# SW_STORAGE_BANYANDB_TARGETS.
+apiVersion: operator.skywalking.apache.org/v1alpha1
+kind: Storage
+metadata:
+  name: storage
+  namespace: skywalking-system
+spec:
+  type: banyandb
+  connectType: external
+  address: storage-banyandb-grpc.skywalking-system:17912
+  version: 0.11.0

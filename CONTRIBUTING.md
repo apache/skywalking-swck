@@ -38,6 +38,19 @@ Once we've discussed your changes and you've got your code ready, make sure that
 * References the original issue in description, e.g. "Resolves #123".
 * Has a [good commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
 
+## Where the scripts live
+
+Scripts are split by who runs them, rather than collected in one `hack/` directory:
+
+| | |
+| --- | --- |
+| [`tools/`](tools) | Developer and build tooling: `generate-chart.sh`, `deploy.sh`, the `build/*.mk` Makefile includes, and `releasing/` |
+| [`test/tools/`](test/tools) | Test tooling: `prepare-e2e.sh`, `install-kubebuilder.sh`, `check-chart-render.sh` |
+
+Everything in both is reached through a `make` target or an e2e case — nothing is meant to be run
+by hand from an unrelated directory, and the scripts resolve paths relative to themselves, so they
+work from anywhere.
+
 ## Compiling and building
 Clone the source code and simply run `make` in the source directory,
 this will download all necessary dependencies and run tests, lint, and build three binary files in `./bin/`, for Windows, Linux, MacOS respectively.
@@ -68,14 +81,14 @@ This section guides committers and PMC members to release SkyWalking Cloud on Ku
 ### Prerequisites
 - [x] [GNU Make](https://www.gnu.org/software/make/manual/make.html) is installed
 - [x] [GPG tool](https://gpgtools.org) is installed
-- [x] [Add your GPG key](docs/release.md#add-your-gpg-public-key)
+- [x] [Add your GPG key](docs/en/guides/release.md#add-your-gpg-public-key)
 
 ### Release steps
 - Export the version that is to be released, `export VERSION=0.1.0 `
 - Tag the latest commit that is to be released with `git tag ${VERSION}` and push the tag with `git push https://github.com/apache/skywalking-swck ${VERSION}`
 - Verify licenses, build and sign distribution packages, simply run `make release`, distribution packages and checksums are generated
-- [Upload the packages to SVN repository](docs/release.md#upload-to-apache-svn) 
-- [Send internal announcement](docs/release.md#make-the-internal-announcements)
-- [Wait at least 48 hours for test responses](docs/release.md#wait-at-least-48-hours-for-test-responses)
-- [Call for vote](docs/release.md#call-a-vote-in-dev)
-- [Publish release](docs/release.md#publish-release)
+- [Upload the packages to SVN repository](docs/en/guides/release.md#upload-to-apache-svn) 
+- [Send internal announcement](docs/en/guides/release.md#make-the-internal-announcements)
+- [Wait at least 48 hours for test responses](docs/en/guides/release.md#wait-at-least-48-hours-for-test-responses)
+- [Call for vote](docs/en/guides/release.md#call-a-vote-in-dev)
+- [Publish release](docs/en/guides/release.md#publish-release)

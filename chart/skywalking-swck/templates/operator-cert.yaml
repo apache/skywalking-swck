@@ -1,0 +1,52 @@
+# Licensed to Apache Software Foundation (ASF) under one or more contributor
+# license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright
+# ownership. Apache Software Foundation (ASF) licenses this file to you under
+# the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- if .Values.operator.webhook.enabled }}
+# The serving certificate of the webhook server, and the self-signed issuer that
+# mints it. cert-manager must already be installed -- see the chart README.
+#
+# These are ordinary release resources, deliberately NOT helm hooks. The manager
+# pod mounts the Secret this Certificate produces, so a post-install hook would
+# deadlock `helm install --wait`: helm waits for the Deployment to become ready
+# before it runs post-install hooks, and the Deployment cannot become ready until
+# the hook has run.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "swck.componentName" (list . "selfsigned-issuer") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "swck.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "swck.componentName" (list . "serving-cert") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "swck.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+  - {{ include "swck.componentName" (list . "webhook-service") }}.{{ .Release.Namespace }}.svc
+  - {{ include "swck.componentName" (list . "webhook-service") }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ include "swck.componentName" (list . "selfsigned-issuer") }}
+  secretName: {{ include "swck.componentName" (list . "controller-manager-cert") }}
+{{- end }}
