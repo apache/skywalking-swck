@@ -1,5 +1,8 @@
 ## 0.11.0
 
+#### Bugs
+- Build genuinely multi-architecture images, again. The previous fix declared `ARG TARGETARCH=amd64` in each Dockerfile, and giving a *predefined* platform argument a default makes BuildKit use that default instead of the target's architecture -- so `TARGETARCH` read `amd64` even when building for `linux/arm64`, the builder stage ran once, and the amd64 binary was copied into the arm64 manifest. The publish workflow's own ELF check caught it on the first run that was ever able to start. The argument is declared with no default now, and the shell falls back to the native architecture for a plain `docker build`, which was also producing amd64 binaries on an arm64 host.
+
 #### Features
 - Release the `skywalking-swck` Helm chart from this repository. One chart installs the operator and, behind a values flag, the custom metrics adapter. The CRDs, the operator's ClusterRole and the admission webhook configurations it ships are generated from the operator sources by `make chart-manifests`, and CI fails on any drift.
 
