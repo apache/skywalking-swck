@@ -82,7 +82,18 @@ set_release_version() {
     grep -E '^(version|appVersion):' "${CHART_DIR_REL}/Chart.yaml"
 
     git add "${CHART_DIR_REL}/Chart.yaml" operator/config adapter/config
-    git commit -m "Prepare for release ${RELEASE_VERSION}"
+    # --allow-empty, for two reasons.
+    #
+    # The tree usually ALREADY carries the release version by the time a release is cut: the guide
+    # tells you to set Chart.yaml before you start, and the kustomize image tags are set here
+    # precisely so the same call inside `make release` is a no-op. `git commit` exits non-zero when
+    # there is nothing staged, and this script runs under `set -e`, so the release died right here
+    # with "nothing to commit, working tree clean" and no explanation.
+    #
+    # And the regeneration step below amends this commit. Without a commit of our own to amend, it
+    # would rewrite whatever master's HEAD happened to be, folding generated files into somebody
+    # else's commit and changing the tree the tag is about to point at.
+    git commit --allow-empty -m "Prepare for release ${RELEASE_VERSION}"
 }
 
 build_release_artifacts() {
@@ -310,7 +321,9 @@ prepare_next_version() {
     yq -i '(.catalog[] | select(.name=="Changelog") | .catalog) |= [.[] | select(.name == "Current Version")] + [{ "name": "'"${RELEASE_VERSION}"'", "path": "/en/changes/changes-'"${RELEASE_VERSION}"'" }] + [.[] | select(.name != "Current Version")]' docs/menu.yml
 
     git add "${CHART_DIR_REL}/Chart.yaml" docs
-    git commit -m "Start the next iteration ${NEXT_RELEASE_VERSION}"
+    # Same reason as the release commit above: nothing staged is not a failure, and `set -e` would
+    # otherwise abort the run after the vote candidate is already uploaded.
+    git commit --allow-empty -m "Start the next iteration ${NEXT_RELEASE_VERSION}"
 
     echo "Pushing the changes to the remote repository..."
     git push --set-upstream origin "${RELEASE_VERSION}-release"
@@ -323,56 +336,39 @@ prepare_next_version() {
 
 # ========================== Main flow ==========================
 
-# Step 1: Check GPG signer
-echo "=== Step 1: Checking GPG signer ==="
-
-GPG_KEY_ID=$(git config user.signingkey 2>/dev/null || true)
-if [ -z "$GPG_KEY_ID" ]; then
-    echo "No git signing key configured. Trying default GPG key..."
-    GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG 2>/dev/null | grep -A1 '^sec' | tail -1 | awk '{print $1}' || true)
-fi
-
-if [ -z "$GPG_KEY_ID" ]; then
-    echo "ERROR: No GPG secret key found. Please configure a GPG key first."
+# Step 1: Preflight
+# Everything this script needs, checked before it does anything irreversible -- the tools it shells
+# out to, the signing key, gh, the dist URLs, the version, and whether the generated files are in
+# sync. tools/releasing/preflight.sh is the same code, runnable on its own beforehand.
+#
+# It runs FIRST, before the signer prompt: being asked to confirm a key and only then told that
+# svn is unreachable or the version is already tagged wastes the release manager's time.
+# shellcheck source=tools/releasing/preflight.sh
+. "${SCRIPT_DIR}/preflight.sh"
+if ! run_preflight; then
     exit 1
 fi
 
-# The UIDs of THIS key, not of every secret key on the machine. A release
-# manager with several keys would otherwise pass the @apache.org check on some
-# other key's UID and then sign with one that is not in the project KEYS file --
-# which every voter's `gpg --verify` would reject.
-GPG_UIDS=$(gpg --list-secret-keys --with-colons "$GPG_KEY_ID" 2>/dev/null \
-    | awk -F: '$1 == "uid" { print $10 }')
-if [ -z "$GPG_UIDS" ]; then
-    echo "ERROR: no secret key matching '${GPG_KEY_ID}'."
-    exit 1
-fi
-GPG_EMAIL=$(echo "$GPG_UIDS" | grep -oE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' | grep '@apache.org$' | head -1)
-
-if [ -z "$GPG_EMAIL" ]; then
-    echo "ERROR: key ${GPG_KEY_ID} has no @apache.org UID:"
-    echo "${GPG_UIDS}"
-    echo "Apache releases must be signed with an @apache.org GPG key."
-    exit 1
-fi
-
-# Everything downstream signs with this key: build/package/release.sh passes it
-# to gpg as --local-user.
+# Step 2: Confirm the signer, and prove it can actually sign
+# The key itself was resolved and validated by the preflight -- including that it carries an
+# @apache.org UID and appears in the published KEYS file. This does not repeat that work; it
+# confirms the choice with a human and checks that gpg-agent will hand over the passphrase, which
+# is worth finding out now rather than halfway through `make release`.
+echo ""
+echo "=== Step 2: Confirming the GPG signer ==="
+GPG_KEY_ID="${PREFLIGHT_GPG_KEY_ID}"
 export GPG_KEY_ID
-
 echo "GPG Key:    ${GPG_KEY_ID}"
-echo "GPG Signer: ${GPG_UIDS}"
-echo "GPG Email:  ${GPG_EMAIL}"
+echo "GPG Signer: ${PREFLIGHT_GPG_UIDS}"
+echo "GPG Email:  ${PREFLIGHT_GPG_EMAIL}"
 read -r -p "Is this the correct GPG signer? [y/N] " confirm
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "Aborted."
     exit 1
 fi
 
-# Ensure GPG can prompt for a passphrase in the current terminal.
 GPG_TTY=$(tty)
 export GPG_TTY
-
 echo "Verifying GPG signing works (you may be prompted for your passphrase)..."
 TEST_FILE=$(mktemp)
 echo "test" > "${TEST_FILE}"
@@ -387,26 +383,6 @@ if ! gpg --local-user "${GPG_KEY_ID}" --armor --detach-sig "${TEST_FILE}" 2>/dev
 fi
 rm -f "${TEST_FILE}" "${TEST_FILE}.asc"
 echo "GPG signing verified successfully."
-
-# Step 2: Check required tools
-echo ""
-echo "=== Step 2: Checking required tools ==="
-
-MISSING_TOOLS=()
-# helm packages the chart; yq edits the docs menu; go builds everything and installs the
-# controller-gen and kustomize that `make release` needs.
-for tool in gpg svn shasum git go helm yq gh tar; do
-    if ! command -v "$tool" &>/dev/null; then
-        MISSING_TOOLS+=("$tool")
-    fi
-done
-
-if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
-    echo "ERROR: Missing required tools: ${MISSING_TOOLS[*]}"
-    exit 1
-fi
-
-echo "All required tools are available."
 
 # Step 3: Detect the current version
 echo ""

@@ -9,10 +9,27 @@ Most of what follows is automated by two scripts, modelled on `apache/skywalking
 and when one fails you need to know which step it was on.
 
 ```shell
+bash tools/releasing/preflight.sh        # check everything before starting (optional; release.sh runs it too)
 bash tools/releasing/release.sh          # everything up to the vote
 # ... the vote runs for at least 72 hours ...
 bash tools/releasing/release-passed.sh   # everything after it passes
 ```
+
+`preflight.sh` checks the tools, the signing key -- including that it carries an `@apache.org` UID
+and appears in the published `KEYS` file -- `gh` authentication, the dist URLs, that the version in
+`Chart.yaml` matches the changelog and that its tag is still free, that `dist/dev` holds no
+abandoned candidate, and that the tree is clean and the generated chart files are in sync. It
+reports everything rather than stopping at the first problem, and exits non-zero if any of it
+blocks. `release.sh` runs it as its **step 1**, before it asks you to confirm the signing key -- being
+asked about a key and only then told that svn is unreachable wastes your time. So running
+`preflight.sh` yourself is optional: it is there for checking readiness days ahead, without
+starting a release. The key it resolves is the key `release.sh` then signs with, so the two cannot
+pick different ones.
+
+Three things it cannot check, and says so rather than guessing: svn **commit** access (testing it
+means writing to the ASF dist area), the `DOCKERHUB_USER` / `DOCKERHUB_TOKEN` repository secrets
+(listing them needs an admin token), and whether the Docker Hub publish path works at all -- it has
+never run.
 
 | | `release.sh` | `release-passed.sh` |
 | --- | --- | --- |
