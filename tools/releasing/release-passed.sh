@@ -44,7 +44,6 @@ PRODUCT_NAME="skywalking-swck"
 REPO="apache/skywalking-swck"
 SVN_DEV_URL="https://dist.apache.org/repos/dist/dev/skywalking/swck"
 SVN_RELEASE_URL="https://dist.apache.org/repos/dist/release/skywalking/swck"
-ARCHIVE_URL="https://archive.apache.org/dist/skywalking/swck"
 DOWNLOAD_URL="https://downloads.apache.org/skywalking/swck"
 
 # ========================== Shared functions ==========================
@@ -59,14 +58,16 @@ confirm() {
 }
 
 move_to_release() {
-    echo "Moving ${SVN_DEV_URL}/${RELEASE_VERSION} to ${SVN_RELEASE_URL}/..."
-    echo "You need to be a PMC member to do this, and you will be asked for your Apache password."
-    confirm "Has the vote passed with at least 3 binding +1 and more +1 than -1?"
-
+    # Check first, ask second. Asking whether the vote passed and only then discovering the move
+    # already happened makes a resume look like it is about to redo something irreversible.
     if svn ls "${SVN_RELEASE_URL}/${RELEASE_VERSION}" >/dev/null 2>&1; then
         echo "${SVN_RELEASE_URL}/${RELEASE_VERSION} already exists, skipping the move."
         return
     fi
+
+    echo "Moving ${SVN_DEV_URL}/${RELEASE_VERSION} to ${SVN_RELEASE_URL}/..."
+    echo "You need to be a PMC member to do this, and you will be asked for your Apache password."
+    confirm "Has the vote passed with at least 3 binding +1 and more +1 than -1?"
 
     svn mv -m "Release Apache SkyWalking Cloud on Kubernetes ${RELEASE_VERSION}" \
         "${SVN_DEV_URL}/${RELEASE_VERSION}" "${SVN_RELEASE_URL}/${RELEASE_VERSION}"
@@ -94,20 +95,15 @@ remove_previous_release() {
 # build/images/Dockerfile.release downloads the binary tarball from archive.apache.org and verifies
 # its signature, so the image cannot be built until the archive has it. The publish workflow waits
 # too, but failing here costs a minute instead of a workflow run.
-wait_for_archive() {
-    local url="${ARCHIVE_URL}/${RELEASE_VERSION}/${PRODUCT_NAME}-${RELEASE_VERSION}-bin.tgz"
-    echo "Waiting for ${url} ..."
-    for attempt in $(seq 1 60); do
-        if curl -sfIL --max-time 30 "${url}" >/dev/null; then
-            echo "The release has reached the archive."
-            return
-        fi
-        echo "attempt ${attempt}/60: not there yet, waiting 60s"
-        sleep 60
-    done
-    echo "ERROR: ${url} did not appear within an hour."
-    echo "Re-run this script once it has; every step before this one is idempotent."
-    exit 1
+# The move committed to dist/release. That is the release, and it is what the image build reads,
+# so there is nothing else to confirm.
+verify_published() {
+    local svn_url="${SVN_RELEASE_URL}/${RELEASE_VERSION}"
+    if ! svn ls "${svn_url}" >/dev/null 2>&1; then
+        echo "ERROR: ${svn_url} does not exist -- the move to dist/release did not take effect."
+        exit 1
+    fi
+    echo "Published to ${svn_url}"
 }
 
 # Publishing the GitHub release is what triggers .github/workflows/publish-docker.yml, which builds
@@ -134,13 +130,35 @@ publish_github_release() {
     echo "Creating the GitHub release ${tag}..."
     local notes_file
     notes_file=$(mktemp)
+
+    # The release page carries the changelog itself, not a link to it. A link is worse than it
+    # looks: by the time anyone follows it, the next-version PR has moved that section into
+    # docs/en/changes/changes-<version>.md and put an empty template at changes.md, so the link
+    # lands on the NEXT version's empty page.
+    #
+    # Read it from the tag rather than the working tree, for the same reason and because the tag is
+    # what the PMC actually voted on. The leading "## <version>" heading is dropped: GitHub already
+    # shows the version as the release title.
+    local changelog
+    changelog=$(git -C "${PROJECT_DIR}" show "${tag}:docs/en/changes/changes.md" 2>/dev/null \
+        | sed '1{/^## /d;}')
+    if [ -z "${changelog}" ]; then
+        echo "WARNING: could not read the changelog from ${tag}; falling back to a link." >&2
+        changelog="Changes: https://github.com/${REPO}/blob/${tag}/docs/en/changes/changes.md"
+    fi
+
     cat > "${notes_file}" <<EOF
 Apache SkyWalking Cloud on Kubernetes ${RELEASE_VERSION}.
 
-Changes: https://github.com/${REPO}/blob/${tag}/docs/en/changes/changes.md
+${changelog}
+
+---
 
 Source and binary distributions, and the Helm chart, are on the ASF mirrors:
 ${DOWNLOAD_URL}/${RELEASE_VERSION}
+
+Docker images and the Helm chart are convenience binaries; the official release is the source
+tarball above.
 EOF
     # --verify-tag or gh creates the tag itself, at whatever master points to now. That would
     # publish convenience binaries built from code the PMC never voted on.
@@ -334,15 +352,24 @@ if [ -z "${RELEASE_VERSION}" ]; then
     if [ "${CANDIDATE_COUNT}" -eq 1 ]; then
         RELEASE_VERSION="${CANDIDATES}"
         echo "dist/dev holds one candidate: ${RELEASE_VERSION}"
-    elif [ "${CANDIDATE_COUNT}" -eq 0 ]; then
-        echo "ERROR: ${SVN_DEV_URL} holds no release candidate."
-        echo "Nothing has been uploaded for a vote, or it has already been published."
-        exit 1
-    else
+    elif [ "${CANDIDATE_COUNT}" -gt 1 ]; then
         echo "ERROR: ${SVN_DEV_URL} holds more than one candidate:"
         echo "${CANDIDATES}" | sed 's/^/  /'
         echo "Pass the one you mean: bash $(basename "$0") <version>"
         exit 1
+    else
+        # dist/dev is empty, which is what a RESUME looks like: the move already happened and
+        # everything after it -- publishing the GitHub release, the images, the chart -- has not.
+        # Fall back to the newest thing in dist/release so re-running picks up where it stopped
+        # instead of refusing to start.
+        RELEASE_VERSION=$(svn ls "${SVN_RELEASE_URL}" 2>/dev/null | tr -d '/' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "${RELEASE_VERSION}" ]; then
+            echo "ERROR: neither ${SVN_DEV_URL} nor ${SVN_RELEASE_URL} holds a release."
+            exit 1
+        fi
+        echo "dist/dev is empty and dist/release holds ${RELEASE_VERSION}."
+        echo "Continuing a release that was already moved; the steps below skip what is done."
     fi
 
     read -r -p "Version to publish [${RELEASE_VERSION}]: " answer
@@ -356,9 +383,11 @@ fi
 
 # Fail here, before the vote question and before anything is moved, rather than partway through
 # with an svn path error.
-if ! svn ls "${SVN_DEV_URL}/${RELEASE_VERSION}" >/dev/null 2>&1; then
-    echo "ERROR: ${SVN_DEV_URL}/${RELEASE_VERSION} does not exist."
-    echo "Available: $(svn ls "${SVN_DEV_URL}" 2>/dev/null | tr -d '/' | tr '\n' ' ')"
+if ! svn ls "${SVN_DEV_URL}/${RELEASE_VERSION}" >/dev/null 2>&1 \
+    && ! svn ls "${SVN_RELEASE_URL}/${RELEASE_VERSION}" >/dev/null 2>&1; then
+    echo "ERROR: ${RELEASE_VERSION} is in neither dist/dev nor dist/release."
+    echo "  dist/dev:     $(svn ls "${SVN_DEV_URL}" 2>/dev/null | tr -d '/' | tr '\n' ' ')"
+    echo "  dist/release: $(svn ls "${SVN_RELEASE_URL}" 2>/dev/null | tr -d '/' | tr '\n' ' ')"
     exit 1
 fi
 
@@ -384,8 +413,8 @@ echo "=== Step 3: Removing the previous release from dist/release ==="
 remove_previous_release
 
 echo ""
-echo "=== Step 4: Waiting for the release to reach archive.apache.org ==="
-wait_for_archive
+echo "=== Step 4: Confirming the release is published ==="
+verify_published
 
 echo ""
 echo "=== Step 5: Publishing the GitHub release ==="

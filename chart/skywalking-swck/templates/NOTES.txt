@@ -42,7 +42,7 @@ conflicts on exactly the fields an upgrade needs to change. Pass the same chart
 reference you installed from -- `helm show crds` needs an OCI URL, a repo/chart
 or a path, not a release name:
 
-  helm show crds oci://registry-1.docker.io/apache/skywalking-swck --version {{ .Chart.Version }} \
+  helm show crds oci://docker.io/apache/skywalking-swck --version {{ .Chart.Version }} \
     | kubectl apply --server-side --force-conflicts -f -
 
   # or, from GHCR
