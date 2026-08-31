@@ -33,11 +33,16 @@ WORKDIR  ${SWCK_HOME}
 RUN set -eux; \
     apk add --virtual .build-deps curl gnupg unzip
 
-# Download 
+# Download
+#
+# dist.apache.org/repos/dist/release is where the release is: the svn move puts it there and it is
+# servable immediately. The mirror and the archive are copies that lag, so fetching from either
+# only adds a wait.
 RUN set -eux; \
-    curl https://archive.apache.org/dist/skywalking/swck/${SWCK_VERSION}/skywalking-swck-${SWCK_VERSION}-bin.tgz -o swck.tgz; \
-    curl https://archive.apache.org/dist/skywalking/swck/${SWCK_VERSION}/skywalking-swck-${SWCK_VERSION}-bin.tgz.asc -o swck.tgz.asc; \
-	curl https://downloads.apache.org/skywalking/KEYS -o KEYS
+    base="https://dist.apache.org/repos/dist/release/skywalking/swck/${SWCK_VERSION}"; \
+    curl -sfL "${base}/skywalking-swck-${SWCK_VERSION}-bin.tgz" -o swck.tgz; \
+    curl -sfL "${base}/skywalking-swck-${SWCK_VERSION}-bin.tgz.asc" -o swck.tgz.asc; \
+    curl -sfL https://downloads.apache.org/skywalking/KEYS -o KEYS
 
 # Install
 RUN set -eux; \

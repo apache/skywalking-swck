@@ -50,7 +50,7 @@ builds an image for it.
 From Docker Hub, which carries the combined image the chart's default values point at:
 
 ```shell
-helm install skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm install skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version 0.11.0-helm \
   --namespace skywalking-swck-system --create-namespace
 ```
@@ -109,7 +109,7 @@ kinds of image. Which one you install from changes what you have to set.
 ## Upgrade
 
 ```shell
-helm upgrade skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm upgrade skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version <new version>-helm --namespace skywalking-swck-system
 ```
 
@@ -119,7 +119,7 @@ custom resource leaves the cluster with the old schema and the new operator unab
 Apply them yourself as part of the upgrade:
 
 ```shell
-helm show crds oci://registry-1.docker.io/apache/skywalking-swck --version <new version>-helm \
+helm show crds oci://docker.io/apache/skywalking-swck --version <new version>-helm \
   | kubectl apply --server-side --force-conflicts -f -
 ```
 
@@ -165,7 +165,7 @@ it points at exists, so a wrong address fails silently, with every HPA query sim
 nothing.
 
 ```shell
-helm install skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm install skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version 0.11.0-helm \
   --namespace skywalking-swck-system --create-namespace \
   --set adapter.enabled=true \

@@ -33,7 +33,7 @@
 # The release path is also reachable through workflow_dispatch with the same tag. That is not a
 # second way to release; it is how the release manager re-runs a release publish that failed, most
 # often because the release had not yet reached archive.apache.org when the GitHub release was
-# published -- see the wait in publish-combined-image.
+# published -- see the wait in publish-release-image.
 #
 # The Docker Hub repository apache/skywalking-swck carries two kinds of artifact at two distinct
 # tags. They MUST stay at distinct tags: pushing a chart over an image tag rewrites the manifest
@@ -163,10 +163,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Release publish of $tag as $version"
 
-  # Split images, GHCR only, on both paths.
-  publish-split-images:
-    name: Publish ${{ matrix.component }} image
+  # Snapshot images, GHCR. Commits go to GHCR; releases go to Docker Hub.
+  publish-snapshot-images:
+    name: Publish snapshot ${{ matrix.component }} image
     needs: resolve
+    # Snapshots only. A commit on master publishes the per-component images to GHCR; a release
+    # publishes the combined image to Docker Hub instead, so there is nothing for this to do.
+    if: needs.resolve.outputs.is_release != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -259,8 +262,8 @@ jobs:
   # apache/skywalking-swck were pushed by hand. It is built from build/images/Dockerfile.release,
   # which downloads skywalking-swck-$VERSION-bin.tgz from archive.apache.org and GPG-verifies it
   # against the published KEYS file, so the image contains exactly the voted release binaries.
-  publish-combined-image:
-    name: Publish combined image to Docker Hub
+  publish-release-image:
+    name: Publish release image to Docker Hub
     needs: resolve
     if: needs.resolve.outputs.is_release == 'true'
     runs-on: ubuntu-latest
@@ -288,25 +291,23 @@ jobs:
             echo "::error::Ask ASF INFRA to grant apache/skywalking-swck access to them (see docs/en/guides/release.md)."
             exit 1
           fi
-      # Dockerfile.release downloads the voted binary tarball from archive.apache.org. The GitHub
-      # release is normally published right after the artifacts are moved into the dist release
-      # repository, and the move to the archive is not instant -- so wait for it here instead of
-      # failing the release publish on a mirror that has not caught up. If it never arrives, the
-      # release manager re-runs this workflow through workflow_dispatch once it has.
-      - name: Wait for the release to reach archive.apache.org
+      # Dockerfile.release fetches the tarball from dist/release, which is where the svn move
+      # puts it. Wait only for that: the mirror and the archive are copies that lag, and neither
+      # is what the build reads.
+      - name: Wait for the release to exist in dist/release
         shell: bash
         run: |
           set -euo pipefail
-          url="https://archive.apache.org/dist/skywalking/swck/${VERSION}/skywalking-swck-${VERSION}-bin.tgz"
-          for attempt in $(seq 1 30); do
+          url="https://dist.apache.org/repos/dist/release/skywalking/swck/${VERSION}/skywalking-swck-${VERSION}-bin.tgz"
+          for attempt in $(seq 1 10); do
             if curl -sfIL --max-time 30 "$url" >/dev/null; then
               echo "$url is available"
               exit 0
             fi
-            echo "attempt $attempt/30: $url is not available yet, waiting 60s"
-            sleep 60
+            echo "attempt $attempt/10: not there yet, waiting 30s"
+            sleep 30
           done
-          echo "::error::$url did not appear within 30 minutes."
+          echo "::error::$url did not appear within five minutes."
           echo "::error::Move the release to dist/release first, then re-run this workflow with tag=v${VERSION}."
           exit 1
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
@@ -369,21 +370,17 @@ jobs:
   # credential must not be able to withhold them.
   #
   # On the release path it is not independent, because a release chart keeps its Docker Hub
-  # defaults -- docker.io/apache/skywalking-swck:<appVersion>, which publish-combined-image builds.
+  # defaults -- docker.io/apache/skywalking-swck:<appVersion>, which publish-release-image builds.
   # Publishing the chart first would advertise an image that does not exist yet, and if that job
-  # then failed, would leave it advertising one that never will. So publish-combined-image is in
+  # then failed, would leave it advertising one that never will. So publish-release-image is in
   # `needs`, and the guard below lets the snapshot path through the `skipped` result it produces
   # there.
-  publish-chart-ghcr:
-    name: Publish Helm chart to GHCR
-    needs: [resolve, publish-split-images, publish-combined-image]
-    # publish-combined-image is skipped on the snapshot path, which would otherwise skip this job
-    # too. Require it to have succeeded only where the chart actually points at what it builds.
-    if: |
-      always()
-      && needs.resolve.result == 'success'
-      && needs.publish-split-images.result == 'success'
-      && (needs.resolve.outputs.is_release != 'true' || needs.publish-combined-image.result == 'success')
+  publish-snapshot-chart:
+    name: Publish snapshot Helm chart to GHCR
+    needs: [resolve, publish-snapshot-images]
+    # Snapshots only, matching the images: GHCR carries a chart for every commit on master, and a
+    # release publishes its chart to Docker Hub beside the image it references.
+    if: needs.resolve.outputs.is_release != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -539,9 +536,9 @@ jobs:
   # The chart, to Docker Hub, release path only. Separate from the GHCR job so that a Docker Hub
   # problem cannot withhold the GHCR chart, and ordered after the combined image so the mediaType
   # guard runs against the image this same run pushed.
-  publish-chart-dockerhub:
-    name: Publish Helm chart to Docker Hub
-    needs: [resolve, publish-combined-image, publish-chart-ghcr]
+  publish-release-chart:
+    name: Publish release Helm chart to Docker Hub
+    needs: [resolve, publish-release-image]
     if: needs.resolve.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -566,11 +563,15 @@ jobs:
         with:
           name: charts
           path: build/chart
-      # Docker Hub: the same chart the GHCR job packaged, at <version>-helm, pushed into the
-      # oci://.../apache namespace so helm lands it on apache/skywalking-swck at tag
-      # <version>-helm, next to the combined image at tag <version>. registry-1.docker.io is the
-      # registry endpoint; docker.io itself does not serve the /v2/ API that helm's OCI client
-      # talks to.
+      # Docker Hub: the same chart the snapshot job packaged, at <version>-helm, pushed into the
+      # oci://docker.io/apache namespace so helm lands it on apache/skywalking-swck at tag
+      # <version>-helm, next to the release image at tag <version>.
+      #
+      # docker.io, not registry-1.docker.io. Both resolve to the same registry and either can be
+      # pulled from anonymously, but the credential is stored under the host you logged in as, and
+      # a push normalises the reference back to Docker Hub's canonical host -- so logging in as
+      # registry-1.docker.io leaves the push looking up a credential that was never written there,
+      # and it 401s. apache/skywalking uses docker.io throughout for this reason.
       - name: Login to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
         with:
@@ -584,9 +585,9 @@ jobs:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           set -euo pipefail
-          echo "$DOCKERHUB_TOKEN" | helm registry login registry-1.docker.io -u "$DOCKERHUB_USER" --password-stdin
-          helm push "build/chart/skywalking-swck-${VERSION}-helm.tgz" oci://registry-1.docker.io/apache
-          helm registry logout registry-1.docker.io
+          echo "$DOCKERHUB_TOKEN" | helm registry login docker.io -u "$DOCKERHUB_USER" --password-stdin
+          helm push "build/chart/skywalking-swck-${VERSION}-helm.tgz" oci://docker.io/apache
+          helm registry logout docker.io
       # A chart pushed over an image tag replaces the manifest config with
       # application/vnd.cncf.helm.config.v1+json and docker pull then fails. Prove the combined
       # image tag survived the chart push.

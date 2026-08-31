@@ -40,7 +40,7 @@ builds an image for it.
 ## Install
 
 ```shell
-helm install skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm install skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version 0.11.0-helm \
   --namespace skywalking-swck-system --create-namespace
 ```
@@ -93,7 +93,7 @@ Off by default, and it needs the address of a running OAP cluster — the chart 
 without one:
 
 ```shell
-helm install skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm install skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version 0.11.0-helm \
   --namespace skywalking-swck-system --create-namespace \
   --set adapter.enabled=true \
@@ -113,7 +113,7 @@ prometheus-adapter or KEDA takes that API group away from them. See
 ## Upgrade
 
 ```shell
-helm upgrade skywalking-swck oci://registry-1.docker.io/apache/skywalking-swck \
+helm upgrade skywalking-swck oci://docker.io/apache/skywalking-swck \
   --version <new version>-helm --namespace skywalking-swck-system
 ```
 
@@ -122,7 +122,7 @@ first install and then never touches — so an upgrade that adds a field to a cu
 the cluster on the old schema. Apply them yourself:
 
 ```shell
-helm show crds oci://registry-1.docker.io/apache/skywalking-swck --version <new version>-helm \
+helm show crds oci://docker.io/apache/skywalking-swck --version <new version>-helm \
   | kubectl apply --server-side --force-conflicts -f -
 ```
 

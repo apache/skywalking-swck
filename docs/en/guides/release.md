@@ -44,7 +44,7 @@ never run.
 | Drafts the vote-result and announcement emails | | yes |
 
 Neither script publishes an image or a chart before the vote passes. That is not only policy: the
-Docker Hub image is built from the **released** binary tarball, downloaded from `archive.apache.org`
+Docker Hub image is built from the **released** binary tarball, downloaded from the ASF mirror
 and GPG-verified, so it cannot be built until the release is real.
 
 Do not confuse `tools/releasing/release.sh` with `build/package/release.sh`, which is the packaging
@@ -376,14 +376,14 @@ do each step by hand:
 
 1. Remove the last released tarballs from `https://dist.apache.org/repos/dist/release/skywalking`.
    `dist/release` is mirrored everywhere, so it carries only the current release; older ones stay
-   available on `archive.apache.org`.
+   available on the ASF mirror (`downloads.apache.org`), which carries the current release within minutes of the `dist/release` commit.
 
 1. Publish the convenience binaries: the container images and the Helm chart.
 
     These are **not** the release -- the voted source tarball is. They are convenience binaries and
     **must not be pushed before the vote passes** and the tarballs have moved to `dist/release`. This
     is not only policy: `build/images/Dockerfile.release` builds the Docker Hub image by downloading
-    `skywalking-swck-$VERSION-bin.tgz` from `archive.apache.org` and verifying its `.asc`, so it
+    `skywalking-swck-$VERSION-bin.tgz` from `downloads.apache.org`, falling back to `archive.apache.org` for a version that is no longer current, and verifying its `.asc`, so it
     simply cannot be built until the tarball is released and has propagated to the archive.
 
     Publishing is triggered by **publishing the GitHub release**, exactly as in `apache/skywalking`:
@@ -398,7 +398,7 @@ do each step by hand:
     [Release artifacts and version scheme](#release-artifacts-and-version-scheme). Pushes to `master`
     continue to publish only SHA-tagged development images and a `0.0.0-<sha>` chart to GHCR.
 
-    The workflow waits up to 30 minutes for `archive.apache.org` to serve the binary tarball before
+    The workflow waits up to ten minutes for either source to serve the binary tarball before
     it builds the combined image. If the mirrors take longer than that, re-run the release path by
     hand once the URL resolves -- it is the same workflow, and the tag is its only input:
 
@@ -423,7 +423,7 @@ do each step by hand:
 
     # the combined image must still pull AFTER the chart has been pushed to the same repository
     docker pull apache/skywalking-swck:$VERSION
-    helm show chart oci://registry-1.docker.io/apache/skywalking-swck --version "$VERSION-helm"
+    helm show chart oci://docker.io/apache/skywalking-swck --version "$VERSION-helm"
     ```
 
     If `docker pull` fails here, the chart was pushed onto the image's tag and clobbered its manifest
@@ -458,7 +458,7 @@ do each step by hand:
 
     # Docker Hub: the same chart, repackaged at the -helm tag
     helm package chart/skywalking-swck --version "$VERSION-helm" --app-version "$VERSION" -d build/release
-    helm push "build/release/skywalking-swck-$VERSION-helm.tgz" oci://registry-1.docker.io/apache
+    helm push "build/release/skywalking-swck-$VERSION-helm.tgz" oci://docker.io/apache
     ```
 
     No retagging is involved on GHCR: `helm push` appends the chart *name* to the OCI namespace it is
