@@ -123,9 +123,6 @@ spec:
                     type:
                       description: Type of deployment condition.
                       type: string
-                  required:
-                  - status
-                  - type
                   type: object
                 type: array
               configMapName:
