@@ -321,15 +321,44 @@ EOF
 
 RELEASE_VERSION="${1:-}"
 if [ -z "${RELEASE_VERSION}" ]; then
-    RELEASE_VERSION=$(awk '/^version:/{print $2; exit}' "${PROJECT_DIR}/chart/skywalking-swck/Chart.yaml")
-    echo "No version given; chart/skywalking-swck/Chart.yaml says ${RELEASE_VERSION}."
-    echo "NOTE: if the next-version PR has already merged, this is the NEXT version, not the one you released."
+    # Ask dist/dev what is waiting to be published, rather than the working tree.
+    #
+    # Chart.yaml is the wrong source here: by the time the vote passes, release.sh has already
+    # opened the next-version PR and it has usually been merged, so Chart.yaml holds the version
+    # AFTER the one being released. Defaulting to it meant pressing Enter tried to publish a
+    # candidate that does not exist -- which failed, but only several prompts later and with an
+    # svn path error rather than an explanation.
+    CANDIDATES=$(svn ls "${SVN_DEV_URL}" 2>/dev/null | tr -d '/' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+    CANDIDATE_COUNT=$(echo "${CANDIDATES}" | grep -c . || true)
+
+    if [ "${CANDIDATE_COUNT}" -eq 1 ]; then
+        RELEASE_VERSION="${CANDIDATES}"
+        echo "dist/dev holds one candidate: ${RELEASE_VERSION}"
+    elif [ "${CANDIDATE_COUNT}" -eq 0 ]; then
+        echo "ERROR: ${SVN_DEV_URL} holds no release candidate."
+        echo "Nothing has been uploaded for a vote, or it has already been published."
+        exit 1
+    else
+        echo "ERROR: ${SVN_DEV_URL} holds more than one candidate:"
+        echo "${CANDIDATES}" | sed 's/^/  /'
+        echo "Pass the one you mean: bash $(basename "$0") <version>"
+        exit 1
+    fi
+
     read -r -p "Version to publish [${RELEASE_VERSION}]: " answer
     RELEASE_VERSION="${answer:-${RELEASE_VERSION}}"
 fi
 
 if [[ ! "${RELEASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "ERROR: '${RELEASE_VERSION}' is not a release version like 0.11.0"
+    exit 1
+fi
+
+# Fail here, before the vote question and before anything is moved, rather than partway through
+# with an svn path error.
+if ! svn ls "${SVN_DEV_URL}/${RELEASE_VERSION}" >/dev/null 2>&1; then
+    echo "ERROR: ${SVN_DEV_URL}/${RELEASE_VERSION} does not exist."
+    echo "Available: $(svn ls "${SVN_DEV_URL}" 2>/dev/null | tr -d '/' | tr '\n' ' ')"
     exit 1
 fi
 
