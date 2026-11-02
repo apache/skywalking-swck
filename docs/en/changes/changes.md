@@ -9,3 +9,4 @@
 - Take `release-passed.sh`'s default version from `dist/dev` rather than from `Chart.yaml`. By the time a vote passes, `release.sh` has already opened the next-version PR and it is usually merged, so `Chart.yaml` holds the version *after* the one being released -- pressing Enter at the prompt tried to publish a candidate that does not exist. It failed, but several prompts later and with an svn path error rather than an explanation. The script now reads what is actually waiting in `dist/dev`, refuses to guess when there is more than one candidate, and checks the chosen version exists before asking whether the vote passed.
 
 #### Chores
+- Bump `go.etcd.io/etcd/client/pkg/v3` (with `api/v3` and `client/v3`) to v3.5.35 in the adapter to fix GO-2026-6107, and `golang.org/x/net` to v0.62.0 in the adapter and the operator to fix GO-2026-6860 and GO-2026-6866.
