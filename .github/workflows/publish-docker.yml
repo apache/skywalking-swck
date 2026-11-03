@@ -79,7 +79,7 @@ jobs:
       # The release version with its leading v stripped, e.g. 0.11.0. Empty on the snapshot path.
       version: ${{ steps.resolve.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -187,7 +187,7 @@ jobs:
             image: ghcr.io/apache/skywalking-swck/metrics-adapter
             binary: /adapter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-tags: true
           ref: ${{ needs.resolve.outputs.ref }}
@@ -205,9 +205,9 @@ jobs:
           else
             echo "IMAGE_TAGS=$IMAGE:$SHA,$IMAGE:latest" >> "$GITHUB_ENV"
           fi
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -215,7 +215,7 @@ jobs:
       # Both Dockerfiles take TARGETARCH, which buildx sets per platform, so each manifest entry
       # really holds a binary for its own architecture.
       - name: Build and push the ${{ matrix.component }} image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
@@ -273,7 +273,7 @@ jobs:
     env:
       VERSION: ${{ needs.resolve.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-tags: true
           ref: ${{ needs.resolve.outputs.ref }}
@@ -310,9 +310,9 @@ jobs:
           echo "::error::$url did not appear within five minutes."
           echo "::error::Move the release to dist/release first, then re-run this workflow with tag=v${VERSION}."
           exit 1
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Login to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: docker.io
           username: ${{ secrets.DOCKERHUB_USER }}
@@ -326,7 +326,7 @@ jobs:
       # ELF, so an arm64 node gets "exec format error". The verification step below is what stops
       # that recurring: it pulls each advertised platform back and checks the ELF machine type.
       - name: Build and push the combined image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: build/images
           file: build/images/Dockerfile.release
@@ -391,11 +391,11 @@ jobs:
       IS_RELEASE: ${{ needs.resolve.outputs.is_release }}
       VERSION: ${{ needs.resolve.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-tags: true
           ref: ${{ needs.resolve.outputs.ref }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
       - name: Set the chart version
@@ -512,7 +512,7 @@ jobs:
           fi
           ls -l build/chart
       - name: Upload the packaged charts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: charts
           path: build/chart/*.tgz
@@ -559,7 +559,7 @@ jobs:
             echo "::error::Ask ASF INFRA to grant apache/skywalking-swck access to them (see docs/en/guides/release.md)."
             exit 1
           fi
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: charts
           path: build/chart
@@ -573,7 +573,7 @@ jobs:
       # registry-1.docker.io leaves the push looking up a credential that was never written there,
       # and it 401s. apache/skywalking uses docker.io throughout for this reason.
       - name: Login to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: docker.io
           username: ${{ secrets.DOCKERHUB_USER }}
