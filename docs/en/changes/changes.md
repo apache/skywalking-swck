@@ -10,3 +10,4 @@
 
 #### Chores
 - Bump `go.etcd.io/etcd/client/pkg/v3` (with `api/v3` and `client/v3`) to v3.5.35 in the adapter to fix GO-2026-6107, and `golang.org/x/net` to v0.62.0 in the adapter and the operator to fix GO-2026-6860 and GO-2026-6866.
+- Build the adapter and operator images with `golang:1.26.11` instead of `golang:1.26.3`, fixing the Go standard library vulnerabilities that govulncheck reports as reachable from both binaries (including GO-2026-6859, GO-2026-6809 and the go1.26.9 net/http and crypto/tls fixes).
