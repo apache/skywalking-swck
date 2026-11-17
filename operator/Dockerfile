@@ -17,7 +17,7 @@
 # --platform=$BUILDPLATFORM pins the builder stage to the machine doing the build, so a
 # multi-platform build cross-compiles with the Go toolchain instead of running the whole stage
 # under QEMU emulation for every target.
-FROM --platform=$BUILDPLATFORM golang:1.26.3 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.11 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
