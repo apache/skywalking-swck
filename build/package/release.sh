@@ -60,15 +60,14 @@ binary(){
     popd
     ${KUSTOMIZE} build adapter/config > ${bindir}/config/adapter-bundle.yaml
     # Package
-    tar -czf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-bin.tgz -C ${bindir} .
+    bash ${SCRIPTDIR}/linux-tar.sh pack ${BUILDDIR}/release -czf skywalking-swck-${RELEASE_VERSION}-bin.tgz -C binary .
     rm -rf ${bindir}
 }
 
 source(){
     # Package
     rm -rf ${BUILDDIR}/release/skywalking-swck-${RELEASE_VERSION}-src.tgz
-    pushd ${ROOTDIR}
-    tar \
+    bash ${SCRIPTDIR}/linux-tar.sh pack ${ROOTDIR} \
         --exclude=".DS_Store" \
         --exclude=".git" \
         --exclude=".github" \
@@ -83,7 +82,6 @@ source(){
         --exclude="*.out"  \
         -czf ./build/release/skywalking-swck-${RELEASE_VERSION}-src.tgz \
         .
-    popd
 }
 
 # The Helm chart is a release artifact like the source and binary tarballs: it is
@@ -135,6 +133,7 @@ sign(){
         local_user="--local-user ${GPG_KEY_ID}"
     fi
     pushd ${BUILDDIR}/release/
+    bash ${SCRIPTDIR}/linux-tar.sh verify ${file}
     gpg ${local_user} --batch --yes --armor --detach-sig ${file}
 	shasum -a 512 ${file} > ${file}.sha512
 	popd

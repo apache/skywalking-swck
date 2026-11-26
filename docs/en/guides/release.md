@@ -18,7 +18,8 @@ bash tools/releasing/release-passed.sh   # everything after it passes
 `preflight.sh` checks the tools, the signing key -- including that it carries an `@apache.org` UID
 and appears in the published `KEYS` file -- `gh` authentication, the dist URLs, that the version in
 `Chart.yaml` matches the changelog and that its tag is still free, that `dist/dev` holds no
-abandoned candidate, and that the tree is clean and the generated chart files are in sync. It
+abandoned candidate, that the tree is clean and the generated chart files are in sync, and that
+Docker is running, since `make release` packs and checks the tarballs in a Linux container. It
 reports everything rather than stopping at the first problem, and exits non-zero if any of it
 blocks. `release.sh` runs it as its **step 1**, before it asks you to confirm the signing key -- being
 asked about a key and only then told that svn is unreachable wastes your time. So running
@@ -152,6 +153,11 @@ make clean && make release
 
 The `skywalking-swck-${VERSION}-bin.tgz`, `skywalking-swck-${VERSION}-src.tgz`, and their corresponding `asc`, `sha512` are written to `build/release`. **In total, six files should be automatically generated in the directory.**
 
+`make release` packs both tarballs with GNU tar in a Linux container (`build/package/linux-tar.sh`), not with the
+host's `tar`, so a release made on macOS carries no macOS metadata (AppleDouble `._*` files or extended-attribute
+headers). This needs Docker running. Before signing each tarball, it unpacks it with GNU tar in the same image, and
+stops if tar prints any warning or finds a `._*` entry.
+
 ### Package and sign the Helm chart
 
 The chart tarball is a signed, voted release artifact and ships next to the source and binary tarballs --
@@ -169,8 +175,9 @@ helm package chart/skywalking-swck --version "$VERSION" --app-version "$VERSION"
 rm -f chart/skywalking-swck/LICENSE chart/skywalking-swck/NOTICE
 
 pushd build/release
-gpg --batch --yes --armor --detach-sig "skywalking-swck-$VERSION.tgz"
-shasum -a 512 "skywalking-swck-$VERSION.tgz" > "skywalking-swck-$VERSION.tgz.sha512"
+bash ../../build/package/linux-tar.sh verify "skywalking-swck-$VERSION.tgz" &&
+  gpg --batch --yes --armor --detach-sig "skywalking-swck-$VERSION.tgz" &&
+  shasum -a 512 "skywalking-swck-$VERSION.tgz" > "skywalking-swck-$VERSION.tgz.sha512"
 popd
 ```
 

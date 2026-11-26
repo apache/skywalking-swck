@@ -181,6 +181,16 @@ check_generated_in_sync() {
     fi
 }
 
+# `make release` packs and checks the tarballs with GNU tar in a Linux container.
+check_docker() {
+    echo "Docker"
+    if bash "${PROJECT_DIR}/build/package/linux-tar.sh" check 2>/dev/null; then
+        _ok "the daemon is running"
+    else
+        _block "Docker is not installed or its daemon is not running; make release packs the tarballs in a Linux container"
+    fi
+}
+
 # The release path pushes to Docker Hub with repository secrets this cannot read.
 check_dockerhub() {
     echo "Docker Hub"
@@ -199,6 +209,7 @@ run_preflight() {
     check_version;             echo ""
     check_dist_dev_clean;      echo ""
     check_generated_in_sync;   echo ""
+    check_docker;              echo ""
     check_dockerhub;           echo ""
 
     if [ "${PREFLIGHT_BLOCKERS}" -gt 0 ]; then
